@@ -8,7 +8,8 @@
 - Gradle wrapper: 8.8
 - Java runtime and bytecode: 17
 - Verified local JDK: `<Java 17 JDK>`
-- Gradle user home: `<repository>/.gradle-verify-cache`
+- Gradle user home:
+  `<repository>/.gradle-verify-cache`
 
 Do not run Gradle concurrently against this checkout/cache. Review complete
 logs and crash-report directories after every client, server, or GameTest run.

@@ -52,20 +52,17 @@ replay_pid*
 !.env.example
 secret.json
 
-# Local coding-agent context at any depth. Durable project knowledge belongs
+# Local developer-only context at any depth. Durable project knowledge belongs
 # in README.md and docs/ so it remains available after cloning.
 AGENT.md
 AGENTS.md
 CLAUDE.md
-CODEX.md
 GEMINI.md
 agent-notes/
 agent_notes/
-.codex/
 .claude/
 .cursor/
 *agent-handover*.md
-codex-*.md
 
 # Files from Forge MDK
 forge*changelog.txt

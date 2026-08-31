@@ -2,9 +2,11 @@
 
 ## Current repository
 
-The initial 1.18.2 checkout is `<workspace>` on branch
-`master-1.18.2`. It starts as a local Git repository with no remotes. Do not
-invent remote URLs or create hosted repositories without the user's direction.
+`<workspace>` is the multi-version workspace wrapper and is not a Git
+repository. The 1.18.2 Git/Gradle checkout is
+`<repository>` on branch
+`master-1.18.2`. It has no remotes. Do not invent remote URLs or create hosted
+repositories without the user's direction.
 
 The intended hosted topology, once those repositories actually exist, is:
 
@@ -18,19 +20,21 @@ Verify both URLs and permissions before adding them. Ordinary pushes go to
 
 ## Branching
 
-- Stable target branch: `master-1.18.2`
-- First beta implementation branch: `codex/1.18.2-beta`
-- Focused work: `feature/<issue-or-short-purpose>` or
-  `fix/<issue-or-short-purpose>`
+- Current target branch: `master-1.18.2`; routine work may remain directly on
+  this branch while the project is in early local development.
+- Create a focused branch only when parallel or isolated work genuinely needs
+  one. Keep branch, folder, commit, artifact, and other project-facing names
+  free of coding-agent or tool branding.
 - Keep each Minecraft version and loader lineage on a distinct branch and,
-  when concurrent work begins, a distinct checkout/worktree.
+  when concurrent work begins, a distinct version checkout under
+  `<workspace>\SkysGrassSlabs<version>\SkysGrassSlabs`.
 - Do not mix a future NeoForge line into a Forge branch.
 - Use the newest accepted feature-complete product branch as the product source
   for a forward port, then overlay only the target MDK scaffold and deliberate
   API/resource adaptations.
 
-Agree a multi-version directory layout with the user before moving this root
-checkout or creating sibling version folders.
+The outer version folder can also serve as that version's Eclipse workspace,
+matching the established OreSpawn and Mineralogy layout.
 
 ## Publication guardrails
 
@@ -56,10 +60,11 @@ Keep commits focused and leave the worktree clean at handoff unless a candidate
 is intentionally awaiting manual testing. Do not include generated run data,
 Gradle caches, Eclipse metadata, evidence directories, or local paths.
 
-`AGENTS.md`, `agent-notes/`, and `.codex/` are local and ignored at every
-repository depth. Durable technical and contributor knowledge belongs in
-tracked `README.md` and `docs/`. Before any public push, verify that no agent
-file is tracked or present in the candidate jar.
+`AGENTS.md`, `agent-notes/`, and tool-specific working state are local and must
+remain untracked at every repository depth. Durable technical and contributor
+knowledge belongs in tracked `README.md` and `docs/`. Before any public push,
+verify that no local guidance or tool-state file is tracked or present in the
+candidate jar.
 
 The project is licensed `LGPL-2.1-only`, copyright SkyBlade1978. The root
 license, SPDX marker, and notice must be present in source and packaged jars.
