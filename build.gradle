@@ -236,6 +236,138 @@ tasks.withType(Test).configureEach {
     workingDir = project.projectDir
 }
 
+def configureEclipseBuildship = tasks.register('configureEclipseBuildship') {
+    group = 'ide'
+    description = 'Pins Eclipse Buildship to the same Gradle home used to generate Forge runs.'
+    doLast {
+        File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
+        Properties preferences = new Properties()
+        if (preferencesFile.isFile()) {
+            preferencesFile.withInputStream { preferences.load(it) }
+        }
+        preferences.setProperty('eclipse.preferences.version', '1')
+        preferences.setProperty('connection.gradle.distribution', 'GRADLE_DISTRIBUTION(WRAPPER)')
+        preferences.setProperty('connection.gradle.user.home', gradle.gradleUserHomeDir.canonicalPath)
+        preferences.setProperty('connection.project.dir', '')
+        preferences.setProperty('gradle.user.home', gradle.gradleUserHomeDir.canonicalPath)
+        preferences.setProperty('override.workspace.settings', 'true')
+        preferencesFile.parentFile.mkdirs()
+        preferencesFile.withOutputStream { preferences.store(it, 'Generated Buildship configuration.') }
+    }
+}
+
+eclipse {
+    classpath {
+        downloadSources = true
+        downloadJavadoc = true
+        file.whenMerged { classpath ->
+            // Buildship owns Gradle dependencies. Keeping Eclipse-plugin library
+            // entries as well exposes Forge modules twice and crashes ModLauncher.
+            classpath.entries.removeAll { entry ->
+                entry instanceof org.gradle.plugins.ide.eclipse.model.Library
+            }
+            String buildshipContainer = 'org.eclipse.buildship.core.gradleclasspathcontainer'
+            if (!classpath.entries.any { entry -> entry.path == buildshipContainer }) {
+                classpath.entries.add(0,
+                        new org.gradle.plugins.ide.eclipse.model.Container(buildshipContainer))
+            }
+        }
+    }
+    synchronizationTasks 'configureEclipseBuildship'
+}
+
+def isolateEclipseRuns = tasks.register('isolateEclipseRuns') {
+    group = 'ide'
+    description = 'Keeps generated Forge Eclipse launches free of duplicate outputs and test code.'
+    dependsOn configureEclipseBuildship
+    doLast {
+        String mainOutput = new File(projectDir, 'bin/main').absolutePath
+        String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
+        String productionModClasses = "${mod_id}%%${mainOutput}"
+        String gameTestModClasses = productionModClasses + File.pathSeparator +
+                "${mod_id}%%${gameTestOutput}"
+        File configurations = file('.eclipse/configurations')
+
+        ['Client', 'Server', 'Data'].each { String runName ->
+            File launch = new File(configurations, "${project.name} - run${runName}Slim.launch")
+            if (!launch.isFile()) {
+                throw new GradleException("Missing generated Eclipse launch: ${launch}")
+            }
+            String text = launch.getText('UTF-8').replaceFirst(
+                    /<mapEntry key="MOD_CLASSES" value="[^"]*"\/>/,
+                    java.util.regex.Matcher.quoteReplacement(
+                            "<mapEntry key=\"MOD_CLASSES\" value=\"${productionModClasses}\"/>"))
+            if (!text.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE')) {
+                text = text.replace('</launchConfiguration>',
+                        '  <booleanAttribute key="org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE" value="true"/>\r\n' +
+                                '</launchConfiguration>')
+            }
+            launch.setText(text.replace('\r\n', '\n'), 'UTF-8')
+        }
+
+        File gameTestLaunch = new File(configurations,
+                "${project.name} - runGameTestServerSlim.launch")
+        if (!gameTestLaunch.isFile()) {
+            throw new GradleException("Missing generated Eclipse launch: ${gameTestLaunch}")
+        }
+        String gameTestText = gameTestLaunch.getText('UTF-8').replaceFirst(
+                /<mapEntry key="MOD_CLASSES" value="[^"]*"\/>/,
+                java.util.regex.Matcher.quoteReplacement(
+                        "<mapEntry key=\"MOD_CLASSES\" value=\"${gameTestModClasses}\"/>"))
+        gameTestLaunch.setText(gameTestText.replace('\r\n', '\n'), 'UTF-8')
+    }
+}
+
+tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
+    finalizedBy isolateEclipseRuns
+}
+
+tasks.named('eclipse').configure {
+    dependsOn 'genEclipseRuns'
+}
+
+def verifyEclipseConfiguration = tasks.register('verifyEclipseConfiguration') {
+    group = 'verification'
+    description = 'Rejects duplicate Eclipse dependencies, caches, outputs, and test leakage.'
+    dependsOn isolateEclipseRuns
+    dependsOn tasks.named('eclipseClasspath')
+    doLast {
+        File classpathFile = file('.classpath')
+        String classpathText = classpathFile.getText('UTF-8')
+        if (classpathText.contains('kind="lib"')) {
+            throw new GradleException('Eclipse classpath contains libraries in addition to Buildship')
+        }
+        if (classpathText.count('org.eclipse.buildship.core.gradleclasspathcontainer') != 1) {
+            throw new GradleException('Eclipse classpath must contain exactly one Buildship container')
+        }
+
+        File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
+        Properties preferences = new Properties()
+        preferencesFile.withInputStream { preferences.load(it) }
+        String expectedGradleHome = gradle.gradleUserHomeDir.canonicalPath
+        if (preferences.getProperty('connection.gradle.user.home') != expectedGradleHome ||
+                preferences.getProperty('gradle.user.home') != expectedGradleHome ||
+                preferences.getProperty('override.workspace.settings') != 'true') {
+            throw new GradleException("Eclipse Buildship is not pinned to ${expectedGradleHome}")
+        }
+
+        String mainOutput = new File(projectDir, 'bin/main').absolutePath
+        String expectedProductionClasses = "${mod_id}%%${mainOutput}"
+        ['Client', 'Server', 'Data'].each { String runName ->
+            File launch = file(".eclipse/configurations/${project.name} - run${runName}Slim.launch")
+            String text = launch.getText('UTF-8')
+            if (!text.contains("key=\"MOD_CLASSES\" value=\"${expectedProductionClasses}\"") ||
+                    !text.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE')) {
+                throw new GradleException("Eclipse production launch is not isolated: ${launch}")
+            }
+        }
+    }
+}
+
+tasks.named('eclipse').configure {
+    finalizedBy verifyEclipseConfiguration
+}
+
 def prepareGameTestStructures = tasks.register('prepareGameTestStructures', Copy) {
     from 'src/gameTest/resources/gameteststructures'
     into "${gameTestRunDirectory}/gameteststructures"

@@ -14,6 +14,24 @@
 Do not run Gradle concurrently against this checkout/cache. Review complete
 logs and crash-report directories after every client, server, or GameTest run.
 
+## Eclipse
+
+Use `<Eclipse workspace>` as the Eclipse workspace and import
+`SkysGrassSlabs` as an existing Gradle project. Generate or refresh the launch
+configuration with the prescribed Gradle environment:
+
+```powershell
+./gradlew.bat genEclipseRuns eclipse --no-daemon
+```
+
+The `eclipse` task verifies that dependencies are exposed through exactly one
+Buildship container, Buildship uses the prescribed Gradle home, production
+launches exclude test code, and Forge receives each output once. Do not add
+explicit Gradle libraries to the Eclipse build path; doing so duplicates named
+Forge modules at startup. After regenerating files outside Eclipse, use
+**Gradle > Refresh Gradle Project** and **Project > Clean** if stale markers or
+launch data remain.
+
 ## Development loop
 
 For focused work, begin with red-to-green unit or contract tests, then run the
