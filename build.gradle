@@ -237,7 +237,7 @@ tasks.withType(Test).configureEach {
 }
 
 def prepareGameTestStructures = tasks.register('prepareGameTestStructures', Copy) {
-    from 'src/gametest/resources/gameteststructures'
+    from 'src/gameTest/resources/gameteststructures'
     into "${gameTestRunDirectory}/gameteststructures"
 }
 
