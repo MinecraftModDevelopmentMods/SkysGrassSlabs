@@ -4,8 +4,8 @@ Sky's Grass Slabs is a standalone Minecraft mod providing dirt, grass, and path
 slabs, natural grass spreading between full blocks and slabs, and smooth
 grass-slab transitions on newly generated terrain.
 
-The first target is Minecraft 1.18.2 with Forge 40.3.0 and Java 17. The stable
-mod ID is `skysgrassslabs`, the Java package root is
+The first target is Minecraft 1.18.2 with Forge 40.3.0, ForgeGradle 7.0.34,
+and Java 17. The stable mod ID is `skysgrassslabs`, the Java package root is
 `zone.moddev.mc.skysgrassslabs`, and the initial development version is
 `0.1.0.118021`.
 
@@ -45,6 +45,14 @@ $env:GRADLE_USER_HOME='<repository>/.gradle-verify-cache'
 ./gradlew.bat runGameTestServer --no-daemon
 ./gradlew.bat genEclipseRuns eclipse --no-daemon
 ```
+
+Then use **Gradle > Refresh Gradle Project** in Eclipse. Buildship consumes the
+generated FG7 dependency model and presents it as one **Project and External
+Dependencies** container.
+
+ForgeGradle's build-only Minecraft Mavenizer runs with a Java 25 toolchain to
+prepare Forge 40 sources. The mod, development launches, tests, and shipped
+bytecode remain on Java 17.
 
 Do not treat a successful build as gameplay, migration, packaged-runtime, or
 manual acceptance evidence. The required gates are defined in `docs/TESTING.md`.

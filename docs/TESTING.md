@@ -4,10 +4,13 @@
 
 - Minecraft: 1.18.2
 - Forge: 40.3.0
+- ForgeGradle: 7.0.34
 - Mappings: official 1.18.2
-- Gradle wrapper: 8.8
+- Gradle wrapper: 9.6.1
 - Java runtime and bytecode: 17
 - Verified local JDK: `<Java 17 JDK>`
+- Build-only Mavenizer toolchain: Java 25
+- Verified local Mavenizer JDK: `<Java 25 JDK>`
 - Gradle user home:
   `<repository>/.gradle-verify-cache`
 
@@ -24,13 +27,20 @@ configuration with the prescribed Gradle environment:
 ./gradlew.bat genEclipseRuns eclipse --no-daemon
 ```
 
-The `eclipse` task verifies that dependencies are exposed through exactly one
-Buildship container, Buildship uses the prescribed Gradle home, production
-launches exclude test code, and Forge receives each output once. Do not add
-explicit Gradle libraries to the Eclipse build path; doing so duplicates named
+After the command completes, use **Gradle > Refresh Gradle Project**. The
+`eclipse` task keeps Forge's mapped libraries in the FG7 model so Buildship can
+consume them; the refresh then exposes them through one **Project and External
+Dependencies** container. The verification also pins Buildship to the
+prescribed Gradle home, checks processed resources, and excludes test code from
+production launches. ForgeGradle 7 generates root `run*.launch` files using
+`net.minecraftforge.launcher.Main` and Slime Launcher; use those launches
+rather than any obsolete ForgeGradle 6 launch groups.
+
+Do not manually add Gradle libraries to the Eclipse build path; Buildship owns
+the dependency container. Adding a second dependency path duplicates named
 Forge modules at startup. After regenerating files outside Eclipse, use
-**Gradle > Refresh Gradle Project** and **Project > Clean** if stale markers or
-launch data remain.
+**Gradle > Refresh Gradle Project** and **Project > Clean** to replace stale
+compiler markers and launch data.
 
 ## Development loop
 

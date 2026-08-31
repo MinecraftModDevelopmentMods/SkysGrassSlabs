@@ -1,9 +1,29 @@
+import java.security.MessageDigest
+
 plugins {
     id 'java'
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'net.minecraftforge.renamer' version '1.1.5'
+    id 'net.minecraftforge.gradle' version '7.0.34'
+}
+
+def mavenizerCompatibilityJar = layout.projectDirectory.file(
+        'ci-fixtures/tools/minecraft-mavenizer-0.5.21-forge-1.18.jar')
+def mavenizerCompatibilitySha256 =
+        '28A6697BDF6D9500EC0AF9C1C949B9F3ED7DDFDA649CB5CAC4BEEA2E9567570A'
+
+// ForgeGradle 7's Mavenizer recompilation rejects a redundant accessor emitted
+// by Forge 40's 1.18.2 decompiler. This checksum-sealed build-only variant
+// removes that accessor; the mod and every shipped class remain Java 17.
+fgtools.configure('mavenizer') {
+    classpath.from(mavenizerCompatibilityJar)
+    mainClass.set('net.minecraftforge.mcmaven.cli.Main')
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(25)
+        vendor = JvmVendorSpec.ADOPTIUM
+    })
 }
 
 version = mod_version
@@ -51,11 +71,6 @@ minecraft {
     // enableEclipsePrepareRuns = true
     // enableIdeaPrepareRuns = true
 
-    // This property allows configuring Gradle's ProcessResources task(s) to run on IDE output locations before launching the game.
-    // It is REQUIRED to be set to true for this template to function.
-    // See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
-    copyIdeResources = true
-
     // When true, this property will add the folder name of all declared run configurations to generated IDE run configurations.
     // The folder name can be set on a run configuration using the "folderName" property.
     // By default, the folder name of a run configuration is the name of the Gradle project containing it.
@@ -72,24 +87,12 @@ minecraft {
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
     runs {
-        // applies to all the run configs below
         configureEach {
-            workingDirectory project.file('run')
-
-            // Recommended logging data for a userdev environment
-            // The markers can be added/remove as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-            property 'forge.logging.console.level', 'debug'
-
-            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-            property 'forge.enabledGameTestNamespaces', mod_id
+            workingDir.convention layout.projectDirectory.dir('run')
+            jvmArgs '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED'
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
 
             mods {
                 "${mod_id}" {
@@ -98,22 +101,14 @@ minecraft {
             }
         }
 
-        client {
-            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
+        register('client')
 
-        server {
-            property 'forge.enabledGameTestNamespaces', mod_id
+        register('server') {
             args '--nogui'
         }
 
-        // This run config launches GameTestServer and runs all registered gametests, then exits.
-        // By default, the server will crash when no gametests are provided.
-        // The gametest system is also enabled by default for other run configs under the /test command.
-        gameTestServer {
-            workingDirectory project.file(gameTestRunDirectory)
-            property 'forge.enabledGameTestNamespaces', mod_id
+        register('gameTestServer') {
+            workingDir.convention layout.projectDirectory.dir(gameTestRunDirectory)
             mods {
                 "${mod_id}" {
                     source sourceSets.gameTest
@@ -121,11 +116,8 @@ minecraft {
             }
         }
 
-        data {
-            // example of overriding the workingDirectory set in configureEach above
-            workingDirectory project.file('run-data')
-
-            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+        register('data') {
+            workingDir.convention layout.projectDirectory.dir('run-data')
             args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
         }
     }
@@ -135,43 +127,50 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    // Put repositories for dependencies here
-    // ForgeGradle automatically adds the Forge maven and Maven Central for you
-
-    // If you have mod jar dependencies in ./libs, you can declare them as a repository like so:
-    // flatDir {
-    //     dir 'libs'
-    // }
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+    exclusiveContent {
+        forRepository { maven { url = 'https://repo.spongepowered.org/repository/maven-public' } }
+        filter { includeGroupAndSubgroups('org.spongepowered') }
+    }
+    mavenCentral()
+    maven { url = 'https://libraries.minecraft.net/' }
 }
 
 dependencies {
-    // Specify the version of Minecraft to use.
-    // Any artifact can be supplied so long as it has a "userdev" classifier artifact and is a compatible patcher artifact.
-    // The "userdev" classifier will be requested and setup by ForgeGradle.
-    // If the group id is "net.minecraft" and the artifact id is one of ["client", "server", "joined"],
-    // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation minecraft.dependency(
+            "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}")
     testImplementation 'junit:junit:4.13.2'
-
-    // Real mod deobf dependency examples - these get remapped to your current mappings
-    // compileOnly fg.deobf("mezz.jei:jei-${mc_version}:${jei_version}:api") // Adds JEI API as a compile dependency
-    // runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}:${jei_version}") // Adds the full JEI mod as a runtime dependency
-    // implementation fg.deobf("com.tterrag.registrate:Registrate:MC${mc_version}-${registrate_version}") // Adds registrate as a dependency
-
-    // Example mod dependency using a mod jar from ./libs with a flat dir repository
-    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
-    // The group id is ignored when searching -- in this case, it is "blank"
-    // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
-
-    // For more info:
-    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
-    // http://www.gradle.org/docs/current/userguide/dependency_management.html
 }
 
-// This block of code expands all declared replace properties in the specified resource targets.
-// A missing property will result in an error. Properties are expanded using ${} Groovy notation.
-// When "copyIdeResources" is enabled, this will also run before the game launches in IDE environments.
-// See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompatibilityFixture') {
+    group = 'verification'
+    description = 'Verifies the checksum-sealed Forge 1.18 Mavenizer compatibility tool.'
+    inputs.file mavenizerCompatibilityJar
+    doLast {
+        File fixture = mavenizerCompatibilityJar.asFile
+        if (!fixture.isFile()) {
+            throw new GradleException("Missing Mavenizer compatibility fixture: ${fixture}")
+        }
+        MessageDigest digest = MessageDigest.getInstance('SHA-256')
+        fixture.withInputStream { input ->
+            byte[] buffer = new byte[8192]
+            for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
+                if (read > 0) digest.update(buffer, 0, read)
+            }
+        }
+        String actual = digest.digest().encodeHex().toString().toUpperCase()
+        if (actual != mavenizerCompatibilitySha256) {
+            throw new GradleException("Mavenizer compatibility fixture checksum mismatch: ${actual}")
+        }
+    }
+}
+
+tasks.named('compileJava', JavaCompile) {
+    dependsOn verifyMavenizerCompatibilityFixture
+}
+
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
             minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
@@ -187,8 +186,9 @@ tasks.named('processResources', ProcessResources).configure {
     }
 }
 
-// Example for how to get properties into the manifest for reading at runtime.
 tasks.named('jar', Jar).configure {
+    archiveClassifier = 'deobf'
+    destinationDirectory = layout.buildDirectory.dir('libs-dev')
     from(['LICENSE', 'LICENSE.spdx', 'NOTICE']) {
         into 'META-INF'
     }
@@ -205,20 +205,30 @@ tasks.named('jar', Jar).configure {
                 'Built-On'                : "${minecraft_version}-${forge_version}"
         ])
     }
-
-    // This is the preferred method to reobfuscate your jar file
-    finalizedBy 'reobfJar'
 }
 
-// However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing:
-// tasks.named('publish').configure {
-//     dependsOn 'reobfJar'
-// }
+def releaseJar = renamer.classes(tasks.named('jar', Jar)) {
+    map.from minecraft.dependency.toSrgFile
+    archiveClassifier = null
+    output = layout.buildDirectory.file(
+            "libs/${base.archivesName.get()}-${project.version}.jar")
+}
+
+['apiElements', 'runtimeElements'].each { configurationName ->
+    configurations.named(configurationName) { artifacts.clear() }
+    artifacts { add(configurationName, releaseJar) }
+}
+
+tasks.named('assemble') {
+    dependsOn releaseJar
+    dependsOn tasks.named('sourcesJar')
+    dependsOn tasks.named('javadocJar')
+}
 
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifact jar
+            artifact releaseJar
         }
     }
     repositories {
@@ -234,6 +244,18 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(Test).configureEach {
     workingDir = project.projectDir
+}
+
+def prepareEclipseResources = tasks.register('prepareEclipseResources') {
+    group = 'ide'
+    description = 'Copies processed resources into Eclipse production output.'
+    dependsOn tasks.named('processResources')
+    doLast {
+        project.copy {
+            from(layout.buildDirectory.dir('resources/main'))
+            into(layout.projectDirectory.dir('bin/main'))
+        }
+    }
 }
 
 def configureEclipseBuildship = tasks.register('configureEclipseBuildship') {
@@ -261,35 +283,31 @@ eclipse {
         downloadSources = true
         downloadJavadoc = true
         file.whenMerged { classpath ->
-            // Buildship owns Gradle dependencies. Keeping Eclipse-plugin library
-            // entries as well exposes Forge modules twice and crashes ModLauncher.
             classpath.entries.removeAll { entry ->
-                entry instanceof org.gradle.plugins.ide.eclipse.model.Library
+                entry instanceof org.gradle.plugins.ide.eclipse.model.SourceFolder &&
+                        ['src/main/resources', 'src/generated/resources'].contains(entry.path)
             }
-            String buildshipContainer = 'org.eclipse.buildship.core.gradleclasspathcontainer'
-            if (!classpath.entries.any { entry -> entry.path == buildshipContainer }) {
-                classpath.entries.add(0,
-                        new org.gradle.plugins.ide.eclipse.model.Container(buildshipContainer))
+            if (!classpath.entries.any { entry -> entry.path == 'build/resources/main' }) {
+                classpath.entries.add(new org.gradle.plugins.ide.eclipse.model.SourceFolder(
+                        'build/resources/main', 'bin/main'))
             }
         }
     }
-    synchronizationTasks 'configureEclipseBuildship'
+    synchronizationTasks 'isolateEclipseProductionRuns'
 }
 
-def isolateEclipseRuns = tasks.register('isolateEclipseRuns') {
+def syncForge40EclipseLaunches = tasks.register('syncForge40EclipseLaunches') {
     group = 'ide'
-    description = 'Keeps generated Forge Eclipse launches free of duplicate outputs and test code.'
-    dependsOn configureEclipseBuildship
+    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 40.'
     doLast {
         String mainOutput = new File(projectDir, 'bin/main').absolutePath
         String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
         String productionModClasses = "${mod_id}%%${mainOutput}"
         String gameTestModClasses = productionModClasses + File.pathSeparator +
                 "${mod_id}%%${gameTestOutput}"
-        File configurations = file('.eclipse/configurations')
 
         ['Client', 'Server', 'Data'].each { String runName ->
-            File launch = new File(configurations, "${project.name} - run${runName}Slim.launch")
+            File launch = file("run${runName}.launch")
             if (!launch.isFile()) {
                 throw new GradleException("Missing generated Eclipse launch: ${launch}")
             }
@@ -305,8 +323,7 @@ def isolateEclipseRuns = tasks.register('isolateEclipseRuns') {
             launch.setText(text.replace('\r\n', '\n'), 'UTF-8')
         }
 
-        File gameTestLaunch = new File(configurations,
-                "${project.name} - runGameTestServerSlim.launch")
+        File gameTestLaunch = file('runGameTestServer.launch')
         if (!gameTestLaunch.isFile()) {
             throw new GradleException("Missing generated Eclipse launch: ${gameTestLaunch}")
         }
@@ -319,26 +336,43 @@ def isolateEclipseRuns = tasks.register('isolateEclipseRuns') {
 }
 
 tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
-    finalizedBy isolateEclipseRuns
+    finalizedBy syncForge40EclipseLaunches
 }
 
-tasks.named('eclipse').configure {
-    dependsOn 'genEclipseRuns'
+def isolateEclipseProductionRuns = tasks.register('isolateEclipseProductionRuns') {
+    group = 'ide'
+    description = 'Prepares the complete ForgeGradle 7 Eclipse project configuration.'
+    dependsOn tasks.named('genEclipseRuns')
+    dependsOn syncForge40EclipseLaunches
+    dependsOn configureEclipseBuildship
+    dependsOn prepareEclipseResources
 }
 
 def verifyEclipseConfiguration = tasks.register('verifyEclipseConfiguration') {
     group = 'verification'
     description = 'Rejects duplicate Eclipse dependencies, caches, outputs, and test leakage.'
-    dependsOn isolateEclipseRuns
+    dependsOn isolateEclipseProductionRuns
     dependsOn tasks.named('eclipseClasspath')
     doLast {
         File classpathFile = file('.classpath')
         String classpathText = classpathFile.getText('UTF-8')
-        if (classpathText.contains('kind="lib"')) {
-            throw new GradleException('Eclipse classpath contains libraries in addition to Buildship')
+        int explicitLibraryCount = classpathText.count('kind="lib"')
+        int buildshipContainerCount = classpathText.count(
+                'org.eclipse.buildship.core.gradleclasspathcontainer')
+        if (buildshipContainerCount > 1) {
+            throw new GradleException('Eclipse classpath contains duplicate Buildship containers')
         }
-        if (classpathText.count('org.eclipse.buildship.core.gradleclasspathcontainer') != 1) {
-            throw new GradleException('Eclipse classpath must contain exactly one Buildship container')
+        if (explicitLibraryCount == 0 && buildshipContainerCount != 1) {
+            throw new GradleException('Eclipse classpath contains neither the Gradle model nor its Buildship container')
+        }
+        if (explicitLibraryCount > 0 &&
+                !classpathText.contains("forge-${minecraft_version}-${forge_version}.jar")) {
+            throw new GradleException('ForgeGradle 7 Eclipse model is missing the mapped Forge dependency')
+        }
+        if (!classpathText.contains('path="build/resources/main"') ||
+                classpathText.contains('path="src/main/resources"') ||
+                classpathText.contains('path="src/generated/resources"')) {
+            throw new GradleException('Eclipse must consume only Gradle-processed production resources')
         }
 
         File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
@@ -354,17 +388,35 @@ def verifyEclipseConfiguration = tasks.register('verifyEclipseConfiguration') {
         String mainOutput = new File(projectDir, 'bin/main').absolutePath
         String expectedProductionClasses = "${mod_id}%%${mainOutput}"
         ['Client', 'Server', 'Data'].each { String runName ->
-            File launch = file(".eclipse/configurations/${project.name} - run${runName}Slim.launch")
+            File launch = file("run${runName}.launch")
             String text = launch.getText('UTF-8')
             if (!text.contains("key=\"MOD_CLASSES\" value=\"${expectedProductionClasses}\"") ||
-                    !text.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE')) {
+                    !text.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE') ||
+                    !text.contains('value="net.minecraftforge.launcher.Main"') ||
+                    !text.contains('org.eclipse.jdt.launching.DEFAULT_CLASSPATH" value="false"') ||
+                    text.count('org.eclipse.buildship.core.gradleclasspathcontainer') != 1) {
                 throw new GradleException("Eclipse production launch is not isolated: ${launch}")
             }
+        }
+
+        String expectedGameTestClasses = expectedProductionClasses + File.pathSeparator +
+                "${mod_id}%%${new File(projectDir, 'bin/gameTest').absolutePath}"
+        File gameTestLaunch = file('runGameTestServer.launch')
+        if (!gameTestLaunch.getText('UTF-8').contains(
+                "key=\"MOD_CLASSES\" value=\"${expectedGameTestClasses}\"")) {
+            throw new GradleException("Eclipse GameTest launch is not isolated: ${gameTestLaunch}")
+        }
+
+        File modMetadata = file('bin/main/META-INF/mods.toml')
+        if (!modMetadata.isFile() || modMetadata.getText('UTF-8').contains('${mod_version}') ||
+                !modMetadata.getText('UTF-8').contains("version=\"${project.version}\"")) {
+            throw new GradleException('Eclipse output contains missing or unexpanded Forge metadata')
         }
     }
 }
 
 tasks.named('eclipse').configure {
+    dependsOn isolateEclipseProductionRuns
     finalizedBy verifyEclipseConfiguration
 }
 

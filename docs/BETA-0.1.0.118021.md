@@ -41,6 +41,8 @@ License: GNU Lesser General Public License 2.1 only. Copyright SkyBlade1978.
 
 ## Candidate evidence
 
+### Retained packaged candidate
+
 Candidate artifact:
 
 - `SkysGrassSlabs-0.1.0.118021.jar`
@@ -80,6 +82,25 @@ The proposed Sky's Grass Slabs plus Mineralogy-only matrix row is not a valid
 1.18.2 installation: Mineralogy's metadata declares OreSpawn as a mandatory
 dependency. It was therefore not reported as a failed Sky's Grass Slabs gate;
 the valid three-mod packaged runtime was tested instead.
+
+### ForgeGradle 7 workspace validation
+
+The project was subsequently migrated to ForgeGradle 7.0.34 and Gradle 9.6.1.
+The current unpromoted local build is:
+
+- `build/libs/SkysGrassSlabs-0.1.0.118021.jar`
+- SHA-256:
+  `94D444B7D5B4FC4FD8612B8D340A3ABB7EA284FAEFC3CAF4938AFB26550DCB64`
+
+Two clean builds reproduced that hash byte for byte. Unit tests, all seven
+GameTests, ForgeGradle 7 Eclipse generation/verification, and a development
+client smoke through mod loading, OpenAL, and texture-atlas creation passed.
+The original duplicate-`fmlloader` Eclipse startup failure did not recur.
+
+This newer jar has not replaced the retained `release/` candidate because its
+packaged standalone server, packaged client, and three-mod integration gates
+have not yet been repeated. Promote it only after those exact-jar gates and
+manual visual acceptance pass.
 
 Pending before publication: manual in-world visual acceptance of biome tinting,
 slab joins, generated slopes, snow, walking/collision, path height, shovel
