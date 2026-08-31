@@ -19,6 +19,7 @@ Verify both URLs and permissions before adding them. Ordinary pushes go to
 ## Branching
 
 - Stable target branch: `master-1.18.2`
+- First beta implementation branch: `codex/1.18.2-beta`
 - Focused work: `feature/<issue-or-short-purpose>` or
   `fix/<issue-or-short-purpose>`
 - Keep each Minecraft version and loader lineage on a distinct branch and,
@@ -60,6 +61,7 @@ repository depth. Durable technical and contributor knowledge belongs in
 tracked `README.md` and `docs/`. Before any public push, verify that no agent
 file is tracked or present in the candidate jar.
 
-The project license is not yet selected for public distribution. Confirm it
-before the first public push. If substantial BuildingBricks code is copied,
-carry its MIT copyright and permission notice as required.
+The project is licensed `LGPL-2.1-only`, copyright SkyBlade1978. The root
+license, SPDX marker, and notice must be present in source and packaged jars.
+If substantial BuildingBricks code is copied, carry its MIT copyright and
+permission notice as required.

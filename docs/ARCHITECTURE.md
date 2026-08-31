@@ -4,7 +4,7 @@
 
 The minimum 1.18.2 product consists of:
 
-1. A dirt slab and a grass slab with normal top, bottom, double, waterlogging,
+1. Dirt, grass, and path slabs with normal top, bottom, double, waterlogging,
    placement, collision, rendering, loot, tool, sound, and creative-tab
    behaviour.
 2. Grass survival, decay, and spreading that interoperates with vanilla grass
@@ -12,7 +12,11 @@ The minimum 1.18.2 product consists of:
 3. Convenience recipes for dirt plus a seed to make grass, including slab
    equivalents, plus ordinary slab recipes.
 4. Smooth grass-slab transitions on newly generated Overworld terrain.
-5. Safe conversion of BuildingBricks grass and dirt slabs in old worlds.
+5. A permanent schema marker that future versions can use for save migration.
+
+BuildingBricks migration is deliberately not part of beta `0.1.0.118021`. It
+begins on the Minecraft 1.10.2 line and is then proved while the mod is ported
+forward. See `ROADMAP.md` and `LEGACY-MIGRATION.md`.
 
 Do not expand the initial implementation into BuildingBricks' general material,
 stairs, step, corner, vertical-slab, trowel, bag, or ladder systems. Those are
@@ -83,6 +87,19 @@ Implement target-aware custom behaviour:
   grass-slab side texturing.
 - Snowy appearance, Silk Touch, drops, bonemeal expectations, and plant support
   all require explicit tests; do not inherit assumptions from full blocks.
+
+## Path slabs
+
+Flatten dirt and grass slabs through Forge's `ToolActions.SHOVEL_FLATTEN` block
+hook. Vanilla `ShovelItem` remains untouched, so compatible third-party tools
+can use the same block contract. Reject waterlogged slabs, preserve top/bottom
+orientation, and normalize a double slab to vanilla dirt path. Vanilla owns
+the non-downward-face, clear-space, sound, and durability checks.
+
+A bottom path slab occupies Y 0 through 7/16. A top path slab occupies Y 8/16
+through 15/16. Path slabs use vanilla dirt-path textures, always drop dirt
+slabs, support no grass vegetation, and turn back into matching dirt slabs when
+covered or waterlogged.
 
 ## OreSpawn boundary
 

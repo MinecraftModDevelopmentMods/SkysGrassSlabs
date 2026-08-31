@@ -1,0 +1,50 @@
+{
+  "type": "minecraft:block",
+  "pools": [{
+    "rolls": 1.0,
+    "bonus_rolls": 0.0,
+    "entries": [{
+      "type": "minecraft:alternatives",
+      "children": [
+        {
+          "type": "minecraft:item",
+          "name": "skysgrassslabs:grass_slab",
+          "conditions": [{
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "enchantments": [{
+                "enchantment": "minecraft:silk_touch",
+                "levels": { "min": 1 }
+              }]
+            }
+          }],
+          "functions": [{
+            "function": "minecraft:set_count",
+            "conditions": [{
+              "condition": "minecraft:block_state_property",
+              "block": "skysgrassslabs:grass_slab",
+              "properties": { "type": "double" }
+            }],
+            "count": 2.0,
+            "add": false
+          }]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "skysgrassslabs:dirt_slab",
+          "conditions": [{ "condition": "minecraft:survives_explosion" }],
+          "functions": [{
+            "function": "minecraft:set_count",
+            "conditions": [{
+              "condition": "minecraft:block_state_property",
+              "block": "skysgrassslabs:grass_slab",
+              "properties": { "type": "double" }
+            }],
+            "count": 2.0,
+            "add": false
+          }]
+        }
+      ]
+    }]
+  }]
+}

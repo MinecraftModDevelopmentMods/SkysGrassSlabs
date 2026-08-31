@@ -20,7 +20,16 @@ java {
     withJavadocJar()
 }
 
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+def gameTestRunDirectory = providers.gradleProperty('skysGrassSlabsGameTestRunDirectory')
+        .getOrElse('run-gametest')
 minecraft {
     // The mappings can be changed at any time and must be in the following format.
     // Channel:   Version:
@@ -103,7 +112,13 @@ minecraft {
         // By default, the server will crash when no gametests are provided.
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
+            workingDirectory project.file(gameTestRunDirectory)
             property 'forge.enabledGameTestNamespaces', mod_id
+            mods {
+                "${mod_id}" {
+                    source sourceSets.gameTest
+                }
+            }
         }
 
         data {
@@ -174,6 +189,10 @@ tasks.named('processResources', ProcessResources).configure {
 
 // Example for how to get properties into the manifest for reading at runtime.
 tasks.named('jar', Jar).configure {
+    from(['LICENSE', 'LICENSE.spdx', 'NOTICE']) {
+        into 'META-INF'
+    }
+
     manifest {
         attributes([
                 'Specification-Title'     : mod_id,
@@ -215,6 +234,15 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(Test).configureEach {
     workingDir = project.projectDir
+}
+
+def prepareGameTestStructures = tasks.register('prepareGameTestStructures', Copy) {
+    from 'src/gametest/resources/gameteststructures'
+    into "${gameTestRunDirectory}/gameteststructures"
+}
+
+tasks.matching { it.name == 'prepareRunGameTestServer' || it.name == 'runGameTestServer' }.configureEach {
+    dependsOn prepareGameTestStructures
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {

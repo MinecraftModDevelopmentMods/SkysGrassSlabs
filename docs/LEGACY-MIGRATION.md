@@ -1,5 +1,21 @@
 # Legacy BuildingBricks migration
 
+## Delivery status
+
+Migration is deferred from the first Minecraft 1.18.2 gameplay beta. The next
+product line targets Minecraft 1.10.2, where Sky's Grass Slabs must coexist
+with BuildingBricks in the Sylvester world. Nothing in beta `0.1.0.118021`
+detects BuildingBricks, changes its configuration, remaps its blocks, or
+retrofails existing chunks.
+
+On 1.10.2, detect BuildingBricks and choose one tested world-generation owner:
+prefer disabling BuildingBricks' grass-slab generator through its supported
+configuration when possible, otherwise suppress this mod's equivalent feature.
+Add helper recipes accepting BuildingBricks slabs. Convert BuildingBricks dirt
+and grass slabs to this mod's stable IDs on disposable world copies, preserving
+top/bottom metadata, items, inventories, and reload idempotence. The resulting
+fixture becomes an upgrade input for each later Minecraft port.
+
 ## Safety boundary
 
 The authoritative legacy fixture is:

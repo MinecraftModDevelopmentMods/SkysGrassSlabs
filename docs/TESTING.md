@@ -23,9 +23,17 @@ smallest proportional compile/resource gate. Before handing off a candidate:
 ./gradlew.bat genEclipseRuns eclipse --no-daemon
 ```
 
-Once GameTests exist, run `runGameTestServer` in a fresh disposable run
-directory. Do not enable that gate while the project has no GameTests because
-Forge's empty GameTest server is not a useful product result.
+Run GameTests in a fresh disposable directory so saved state, configs, and
+world output cannot inherit an earlier result:
+
+```powershell
+./gradlew.bat test runGameTestServer `
+  -PskysGrassSlabsGameTestRunDirectory=run-gametest-candidate --no-daemon
+```
+
+The beta suite has seven independently batched runtime tests. The controlled
+world-generation test runs the whole owning chunk twice and requires the
+second pass to make no change.
 
 ## Required automated coverage
 
@@ -72,8 +80,8 @@ Run fresh and reload integration with:
 1. Forge plus Sky's Grass Slabs only.
 2. Sky's Grass Slabs plus Mineralogy.
 3. Sky's Grass Slabs plus the exact local OreSpawn candidate and Mineralogy.
-4. A disposable legacy Sylvester conversion as specified in
-   `LEGACY-MIGRATION.md`.
+4. Starting with the 1.10.2 compatibility release, a disposable legacy
+   Sylvester conversion as specified in `LEGACY-MIGRATION.md`.
 
 The current reference OreSpawn checkout may move. Re-read its ignored handover,
 verify its `git status`, branch, exact commit and jar hash, and never assume the
