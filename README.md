@@ -27,6 +27,4 @@ and Java 17. The stable mod ID is `skysgrassslabs`, the Java package root is
 ## Licensing status
 
 Sky's Grass Slabs is licensed under `LGPL-2.1-only`; see `LICENSE`,
-`LICENSE.spdx`, and `NOTICE`. Copyright is held by SkyBlade1978. BuildingBricks
-compatibility is independently implemented; retain BuildingBricks' MIT notice
-if substantial upstream code is ever copied.
+`LICENSE.spdx`, and `NOTICE`. Copyright is held by SkyBlade1978.
