@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CarpetBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** Biome-tinted carpet-height grass source with no dirt state. */
+/** Biome tinted grass source at carpet height with no dirt state. */
 public final class TurfBlock extends CarpetBlock {
     public TurfBlock(Properties properties) {
         super(properties);
@@ -20,19 +20,23 @@ public final class TurfBlock extends CarpetBlock {
     @Override
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         BlockPos supportPos = pos.below();
+
         return level.getBlockState(supportPos).isCollisionShapeFullBlock(level, supportPos);
     }
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
         BlockPos supportPos = pos.below();
+
         if (!hasDirtSupport(level, supportPos)) {
             level.destroyBlock(pos, true);
             return;
         }
+
         if (!SoilLifecycle.canPropagate(state, level, pos)) {
             return;
         }
+
         GrassSpread.spreadFrom(level, pos, random, supportPos);
     }
 

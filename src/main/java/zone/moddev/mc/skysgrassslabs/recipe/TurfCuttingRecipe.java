@@ -22,25 +22,31 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     public boolean matches(CraftingContainer container, Level level) {
         boolean foundGrass = false;
         boolean foundShovel = false;
+
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             ItemStack stack = container.getItem(slot);
+
             if (stack.isEmpty()) {
                 continue;
             }
+
             if (isGrassSource(stack)) {
                 if (foundGrass) {
                     return false;
                 }
+
                 foundGrass = true;
             } else if (stack.canPerformAction(ToolActions.SHOVEL_FLATTEN)) {
                 if (foundShovel) {
                     return false;
                 }
+
                 foundShovel = true;
             } else {
                 return false;
             }
         }
+
         return foundGrass && foundShovel;
     }
 
@@ -53,18 +59,22 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     public NonNullList<ItemStack> getRemainingItems(CraftingContainer container) {
         NonNullList<ItemStack> remaining = NonNullList.withSize(
                 container.getContainerSize(), ItemStack.EMPTY);
+
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             ItemStack stack = container.getItem(slot);
+
             if (stack.is(Blocks.GRASS_BLOCK.asItem())) {
                 remaining.set(slot, new ItemStack(Blocks.DIRT));
             } else if (stack.is(ModBlocks.GRASS_SLAB_ITEM.get())) {
                 remaining.set(slot, new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get()));
             } else if (stack.canPerformAction(ToolActions.SHOVEL_FLATTEN)) {
                 ItemStack tool = stack.copy();
+
                 tool.setCount(1);
                 remaining.set(slot, tool);
             }
         }
+
         return remaining;
     }
 

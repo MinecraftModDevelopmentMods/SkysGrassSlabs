@@ -43,6 +43,7 @@ public final class WorldgenBootstrap {
             Holder<ConfiguredFeature<?, ?>> configured = BuiltinRegistries.register(
                     BuiltinRegistries.CONFIGURED_FEATURE, id,
                     new ConfiguredFeature<>(SMOOTHING.get(), NoneFeatureConfiguration.INSTANCE));
+
             placedFeature = BuiltinRegistries.register(BuiltinRegistries.PLACED_FEATURE, id,
                     new PlacedFeature(configured, Collections.emptyList()));
         });
@@ -52,8 +53,10 @@ public final class WorldgenBootstrap {
         if (placedFeature == null) {
             return;
         }
+
         List<Holder<PlacedFeature>> features = event.getGeneration()
                 .getFeatures(GenerationStep.Decoration.VEGETAL_DECORATION);
+
         if (features.stream().noneMatch(existing -> existing.value() == placedFeature.value())) {
             features.add(0, placedFeature);
         }

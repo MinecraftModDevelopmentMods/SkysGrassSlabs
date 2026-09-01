@@ -20,10 +20,13 @@ final class SlabTransitions {
         if (action != ToolActions.SHOVEL_FLATTEN || state.getValue(SlabBlock.WATERLOGGED)) {
             return null;
         }
+
         SlabType type = state.getValue(SlabBlock.TYPE);
+
         if (type == SlabType.DOUBLE) {
             return Blocks.DIRT_PATH.defaultBlockState();
         }
+
         return ModBlocks.PATH_SLAB.get().defaultBlockState()
                 .setValue(SlabBlock.TYPE, type)
                 .setValue(SlabBlock.WATERLOGGED, false);
@@ -31,9 +34,11 @@ final class SlabTransitions {
 
     static BlockState dirtFor(BlockState state) {
         SlabType type = state.getValue(SlabBlock.TYPE);
+
         if (type == SlabType.DOUBLE) {
             return Blocks.DIRT.defaultBlockState();
         }
+
         return ModBlocks.DIRT_SLAB.get().defaultBlockState()
                 .setValue(SlabBlock.TYPE, type)
                 .setValue(SlabBlock.WATERLOGGED, state.getValue(SlabBlock.WATERLOGGED));
@@ -41,9 +46,11 @@ final class SlabTransitions {
 
     static BlockState grassFor(BlockState state) {
         SlabType type = state.getValue(SlabBlock.TYPE);
+
         if (type == SlabType.DOUBLE) {
             return Blocks.GRASS_BLOCK.defaultBlockState();
         }
+
         return ModBlocks.GRASS_SLAB.get().defaultBlockState()
                 .setValue(SlabBlock.TYPE, type)
                 .setValue(SlabBlock.WATERLOGGED, false);

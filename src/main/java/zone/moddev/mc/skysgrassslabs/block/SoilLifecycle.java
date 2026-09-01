@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LayerLightEngine;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-/** Vanilla-equivalent light and water rules with slab-aware identities. */
+/** Vanilla light and water rules adapted for slab identities. */
 final class SoilLifecycle {
     private SoilLifecycle() {
     }
@@ -20,22 +20,27 @@ final class SoilLifecycle {
         if (state.hasProperty(SlabBlock.WATERLOGGED) && state.getValue(SlabBlock.WATERLOGGED)) {
             return false;
         }
+
         BlockPos above = pos.above();
         BlockState cover = level.getBlockState(above);
+
         if (cover.is(Blocks.SNOW) && cover.getValue(SnowLayerBlock.LAYERS) == 1) {
             return true;
         }
+
         if (cover.getFluidState().getAmount() == 8) {
             return false;
         }
-        // Slabs and carpet-height turf expose complete horizontal faces to the
-        // shape-based light test. Grass survival only cares about the cover
-        // above, not the source block's own collision shape.
+
+        // Slabs and turf expose complete horizontal faces to the light test.
+        // Grass survival only cares about the cover above, not the source
+        // block's own collision shape.
         BlockState lightState = state.is(ModBlocks.GRASS_SLAB.get())
                 || state.is(ModBlocks.TURF.get())
                 ? Blocks.AIR.defaultBlockState() : state;
         int blocked = LayerLightEngine.getLightBlockInto(level, lightState, pos, cover, above,
                 Direction.UP, cover.getLightBlock(level, above));
+
         return blocked < level.getMaxLightLevel();
     }
 
@@ -49,6 +54,7 @@ final class SoilLifecycle {
             return TurfBlock.hasDirtSupport(level, pos.below())
                     && canPropagate(state, level, pos);
         }
+
         return (state.is(Blocks.GRASS_BLOCK) || state.is(ModBlocks.GRASS_SLAB.get()))
                 && canRemainGrass(state, level, pos);
     }

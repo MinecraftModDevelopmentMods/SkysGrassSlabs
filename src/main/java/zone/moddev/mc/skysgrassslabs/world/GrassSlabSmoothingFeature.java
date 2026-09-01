@@ -18,7 +18,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import zone.moddev.mc.skysgrassslabs.config.BetaConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-/** Deterministic, owning-chunk-only smoother for one-block natural grass transitions. */
+/** Deterministic smoother owned by each chunk for natural grass transitions one block high. */
 public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
     private static final int HALO_WIDTH = 18;
     private static final int HALO_COLUMNS = HALO_WIDTH * HALO_WIDTH;
@@ -39,6 +39,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
         ChunkPos owner = chunk.getPos();
         int minX = owner.getMinBlockX();
         int minZ = owner.getMinBlockZ();
+
         int[] heights = new int[HALO_COLUMNS];
         long[] grass = new long[(HALO_COLUMNS + 63) >>> 6];
         long[] candidates = new long[4];
@@ -50,7 +51,9 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 int z = minZ + haloZ - 1;
                 int index = haloIndex(haloX, haloZ);
                 int surfaceY = grassSurfaceY(level, cursor, x, z);
+
                 heights[index] = surfaceY;
+
                 if (surfaceY != Integer.MIN_VALUE) {
                     set(grass, index);
                 }
@@ -63,20 +66,26 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 int haloZ = localZ + 1;
                 int center = haloIndex(haloX, haloZ);
                 int y = heights[center];
+
                 if (y == Integer.MIN_VALUE) {
                     continue;
                 }
+
                 int x = minX + localX;
                 int z = minZ + localZ;
+
                 cursor.set(x, y + 1, z);
+
                 BlockState target = level.getBlockState(cursor);
                 boolean clear = target.isAir() && level.getBlockEntity(cursor) == null;
                 boolean dry = target.getFluidState().isEmpty();
                 boolean supported = supportedOnAllSides(level, cursor, x, y, z);
+
                 int north = haloIndex(haloX, haloZ - 1);
                 int south = haloIndex(haloX, haloZ + 1);
                 int west = haloIndex(haloX - 1, haloZ);
                 int east = haloIndex(haloX + 1, haloZ);
+
                 if (SmoothingDecision.shouldPlace(y, heights[north], heights[south],
                         heights[west], heights[east], true, get(grass, north),
                         get(grass, south), get(grass, west), get(grass, east), clear,
@@ -90,14 +99,19 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 .setValue(SlabBlock.TYPE, SlabType.BOTTOM)
                 .setValue(SlabBlock.WATERLOGGED, false);
         boolean changed = false;
+
         for (int localX = 0; localX < 16; localX++) {
             for (int localZ = 0; localZ < 16; localZ++) {
                 int candidate = localX * 16 + localZ;
+
                 if (!get(candidates, candidate)) {
                     continue;
                 }
+
                 int y = heights[haloIndex(localX + 1, localZ + 1)];
+
                 cursor.set(minX + localX, y + 1, minZ + localZ);
+
                 if (level.ensureCanWrite(cursor) && level.getBlockState(cursor).isAir()
                         && level.getFluidState(cursor).isEmpty()
                         && level.getBlockEntity(cursor) == null) {
@@ -106,17 +120,22 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 }
             }
         }
+
         return changed;
     }
 
     private static int grassSurfaceY(WorldGenLevel level, BlockPos.MutableBlockPos cursor,
             int x, int z) {
         int height = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+
         cursor.set(x, height, z);
+
         if (level.getBlockState(cursor).is(Blocks.GRASS_BLOCK)) {
             return height;
         }
+
         cursor.setY(height - 1);
+
         return level.getBlockState(cursor).is(Blocks.GRASS_BLOCK)
                 ? height - 1 : Integer.MIN_VALUE;
     }
@@ -131,6 +150,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
 
     private static boolean solid(WorldGenLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
+
         return state.getFluidState().isEmpty()
                 && state.isCollisionShapeFullBlock(level, pos);
     }

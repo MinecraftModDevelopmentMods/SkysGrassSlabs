@@ -32,7 +32,7 @@ import net.minecraftforge.common.IPlantable;
 import net.minecraftforge.common.ToolAction;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-/** Grass slab with target-aware spreading and top-slab vegetation behaviour. */
+/** Grass slab with target aware spreading and top slab vegetation behaviour. */
 public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock {
     public static final BooleanProperty SNOWY = SnowyDirtBlock.SNOWY;
 
@@ -53,7 +53,9 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
         if (context.getLevel().getBlockState(context.getClickedPos()).is(this)) {
             return Blocks.GRASS_BLOCK.defaultBlockState();
         }
+
         BlockState placed = super.getStateForPlacement(context);
+
         return placed == null ? null : placed.setValue(SNOWY,
                 context.getLevel().getBlockState(context.getClickedPos().above()).is(BlockTags.SNOW));
     }
@@ -61,7 +63,9 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
             LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
+
         BlockState updated = super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+
         return direction == Direction.UP && updated.is(this)
                 ? updated.setValue(SNOWY, neighbour.is(BlockTags.SNOW)) : updated;
     }
@@ -72,8 +76,10 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
             if (level.isAreaLoaded(pos, 1)) {
                 level.setBlockAndUpdate(pos, SlabTransitions.dirtFor(state));
             }
+
             return;
         }
+
         GrassSpread.spreadFrom(level, pos, random, null);
     }
 
@@ -81,12 +87,14 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     @Nullable
     public BlockState getToolModifiedState(BlockState state, UseOnContext context,
             ToolAction action, boolean simulate) {
+
         return SlabTransitions.flatten(state, action);
     }
 
     @Override
     public boolean canSustainPlant(BlockState state, BlockGetter level, BlockPos pos,
             Direction direction, IPlantable plantable) {
+
         return state.getValue(TYPE) == SlabType.TOP && direction == Direction.UP
                 && Blocks.GRASS_BLOCK.canSustainPlant(Blocks.GRASS_BLOCK.defaultBlockState(),
                         level, pos, direction, plantable);
@@ -108,40 +116,52 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
         if (state.getValue(TYPE) != SlabType.TOP) {
             return;
         }
+
         BlockPos start = pos.above();
         BlockState vanillaGrass = Blocks.GRASS.defaultBlockState();
+
         outer:
         for (int attempt = 0; attempt < 128; attempt++) {
             BlockPos target = start;
+
             for (int walk = 0; walk < attempt / 16; walk++) {
                 target = target.offset(random.nextInt(3) - 1,
                         (random.nextInt(3) - 1) * random.nextInt(3) / 2,
                         random.nextInt(3) - 1);
                 BlockState support = level.getBlockState(target.below());
+
                 boolean supported = support.is(Blocks.GRASS_BLOCK)
                         || support.is(ModBlocks.GRASS_SLAB.get())
                                 && support.getValue(TYPE) == SlabType.TOP;
+
                 if (!supported || level.getBlockState(target).isCollisionShapeFullBlock(level, target)) {
                     continue outer;
                 }
             }
+
             BlockState current = level.getBlockState(target);
+
             if (current.is(vanillaGrass.getBlock()) && random.nextInt(10) == 0) {
                 ((BonemealableBlock) vanillaGrass.getBlock()).performBonemeal(level, random,
                         target, current);
             }
+
             if (current.isAir()) {
                 Holder<PlacedFeature> feature;
+
                 if (random.nextInt(8) == 0) {
                     List<ConfiguredFeature<?, ?>> flowers = level.getBiome(target).value()
                             .getGenerationSettings().getFlowerFeatures();
+
                     if (flowers.isEmpty()) {
                         continue;
                     }
+
                     feature = ((RandomPatchConfiguration) flowers.get(0).config()).feature();
                 } else {
                     feature = VegetationPlacements.GRASS_BONEMEAL;
                 }
+
                 feature.value().place(level, level.getChunkSource().getGenerator(), random, target);
             }
         }

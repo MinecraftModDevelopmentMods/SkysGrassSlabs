@@ -21,16 +21,20 @@ public final class DirtSlabBlock extends SlabBlock {
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
         if (state.getValue(WATERLOGGED) || !level.isAreaLoaded(pos, 3)
                 || level.getMaxLocalRawBrightness(pos.above()) < 9) {
+
             return;
         }
+
         BlockState future = SlabTransitions.grassFor(state);
+
         if (!SoilLifecycle.canPropagate(future, level, pos)) {
             return;
         }
+
         for (int attempt = 0; attempt < 4; attempt++) {
-            BlockPos sourcePos = pos.offset(random.nextInt(3) - 1,
-                    random.nextInt(5) - 3, random.nextInt(3) - 1);
+            BlockPos sourcePos = pos.offset(random.nextInt(3) - 1, random.nextInt(5) - 3, random.nextInt(3) - 1);
             BlockState source = level.getBlockState(sourcePos);
+
             if (SoilLifecycle.isViableGrassSource(source, level, sourcePos)) {
                 level.setBlockAndUpdate(pos, future);
                 return;

@@ -21,7 +21,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-/** Lowered dirt-path slab with vanilla-style covered-path decay. */
+/** Lowered dirt path slab with vanilla covered path decay. */
 public final class PathSlabBlock extends SlabBlock {
     private static final VoxelShape BOTTOM_PATH = Block.box(0, 0, 0, 16, 7, 16);
     private static final VoxelShape TOP_PATH = Block.box(0, 8, 0, 16, 15, 16);
@@ -51,10 +51,13 @@ public final class PathSlabBlock extends SlabBlock {
         if (context.getLevel().getBlockState(context.getClickedPos()).is(this)) {
             return Blocks.DIRT_PATH.defaultBlockState();
         }
+
         BlockState placed = super.getStateForPlacement(context);
+
         if (placed == null) {
             return null;
         }
+
         return placed.getValue(WATERLOGGED) ? SlabTransitions.dirtFor(placed) : placed;
     }
 
@@ -62,9 +65,11 @@ public final class PathSlabBlock extends SlabBlock {
     public boolean placeLiquid(LevelAccessor level, BlockPos pos, BlockState state,
             FluidState fluid) {
         boolean placed = super.placeLiquid(level, pos, state, fluid);
+
         if (placed) {
             level.scheduleTick(pos, this, 1);
         }
+
         return placed;
     }
 
@@ -72,10 +77,12 @@ public final class PathSlabBlock extends SlabBlock {
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
             LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
         BlockState updated = super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+
         if (updated.getValue(WATERLOGGED)
                 || direction == Direction.UP && !canSurvive(updated, level, pos)) {
             level.scheduleTick(pos, this, 1);
         }
+
         return updated;
     }
 
@@ -84,7 +91,9 @@ public final class PathSlabBlock extends SlabBlock {
         if (state.getValue(WATERLOGGED)) {
             return false;
         }
+
         BlockState above = level.getBlockState(pos.above());
+
         return !above.getMaterial().isSolid() || above.getBlock() instanceof FenceGateBlock;
     }
 
@@ -92,6 +101,7 @@ public final class PathSlabBlock extends SlabBlock {
     public void tick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
         if (!canSurvive(state, level, pos)) {
             BlockState dirt = SlabTransitions.dirtFor(state);
+
             level.setBlockAndUpdate(pos, Block.pushEntitiesUp(state, dirt, level, pos));
         }
     }

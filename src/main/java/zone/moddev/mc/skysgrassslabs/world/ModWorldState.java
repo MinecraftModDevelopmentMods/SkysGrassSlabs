@@ -4,7 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
-/** Minimal permanent schema marker for future cross-version migrations. */
+/** Minimal permanent schema marker for future migrations between versions. */
 public final class ModWorldState extends SavedData {
     public static final String DATA_NAME = "skysgrassslabs_world_state";
     public static final int SCHEMA_VERSION = 1;
@@ -18,10 +18,13 @@ public final class ModWorldState extends SavedData {
     public static ModWorldState get(ServerLevel level) {
         ModWorldState state = level.getDataStorage().computeIfAbsent(ModWorldState::load,
                 () -> new ModWorldState(SCHEMA_VERSION), DATA_NAME);
+
         if (state.schemaVersion < SCHEMA_VERSION) {
             state.schemaVersion = SCHEMA_VERSION;
         }
+
         state.setDirty();
+
         return state;
     }
 
@@ -36,6 +39,7 @@ public final class ModWorldState extends SavedData {
     @Override
     public CompoundTag save(CompoundTag tag) {
         tag.putInt("schema_version", schemaVersion);
+
         return tag;
     }
 }

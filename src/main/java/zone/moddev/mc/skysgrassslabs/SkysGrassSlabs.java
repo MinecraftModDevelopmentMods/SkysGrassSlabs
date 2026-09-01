@@ -23,6 +23,7 @@ public final class SkysGrassSlabs {
     /** Registers content, configuration, world generation, and persistent state. */
     public SkysGrassSlabs() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+
         ModBlocks.register(modBus);
         ModRecipes.register(modBus);
         WorldgenBootstrap.register(modBus);

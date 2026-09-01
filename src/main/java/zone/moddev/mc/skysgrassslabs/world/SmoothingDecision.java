@@ -1,6 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.world;
 
-/** Pure, allocation-free terrain-pattern decision used by world generation and tests. */
+/** Pure terrain decision with no allocations, used by world generation and tests. */
 public final class SmoothingDecision {
     private SmoothingDecision() {
     }
@@ -12,7 +12,9 @@ public final class SmoothingDecision {
         if (!lowerIsGrass || !targetClear || !targetDry || !supported) {
             return false;
         }
+
         int highY = lowerY + 1;
+
         return northIsGrass && northY == highY
                 || southIsGrass && southY == highY
                 || westIsGrass && westY == highY
