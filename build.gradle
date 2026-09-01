@@ -1,4 +1,6 @@
 import java.security.MessageDigest
+import java.nio.charset.StandardCharsets
+import java.util.zip.ZipFile
 
 plugins {
     id 'java'
@@ -225,16 +227,206 @@ tasks.named('assemble') {
     dependsOn tasks.named('javadocJar')
 }
 
+tasks.named('sourcesJar', Jar) {
+    from(['LICENSE', 'LICENSE.spdx', 'NOTICE']) { into 'META-INF' }
+}
+
+tasks.named('javadocJar', Jar) {
+    from(['LICENSE', 'LICENSE.spdx', 'NOTICE']) { into 'META-INF' }
+}
+
+def releaseFiles = provider {
+    [
+            "${base.archivesName.get()}-${project.version}.jar",
+            "${base.archivesName.get()}-${project.version}-sources.jar",
+            "${base.archivesName.get()}-${project.version}-javadoc.jar"
+    ]
+}
+
+tasks.register('verifyReleaseMetadata') {
+    group = 'verification'
+    doLast {
+        if (project.minecraft_version != '1.18.2' || project.forge_version != '40.3.0' ||
+                project.mapping_channel != 'official' || project.mapping_version != '1.18.2' ||
+                project.loader_name != 'forge' || project.loader_code != '1' ||
+                project.java_version != '17' || project.java_toolchain_version != '17.0.1+12' ||
+                project.gradle_java_version != '17' || project.curseforge_project_id != '1677588') {
+            throw new GradleException('Unexpected 1.18.2 release metadata')
+        }
+    }
+}
+
+tasks.register('verifyReleaseArtifacts') {
+    group = 'verification'
+    dependsOn tasks.named('assemble'), tasks.named('verifyReleaseMetadata')
+    doLast {
+        File libs = layout.buildDirectory.dir('libs').get().asFile
+        releaseFiles.get().each { name ->
+            File candidate = new File(libs, name)
+            if (!candidate.isFile() || candidate.length() == 0) {
+                throw new GradleException("Missing release artifact: ${candidate}")
+            }
+        }
+
+        ZipFile zip = new ZipFile(new File(libs, releaseFiles.get()[0]))
+        try {
+            Set<String> names = zip.entries().collect { it.name } as Set<String>
+            ['META-INF/mods.toml', 'META-INF/LICENSE', 'META-INF/LICENSE.spdx',
+             'META-INF/NOTICE',
+             'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class'].each { required ->
+                if (!names.contains(required)) {
+                    throw new GradleException("Release jar is missing ${required}")
+                }
+            }
+            Set<String> forbidden = names.findAll { entry ->
+                String lower = entry.toLowerCase(Locale.ROOT)
+                lower.contains('agent') || lower.contains('.codex') || lower.contains('.claude') ||
+                        lower.contains('/test/') || lower.contains('gametest') ||
+                        lower.startsWith('d' + ':' + '/') ||
+                        lower.startsWith('c' + ':' + '/users/')
+            }
+            if (!forbidden.isEmpty()) {
+                throw new GradleException("Forbidden release entries: ${forbidden}")
+            }
+
+            String windowsPathPrefix = ':' + ((char) 92)
+            List<String> forbiddenContent = [
+                    'c' + windowsPathPrefix + 'users' + ((char) 92),
+                    'd' + windowsPathPrefix + 'skysgrassslabs',
+                    '/' + 'home' + '/' + 'runner' + '/',
+                    'agent-notes', 'agent_notes', '.codex', '.claude', '.cursor'
+            ]
+            zip.entries().each { entry ->
+                if (!entry.directory) {
+                    String content = new String(zip.getInputStream(entry).bytes,
+                            StandardCharsets.ISO_8859_1).toLowerCase(Locale.ROOT)
+                    String match = forbiddenContent.find { content.contains(it) }
+                    if (match != null) {
+                        throw new GradleException(
+                                "Release entry ${entry.name} contains forbidden local context: ${match}")
+                    }
+                }
+            }
+        } finally {
+            zip.close()
+        }
+    }
+}
+
+tasks.register('writeReleaseChecksums') {
+    group = 'verification'
+    dependsOn tasks.named('verifyReleaseArtifacts')
+    def output = layout.buildDirectory.file('release/SHA256SUMS')
+    outputs.file(output)
+    doLast {
+        File libs = layout.buildDirectory.dir('libs').get().asFile
+        File checksumFile = output.get().asFile
+        checksumFile.parentFile.mkdirs()
+        checksumFile.setText(releaseFiles.get().collect { name ->
+            File candidate = new File(libs, name)
+            MessageDigest digest = MessageDigest.getInstance('SHA-256')
+            candidate.withInputStream { input ->
+                byte[] buffer = new byte[8192]
+                for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
+                    if (read > 0) digest.update(buffer, 0, read)
+                }
+            }
+            "${digest.digest().encodeHex().toString().toUpperCase()}  ${name}"
+        }.join('\n') + '\n', 'UTF-8')
+    }
+}
+
+def preparedReleaseDir = providers.gradleProperty('preparedReleaseDir')
+tasks.register('verifyPreparedReleaseArtifacts') {
+    group = 'verification'
+    onlyIf { preparedReleaseDir.isPresent() }
+    doLast {
+        File prepared = file(preparedReleaseDir.get())
+        Set<String> expected = (releaseFiles.get() + ['SHA256SUMS', 'CHANGELOG.md']) as Set<String>
+        Set<String> actual = prepared.listFiles()?.findAll { it.isFile() }*.name as Set<String>
+        if (actual != expected) {
+            throw new GradleException(
+                    "Prepared release files differ: expected ${expected}, found ${actual}")
+        }
+    }
+}
+
+def mavenUploadUrl = providers.environmentVariable('MAVEN_UPLOAD_URL')
+def mavenUploadUsername = providers.environmentVariable('MAVEN_UPLOAD_USERNAME')
+def mavenUploadPassword = providers.environmentVariable('MAVEN_UPLOAD_PASSWORD')
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifact releaseJar
+            artifactId = base.archivesName.get()
+            if (preparedReleaseDir.isPresent()) {
+                artifact(file("${preparedReleaseDir.get()}/${releaseFiles.get()[0]}")) {
+                    extension = 'jar'
+                }
+                artifact(file("${preparedReleaseDir.get()}/${releaseFiles.get()[1]}")) {
+                    classifier = 'sources'
+                    extension = 'jar'
+                }
+                artifact(file("${preparedReleaseDir.get()}/${releaseFiles.get()[2]}")) {
+                    classifier = 'javadoc'
+                    extension = 'jar'
+                }
+            } else {
+                artifact releaseJar
+                artifact tasks.named('sourcesJar')
+                artifact tasks.named('javadocJar')
+            }
+            pom {
+                name = "Sky's Grass Slabs"
+                description = project.mod_description
+                url = 'https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs'
+                licenses {
+                    license {
+                        name = 'GNU Lesser General Public License, Version 2.1'
+                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/MinecraftModDevelopmentMods/SkysGrassSlabs.git'
+                    url = 'https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs'
+                }
+            }
         }
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/mcmodsrepo"
+            name = 'release'
+            url = mavenUploadUrl.isPresent()
+                    ? uri(mavenUploadUrl.get())
+                    : layout.buildDirectory.dir('forbidden-local-release').get().asFile.toURI()
+            credentials {
+                username = mavenUploadUsername.orNull ?: ''
+                password = mavenUploadPassword.orNull ?: ''
+            }
         }
+    }
+}
+
+tasks.register('validateMavenReleaseCredentials') {
+    group = 'publishing'
+    doLast {
+        if (!mavenUploadUrl.isPresent() || !mavenUploadUsername.isPresent() ||
+                !mavenUploadPassword.isPresent()) {
+            throw new GradleException(
+                    'MAVEN_UPLOAD_URL, MAVEN_UPLOAD_USERNAME, and MAVEN_UPLOAD_PASSWORD are required')
+        }
+        if (mavenUploadUrl.get().startsWith('file:')) {
+            throw new GradleException('Maven release publication must use a remote repository')
+        }
+    }
+}
+
+tasks.withType(PublishToMavenRepository).configureEach {
+    dependsOn tasks.named('validateMavenReleaseCredentials')
+    if (preparedReleaseDir.isPresent()) {
+        dependsOn tasks.named('verifyPreparedReleaseArtifacts')
+    } else {
+        dependsOn tasks.named('verifyReleaseArtifacts')
     }
 }
 
