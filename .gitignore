@@ -63,6 +63,15 @@ agent_notes/
 .codex/
 .claude/
 .cursor/
+.vscode/
+.continue/
+.windsurf/
+.roo/
+.kilocode/
+.aider*
+*.code-workspace
+.github/copilot-instructions.md
+.github/instructions/
 *agent-handover*.md
 
 # Files from Forge MDK

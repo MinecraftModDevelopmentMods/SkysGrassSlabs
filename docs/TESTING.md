@@ -8,19 +8,20 @@
 - Mappings: official 1.18.2
 - Gradle wrapper: 9.6.1
 - Java runtime and bytecode: 17
-- Verified local JDK: `<Java 17 JDK>`
+- Gradle runtime: set `JAVA_HOME` to a Java 17 JDK
 - Build-only Mavenizer toolchain: Java 25
-- Verified local Mavenizer JDK: `<Java 25 JDK>`
-- Gradle user home:
-  `<repository>/.gradle-verify-cache`
+- Mavenizer JDK: provide an Adoptium Java 25 toolchain or allow Gradle's
+  configured Foojay resolver to provision one
+- Gradle user home: use any writable cache; a repository-local
+  `.gradle-verify-cache` is supported and ignored
 
 Do not run Gradle concurrently against this checkout/cache. Review complete
 logs and crash-report directories after every client, server, or GameTest run.
 
 ## Eclipse
 
-Use `<Eclipse workspace>` as the Eclipse workspace and import
-`SkysGrassSlabs` as an existing Gradle project. Generate or refresh the launch
+Use a developer-selected Eclipse workspace outside the checkout and import the
+repository root as an existing Gradle project. Generate or refresh the launch
 configuration with the prescribed Gradle environment:
 
 ```powershell

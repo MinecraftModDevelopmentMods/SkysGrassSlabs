@@ -2,10 +2,9 @@
 
 ## Current repository
 
-`<workspace>` is the multi-version workspace wrapper and is not a Git
-repository. The 1.18.2 Git/Gradle checkout is
-`<repository>` on branch
-`master-1.18.2`.
+The 1.18.2 source is the `master-1.18.2` branch of this repository. The clone
+location is developer-selected and is not part of the build or repository
+contract.
 
 The public repository topology is:
 
@@ -25,15 +24,14 @@ Ordinary pushes go to `origin`; MMD work is proposed through a pull request to
   one. Keep branch, folder, commit, artifact, and other project-facing names
   free of coding-agent or tool branding.
 - Keep each Minecraft version and loader lineage on a distinct branch and,
-  when concurrent work begins, a distinct version checkout under
-  `<workspace>\SkysGrassSlabs<version>\SkysGrassSlabs`.
+  when concurrent work begins, a distinct checkout or Git worktree.
 - Do not mix a future NeoForge line into a Forge branch.
 - Use the newest accepted feature-complete product branch as the product source
   for a forward port, then overlay only the target MDK scaffold and deliberate
   API/resource adaptations.
 
-The outer version folder can also serve as that version's Eclipse workspace,
-matching the established OreSpawn and Mineralogy layout.
+An Eclipse workspace may live in any developer-selected directory outside the
+checkout; import the checkout itself as an existing Gradle project.
 
 ## Publication guardrails
 

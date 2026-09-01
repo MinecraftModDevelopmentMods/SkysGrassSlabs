@@ -18,13 +18,13 @@ fixture becomes an upgrade input for each later Minecraft port.
 
 ## Safety boundary
 
-The authoritative legacy fixture is:
+The authoritative legacy fixture is an operator-supplied Sylvester world kept
+outside this repository. Its machine-specific location must remain in local,
+ignored instructions rather than tracked files.
 
-`<immutable Sylvester fixture>`
-
-It is read-only. Never launch, upgrade, rewrite, repair, or add files to that
-directory. Every test must use a complete disposable copy and must verify that
-the source fixture's bytes remain unchanged.
+The fixture is read-only. Never launch, upgrade, rewrite, repair, or add files
+to it. Every test must use a complete disposable copy and must verify that the
+source fixture's bytes remain unchanged.
 
 The Sylvester configuration has `generateGrassSlabs=true` and uses
 `BuildingBricks-1.10.2-2.0.13.jar`. Its `level.dat` Forge registry snapshot
@@ -45,16 +45,16 @@ Support both:
 2. Pre-flattening state recovery before vanilla chunk datafixing, using the
    saved Forge block registry to install the correct legacy state mapping.
 
-The strongest local reference implementation is:
-
-`<Minecraft Mineralogy 1.18.2 checkout>/src/main/java/zone/moddev/mc/mineralogy/patching/LegacyWorldDataHook.java`
+The strongest reference implementation is
+`src/main/java/zone/moddev/mc/mineralogy/patching/LegacyWorldDataHook.java` in
+the [Minecraft Mineralogy repository](https://github.com/MinecraftModDevelopmentMods/MinecraftMineralogy).
 
 Also inspect:
 
 - `patching/PatchHandler.java`
 - `src/main/resources/coremods/mineralogy_legacy_world_fix.js`
-- Base Metals 1.18's `Legacy112WorldMigrator` under
-  `<Base Metals 1.18.2 checkout>`
+- Base Metals 1.18's `Legacy112WorldMigrator` in the
+  [Base Metals repository](https://github.com/MinecraftModDevelopmentMods/BaseMetals)
 
 Mineralogy's hook currently selects Mineralogy states; it does not automatically
 migrate BuildingBricks. Any Sky's Grass Slabs hook must coexist with it in the

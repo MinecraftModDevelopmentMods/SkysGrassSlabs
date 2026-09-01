@@ -27,12 +27,15 @@ separate product decisions.
 ## Confirmed BuildingBricks behaviour
 
 The exact Sylvester server mod is `BuildingBricks-1.10.2-2.0.13.jar`. Its
-matching source tag is `v1.10.2-2.0.13` in
-`<BuildingBricks checkout>`.
+matching source tag is `v1.10.2-2.0.13` in the
+[BuildingBricks repository](https://github.com/SkyBlade1978/BuildingBricks).
 
 Its only world-generation implementation is:
 
-`<BuildingBricks checkout>/src/main/java/com/hea3ven/buildingbricks/compat/vanilla/GrassSlabWorldGen.java`
+`src/main/java/com/hea3ven/buildingbricks/compat/vanilla/GrassSlabWorldGen.java`
+
+Resolve that path from the tagged BuildingBricks checkout; its location on a
+developer's machine is deliberately not part of this repository's contract.
 
 The feature runs at Overworld chunk-population time. For each candidate grass
 surface, it places a bottom grass slab above the lower side of a one-block
@@ -135,8 +138,9 @@ covered or waterlogged.
 
 ## OreSpawn boundary
 
-The current 1.18.2 OreSpawn source is
-`<OreSpawn 1.18.2 checkout>`.
+The 1.18.2 OreSpawn reference is the `master-1.18` line of the
+[OreSpawn repository](https://github.com/MinecraftModDevelopmentMods/OreSpawn).
+Re-verify its current commit before compatibility testing.
 
 Relevant reference points are:
 
