@@ -43,6 +43,27 @@ public class ProjectContractTest {
                 .contains("Copyright (C) 2026 SkyBlade1978"));
     }
 
+    @Test
+    public void releaseDispatcherIsExplicitAndUsesTheImmutableBundle() throws Exception {
+        String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
+        String workflow = Files.readString(
+                Path.of(".github/workflows/deploy-release.yml"), StandardCharsets.UTF_8);
+        String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
+
+        assertTrue(properties.contains("loader_name=forge"));
+        assertTrue(properties.contains("loader_code=1"));
+        assertTrue(properties.contains("curseforge_project_id=1677588"));
+        assertTrue(workflow.contains("confirm_live_publication:"));
+        assertTrue(workflow.contains("name: release"));
+        assertTrue(workflow.contains("-PpreparedReleaseDir="));
+        assertTrue(workflow.contains("MinecraftModDevelopmentMods/SkysGrassSlabs"));
+        assertTrue(workflow.indexOf("  publish_maven:") <
+                workflow.indexOf("  publish_curseforge:"));
+        assertTrue(workflow.indexOf("  publish_curseforge:") <
+                workflow.indexOf("  publish_github:"));
+        assertTrue(build.contains("if (preparedReleaseDir.isPresent())"));
+    }
+
 
     @Test
     public void commonConfigAndWorldStateUsePermanentKeys() throws Exception {
