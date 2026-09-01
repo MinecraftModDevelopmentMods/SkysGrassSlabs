@@ -60,6 +60,7 @@ CLAUDE.md
 GEMINI.md
 agent-notes/
 agent_notes/
+.codex/
 .claude/
 .cursor/
 *agent-handover*.md

@@ -83,5 +83,6 @@ no release-blocking findings or crash reports were present.
 Publication remains pending manual in-world visual acceptance of grass-slab
 sides beside vanilla grass in several biomes; top, bottom, snowy, and joined
 slabs; and turf tint, geometry, placement, spreading, conversion, breaking, and
-invalid-support removal. No remote, tag, upload, or publication action has been
-performed.
+invalid-support removal. The source is hosted in the MMD repository and the
+SkyBlade1978 fork. No tag, release, CurseForge file upload, or binary publication
+has been performed.

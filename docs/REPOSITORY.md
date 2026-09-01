@@ -5,18 +5,17 @@
 `<workspace>` is the multi-version workspace wrapper and is not a Git
 repository. The 1.18.2 Git/Gradle checkout is
 `<repository>` on branch
-`master-1.18.2`. It has no remotes. Do not invent remote URLs or create hosted
-repositories without the user's direction.
+`master-1.18.2`.
 
-The intended hosted topology, once those repositories actually exist, is:
+The public repository topology is:
 
-- `origin`: the SkyBlade1978 fork, normally
+- `origin`: the SkyBlade1978 fork at
   `https://github.com/SkyBlade1978/SkysGrassSlabs.git`
-- `upstream`: the MMD repository, normally
+- `upstream`: the MMD repository at
   `https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs.git`
 
-Verify both URLs and permissions before adding them. Ordinary pushes go to
-`origin`; MMD work is proposed through a pull request to `upstream`.
+Ordinary pushes go to `origin`; MMD work is proposed through a pull request to
+`upstream`. The local pre-push guard blocks direct updates to the MMD repository.
 
 ## Branching
 
