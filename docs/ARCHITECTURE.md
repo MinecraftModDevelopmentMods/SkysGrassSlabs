@@ -2,7 +2,7 @@
 
 ## Product contract
 
-The minimum 1.18.2 product consists of:
+The 1.18.2 beta product consists of:
 
 1. Dirt, grass, and path slabs with normal top, bottom, double, waterlogging,
    placement, collision, rendering, loot, tool, sound, and creative-tab
@@ -12,9 +12,11 @@ The minimum 1.18.2 product consists of:
 3. Convenience recipes for dirt plus a seed to make grass, including slab
    equivalents, plus ordinary slab recipes.
 4. Smooth grass-slab transitions on newly generated Overworld terrain.
-5. A permanent schema marker that future versions can use for save migration.
+5. Carpet-height turf cut from grass blocks or grass slabs, with matching soil
+   and an unchanged Forge-compatible shovel returned by crafting.
+6. A permanent schema marker that future versions can use for save migration.
 
-BuildingBricks migration is deliberately not part of beta `0.1.0.118021`. It
+BuildingBricks migration is deliberately not part of beta `0.2.0.118021`. It
 begins on the Minecraft 1.10.2 line and is then proved while the mod is ported
 forward. See `ROADMAP.md` and `LEGACY-MIGRATION.md`.
 
@@ -87,6 +89,36 @@ Implement target-aware custom behaviour:
   grass-slab side texturing.
 - Snowy appearance, Silk Touch, drops, bonemeal expectations, and plant support
   all require explicit tests; do not inherit assumptions from full blocks.
+
+Grass slabs and turf share one target-aware spreading helper. This keeps the
+loaded-area guard, source light threshold, target eligibility, water checks,
+four-attempt pattern, snowy state, orientation preservation, and double-slab
+normalization identical for both sources. A turf block is also a viable source
+when a dirt slab performs its own source search.
+
+## Turf
+
+Turf is a one-pixel-high `CarpetBlock` with a grass-top texture and biome tint
+on every face. It intentionally has no block entity, wool/carpet tag, llama
+decoration role, or furnace-fuel entry. Normal placement requires a full
+collision block below, matching carpet support and support-loss behaviour.
+
+Only exact vanilla dirt is a lasting substrate. A random tick on any other
+support destroys the turf and drops its item. Valid dirt-supported turf remains
+turf under cover or low light but does not spread. In adequate light it uses
+the shared grass-spread helper and excludes its own supporting dirt from target
+selection.
+
+The custom turf item intercepts an upward use on a dry dirt slab: bottom and
+top orientation are retained as grass slabs, a double slab normalizes to
+vanilla grass, and a waterlogged slab rejects the action without consuming the
+turf. Other uses delegate to normal carpet placement.
+
+The special shapeless `turf_cutting` recipe accepts exactly one vanilla grass
+block or this mod's grass slab plus one item that advertises Forge's
+`SHOVEL_FLATTEN` action. It works in 2 by 2 and 3 by 3 grids, produces one turf,
+returns the corresponding dirt block or slab, and returns an unchanged copy of
+the shovel including damage, enchantments, and NBT.
 
 ## Path slabs
 

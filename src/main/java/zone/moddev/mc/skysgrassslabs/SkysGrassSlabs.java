@@ -10,6 +10,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.ModLoadingContext;
 import zone.moddev.mc.skysgrassslabs.config.BetaConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
+import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 import zone.moddev.mc.skysgrassslabs.world.WorldgenBootstrap;
 
@@ -23,6 +24,7 @@ public final class SkysGrassSlabs {
     public SkysGrassSlabs() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         ModBlocks.register(modBus);
+        ModRecipes.register(modBus);
         WorldgenBootstrap.register(modBus);
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, BetaConfig.SPEC);
 

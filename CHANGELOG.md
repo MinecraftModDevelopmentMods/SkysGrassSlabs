@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0.118021 - Turf beta
+
+- Fixed dark grass-slab sides by using vanilla grass's cutout-mipped render
+  layer for its transparent biome-tinted overlay.
+- Added biome-tinted, carpet-height turf with carpet collision, support,
+  breaking, sound, and flammability behaviour but no wool-carpet integrations.
+- Added grass spreading from dirt-supported turf without a dirt/decay stage;
+  invalid substrates remove and drop the turf on its random tick.
+- Added direct turf conversion for dry dirt slabs, preserving top/bottom
+  orientation and normalizing double slabs to vanilla grass.
+- Added the `turf_cutting` special recipe for grass plus any Forge-compatible
+  shovel, returning matching dirt and the completely unchanged shovel.
+- Shared the target-aware grass spreading implementation between grass slabs
+  and turf, including loaded-area, light, water, orientation, and double-slab
+  rules.
+- Preserved every 0.1.0 registry ID, world-generation rule, configuration key,
+  and world schema version.
+
 ## 0.1.0.118021 - 1.18.2 beta
 
 - Added dirt, biome-tinted grass, and lowered path slabs.

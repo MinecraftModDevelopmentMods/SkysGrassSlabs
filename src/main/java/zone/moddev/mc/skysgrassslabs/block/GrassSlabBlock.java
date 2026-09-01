@@ -74,26 +74,7 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
             }
             return;
         }
-        if (!level.isAreaLoaded(pos, 3) || level.getMaxLocalRawBrightness(pos.above()) < 9) {
-            return;
-        }
-        for (int attempt = 0; attempt < 4; attempt++) {
-            BlockPos targetPos = pos.offset(random.nextInt(3) - 1,
-                    random.nextInt(5) - 3, random.nextInt(3) - 1);
-            BlockState target = level.getBlockState(targetPos);
-            BlockState future = null;
-            if (target.is(Blocks.DIRT)) {
-                future = Blocks.GRASS_BLOCK.defaultBlockState();
-            } else if (target.is(ModBlocks.DIRT_SLAB.get()) && !target.getValue(WATERLOGGED)) {
-                future = SlabTransitions.grassFor(target);
-            }
-            if (future != null && SoilLifecycle.canPropagate(future, level, targetPos)) {
-                if (future.hasProperty(SNOWY)) {
-                    future = future.setValue(SNOWY, level.getBlockState(targetPos.above()).is(Blocks.SNOW));
-                }
-                level.setBlockAndUpdate(targetPos, future);
-            }
-        }
+        GrassSpread.spreadFrom(level, pos, random, null);
     }
 
     @Override

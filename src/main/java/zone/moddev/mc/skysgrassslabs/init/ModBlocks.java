@@ -14,6 +14,8 @@ import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.PathSlabBlock;
+import zone.moddev.mc.skysgrassslabs.block.TurfBlock;
+import zone.moddev.mc.skysgrassslabs.block.TurfBlockItem;
 
 /** Stable block and item registrations. */
 public final class ModBlocks {
@@ -28,10 +30,15 @@ public final class ModBlocks {
             () -> new GrassSlabBlock(BlockBehaviour.Properties.copy(Blocks.GRASS_BLOCK).randomTicks()));
     public static final RegistryObject<Block> PATH_SLAB = BLOCKS.register("path_slab",
             () -> new PathSlabBlock(BlockBehaviour.Properties.copy(Blocks.DIRT_PATH)));
+    public static final RegistryObject<Block> TURF = BLOCKS.register("turf",
+            () -> new TurfBlock(BlockBehaviour.Properties.copy(Blocks.GREEN_CARPET).randomTicks()));
 
     public static final RegistryObject<Item> DIRT_SLAB_ITEM = item("dirt_slab", DIRT_SLAB);
     public static final RegistryObject<Item> GRASS_SLAB_ITEM = item("grass_slab", GRASS_SLAB);
     public static final RegistryObject<Item> PATH_SLAB_ITEM = item("path_slab", PATH_SLAB);
+    public static final RegistryObject<Item> TURF_ITEM = ITEMS.register("turf",
+            () -> new TurfBlockItem(TURF.get(),
+                    new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)));
 
     private ModBlocks() {
     }

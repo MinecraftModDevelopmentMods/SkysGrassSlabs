@@ -1,11 +1,18 @@
 # Version and compatibility roadmap
 
-## 1.18.2 gameplay beta
+## 1.18.2 gameplay betas
 
-Beta `0.1.0.118021` establishes the permanent namespace and gameplay contract:
+Beta `0.1.0.118021` established the permanent namespace and initial gameplay
+contract:
 `dirt_slab`, `grass_slab`, `path_slab`, `grass_slab_smoothing`, common worldgen
 configuration, and world schema version 1. It has no BuildingBricks, OreSpawn,
 or Mineralogy runtime dependency or Java API.
+
+Beta `0.2.0.118021` retains that contract, fixes grass-slab overlay rendering,
+and adds the permanent `turf` block/item plus the `turf_cutting` recipe
+serializer. Turf is a dirt-supported carpet-height grass source and can be used
+to green dry dirt slabs. The schema remains version 1 because no existing
+save-facing identity or data shape is migrated.
 
 ## 1.10.2 BuildingBricks and Sylvester compatibility
 

@@ -60,7 +60,7 @@ world output cannot inherit an earlier result:
   -PskysGrassSlabsGameTestRunDirectory=run-gametest-candidate --no-daemon
 ```
 
-The beta suite has seven independently batched runtime tests. The controlled
+The beta suite has eleven independently batched runtime tests. The controlled
 world-generation test runs the whole owning chunk twice and requires the
 second pass to make no change.
 
@@ -74,7 +74,24 @@ second pass to make no change.
 - snow appearance and survival
 - dirt/grass and dirt-slab/grass-slab seed recipes
 - slab creation and combining behaviour
+- grass-slab `cutoutMipped` registration and biome tint resources
 - server-only classloading and resource completeness
+
+### Turf
+
+- exact one-pixel outline and collision geometry, carpet flammability, and no
+  block entity or wool-carpet tags
+- normal placement on full dirt and non-dirt blocks, rejection on partial
+  supports, and immediate carpet-style removal when support is lost
+- invalid-support random-tick destruction with a turf drop
+- persistence without a dirt stage when covered or too dark
+- spreading to vanilla dirt and every dry dirt-slab orientation without
+  converting its own support
+- turf as a viable source for dirt-slab random-tick growth
+- direct item conversion of bottom, top, and double dirt slabs, plus unchanged
+  waterlogged slabs
+- 2 by 2 special-recipe matching for both grass inputs and multiple compatible
+  shovels, exact dirt remainders, unchanged tool damage/NBT, and invalid inputs
 
 ### Grass lifecycle
 
@@ -107,9 +124,10 @@ Mineralogy/OreSpawn; cache predicates and avoid allocation in the hot loop.
 Run fresh and reload integration with:
 
 1. Forge plus Sky's Grass Slabs only.
-2. Sky's Grass Slabs plus Mineralogy.
-3. Sky's Grass Slabs plus the exact local OreSpawn candidate and Mineralogy.
-4. Starting with the 1.10.2 compatibility release, a disposable legacy
+2. Sky's Grass Slabs plus the exact local OreSpawn candidate and Mineralogy.
+   Mineralogy-only is not a valid 1.18.2 row because Mineralogy declares
+   OreSpawn as mandatory.
+3. Starting with the 1.10.2 compatibility release, a disposable legacy
    Sylvester conversion as specified in `LEGACY-MIGRATION.md`.
 
 The current reference OreSpawn checkout may move. Re-read its ignored handover,
@@ -129,8 +147,9 @@ requires:
 - exact reobfuscated jar in a clean launcher-like Forge 40 client and server
 - fresh world, clean save/stop, and reload
 - complete log and crash-directory review
-- manual visual acceptance of slab joins, tinting, snow, placement, breaking,
-  walking, and generated slopes
+- manual visual acceptance of slab joins and side overlays, tinting, snow,
+  placement, breaking, walking, generated slopes, turf geometry, turf spread,
+  turf conversion, and invalid-support removal
 - legacy migration evidence where applicable
 
 Keep local pass, PR readiness, hosted CI, deployment/publication, packaged

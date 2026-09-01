@@ -30,12 +30,13 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/TESTING.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/REPOSITORY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/ROADMAP.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void betaIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=0.1.0.118021"));
+        assertTrue(properties.contains("mod_version=0.2.0.118021"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -63,13 +64,18 @@ public class ProjectContractTest {
                 "src/main/resources/assets/skysgrassslabs/blockstates/dirt_slab.json",
                 "src/main/resources/assets/skysgrassslabs/blockstates/grass_slab.json",
                 "src/main/resources/assets/skysgrassslabs/blockstates/path_slab.json",
+                "src/main/resources/assets/skysgrassslabs/blockstates/turf.json",
+                "src/main/resources/assets/skysgrassslabs/models/block/turf.json",
+                "src/main/resources/assets/skysgrassslabs/models/item/turf.json",
                 "src/main/resources/data/skysgrassslabs/recipes/dirt_slab.json",
                 "src/main/resources/data/skysgrassslabs/recipes/grass_slab.json",
                 "src/main/resources/data/skysgrassslabs/recipes/grass_block_from_seeds.json",
                 "src/main/resources/data/skysgrassslabs/recipes/grass_slab_from_seeds.json",
+                "src/main/resources/data/skysgrassslabs/recipes/turf.json",
                 "src/main/resources/data/skysgrassslabs/loot_tables/blocks/dirt_slab.json",
                 "src/main/resources/data/skysgrassslabs/loot_tables/blocks/grass_slab.json",
-                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/path_slab.json"
+                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/path_slab.json",
+                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/turf.json"
         };
         for (String path : paths) {
             assertTrue(path, Files.isRegularFile(Path.of(path)));
