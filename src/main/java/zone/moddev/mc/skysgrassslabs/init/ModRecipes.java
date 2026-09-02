@@ -25,7 +25,6 @@ public final class ModRecipes {
         GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ModBlocks.GRASS_SLAB),
                 new ItemStack(ModBlocks.DIRT_SLAB), SEED_ORE));
         BuildingBricksCompat.registerBridgeRecipes();
-
         RecipeSorter.register("skysgrassslabs:turf_cutting", TurfCuttingRecipe.class,
                 RecipeSorter.Category.SHAPELESS, "after:minecraft:shapeless");
         CraftingManager.getInstance().getRecipeList().add(new TurfCuttingRecipe());

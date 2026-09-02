@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   validate-release-tag:
-    name: Validate tag without publishing
+    name: Validate tag for manual release confirmation
     if: github.repository == 'MinecraftModDevelopmentMods/SkysGrassSlabs'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -73,12 +73,22 @@ jobs:
             exit 1
           fi
 
-      - name: Record validation result
+      - name: Record the required manual publication step
+        env:
+          RELEASE_WORKFLOW_URL: https://github.com/${{ github.repository }}/actions/workflows/deploy-release.yml
         run: |
           {
-            echo "## Release tag validated"
+            echo "## Release candidate validated"
             echo
-            echo "Tag \`$GITHUB_REF_NAME\` matches this target and has a successful audited CI build."
+            echo "Tag \`$GITHUB_REF_NAME\` matches this target and has a successful Build, test, and audit check."
             echo
-            echo "**This workflow does not publish anything.** Publication still requires the separately approved manual release dispatcher."
+            echo "**Nothing has been published.**"
+            echo
+            echo "To continue, open [Release Sky's Grass Slabs]($RELEASE_WORKFLOW_URL), select **Run workflow**, and enter:"
+            echo
+            echo "- release_version: \`$GITHUB_REF_NAME\`"
+            echo "- curseforge_release_level: \`release\`, \`beta\`, or \`alpha\`"
+            echo "- confirm_live_publication: enabled"
+            echo
+            echo "The dispatcher rebuilds and audits one immutable bundle before publishing it in order to Maven, CurseForge, and GitHub."
           } >> "$GITHUB_STEP_SUMMARY"

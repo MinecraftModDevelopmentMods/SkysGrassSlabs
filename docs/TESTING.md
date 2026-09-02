@@ -24,16 +24,18 @@ $env:GRADLE_USER_HOME='<dedicated Gradle cache>'
   writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon --stacktrace
 ```
 
-`check` includes focused Java tests plus a Forge runtime mod used only during
-the build. The runtime creates a fresh world, executes 72 gameplay and 8 world
+`check` includes 39 focused Java tests plus a Forge runtime mod used only during
+the build. The runtime creates a fresh world, executes 74 gameplay and 8 world
 generation assertions,
 stops, reloads the same world, and verifies schema state. Probe classes and
 resources are excluded from distributable jars.
 
 ## Focused automated coverage
 
-- permanent registry IDs, configuration and version metadata, recipe sorter identity,
+- permanent registry IDs, both independent configuration settings and version metadata, recipe sorter identity,
   resources, legacy model parents, and repository hygiene;
+- all 18 locale files, exact key parity, reviewed regional wording, UTF-8
+  validity, LF endings, and duplicate or blank value rejection;
 - slab metadata conversions, top and bottom geometry, combination normalization,
   drops, Silk Touch, plants, bonemeal, grass lifecycle, and turf support;
 - grass and dirt snow states that are not saved, untinted snow tops, matching snow edged
@@ -47,8 +49,8 @@ resources are excluded from distributable jars.
   without a drop, wool regrowth, child growth, and `mobGriefing` behavior;
 - turf recipe matching and exact unchanged shovel/dirt remainders;
 - compatible Forge shovel detection and flattening interactions;
-- migration mappings, orientation counts, schema persistence, configuration
-  backup/arbitration, and failure fallback;
+- migration mappings, orientation counts, schema persistence, replacement
+  gating, chunk markers, configuration backup/arbitration, and failure fallback;
 - worldgen eligibility, cliffs, flat terrain, fluid, occupied targets, block
   entities, loaded east and south borders, west and north omission, and second pass
   idempotence;
@@ -85,17 +87,44 @@ a fresh world and after a reload:
 
 1. Forge plus Sky's Grass Slabs.
 2. Sky's Grass Slabs plus BuildingBricks 1.10.2-2.0.13, including config backup
-   and ownership by only one generator.
+   and ownership by only one generator. Test both default retained content and
+   explicitly enabled replacement.
 3. Sky's Grass Slabs plus the current OreSpawn and Mineralogy 1.10 candidates.
-4. The complete disposable Sylvester fixture.
+4. Complete disposable Sylvester copies with BuildingBricks present and
+   replacement disabled, present and replacement enabled, and absent for
+   missing mapping recovery.
 
 Completed local evidence includes:
 
-- solo and BuildingBricks fresh/reload: 72 gameplay and 8 worldgen checks;
+- solo and BuildingBricks fresh/reload: 74 gameplay and 8 worldgen checks;
 - OreSpawn `4.0.8.110021` plus Mineralogy `6.0.1.110021`: fresh/reload, same
-  72/8 checks, active Mineralogy provider, no error or crash directory;
-- complete Sylvester first and second migrations with the exact totals in
+  74/8 checks, active Mineralogy provider, no audit failure or crash directory;
+- complete Sylvester default coexistence, three launch forced migration and
+  reload qualification, and missing mapping recovery with the exact totals in
   `LEGACY-MIGRATION.md` and unchanged source fingerprint.
+- accepted manual new terrain testing in a disposable Sylvester copy: 1,694
+  new chunks contained 46,692 correctly oriented Sky grass slabs, no newly
+  generated BuildingBricks slabs, and active OreSpawn and Mineralogy terrain.
+- all 29 production class entries in the translated candidate match the
+  previously qualified jar byte for byte, so its Sylvester evidence remains
+  applicable without another launch of the large fixture.
+- the exact translated candidate reloaded successfully in the packaged solo,
+  BuildingBricks, and OreSpawn plus Mineralogy environments.
+
+The default Sylvester coexistence check retained the same supported legacy
+block and item totals without creating migration markers or changing counters.
+The missing mod check remapped the supported IDs and preserved orientation.
+Forge's warning contained 110 remaining BuildingBricks block and item registry
+entries, but neither supported slab ID. The disposable run confirmed the
+warning, automatic backup, and subsequent removal path rather than hiding any
+unsupported content.
+
+New terrain takeover must use normal player chunk tracking. The build only
+probe starts with virgin Overworld region `r.122.0.mca` and may try a bounded
+series of further unused regions until eligible grass terrain is encountered.
+It requires Sky grass slabs, no newly generated BuildingBricks grass slabs,
+and an unchanged already disabled BuildingBricks generator setting. A real
+player journey to new terrain remains part of manual acceptance.
 
 ## Final artifact gate
 
@@ -104,8 +133,34 @@ jar. Audit all release jars for expected metadata, resources, licenses, LF line
 endings, absence of tests, probes, local paths and local context, and exact
 checksums.
 
-Manual visual acceptance remains pending for grass tinting; visual grass/dirt
-snow caps in several mountain arrangements; top/bottom joins; support
-dirtification and stable turf fields; sheep animation; turf geometry and
-spread; path height; shovel interaction; placement; breaking; and generated
-slopes.
+Manual visual and gameplay acceptance is complete for grass tinting, grass and
+dirt snow caps, joins, support dirtification, stable turf fields, turf, paths,
+placement, breaking and generated slopes. The accepted disposable world test
+used the same current OreSpawn and Mineralogy candidates as the integration
+matrix.
+
+## Qualified 1.0.0.110021 artifacts
+
+Independent Linux builds on the fork and MMD produced byte for byte identical
+publication artifacts:
+
+- main jar: `83,251` bytes,
+  `2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861`
+- sources jar: `52,199` bytes,
+  `DC3A19FB1A465E8B3C8CA9CB3FE95FC7A466BB0A61DAC079D5DE63F681FBBD74`
+- Javadocs jar: `141,691` bytes,
+  `E6C99AB73B9896B9EC634968E6415F80FD5E818A1DBE9D8C2183871A70BF6A59`
+
+Two local Windows clean builds were also identical. Their main and sources
+jars match the Linux artifacts above. The Java 8 Javadoc formatter has a small
+platform specific whitespace difference: the Windows Javadocs jar is `141,729`
+bytes with SHA-256
+`D657E256ECCADE5250B21C9067AFEC74B79E1A7666C61DE197F8E4C0857FEA38`.
+The release dispatcher runs on Linux and uses the publication artifact listed
+above.
+
+All production classes use Java 8 bytecode. The archive audit found the
+expected licences and resources and found no credentials, machine paths,
+agent material, test probes or local evidence. Licence entries are normalized,
+which makes the distributable main and sources jars identical on Windows and
+Linux.

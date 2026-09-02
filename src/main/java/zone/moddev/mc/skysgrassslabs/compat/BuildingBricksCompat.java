@@ -12,11 +12,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.registry.GameRegistry;
-import net.minecraftforge.oredict.ShapelessOreRecipe;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
-import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
-import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 
 public final class BuildingBricksCompat {
     public static final String MOD_ID = "buildingbricks";
@@ -29,13 +26,21 @@ public final class BuildingBricksCompat {
 
     private static Block grassSlab;
     private static Block dirtSlab;
+    private static boolean bridgeRecipesRegistered;
     private static final Map<Block, String> buildingBricksBlocks =
             Collections.synchronizedMap(new IdentityHashMap<Block, String>());
 
     public static void preInit(File configDirectory) {
-        if (!Loader.isModLoaded(MOD_ID) || !SkysGrassSlabsConfig.generateGrassSlabs()) {
+        boolean installed = Loader.isModLoaded(MOD_ID);
+        if (!installed) {
             return;
         }
+        SkysGrassSlabs.logger.info("BuildingBricks slab replacement is {}",
+                SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs()
+                        ? "enabled" : "disabled");
+        if (!BuildingBricksPolicy.shouldArbitrateWorldgen(installed,
+                SkysGrassSlabsConfig.generateGrassSlabs())) return;
+
         File configFile = new File(configDirectory, "BuildingBricks/general.cfg");
         try {
             if (!BuildingBricksConfigArbitrator.disable(configFile)) {
@@ -79,6 +84,11 @@ public final class BuildingBricksCompat {
         return Loader.isModLoaded(MOD_ID);
     }
 
+    static boolean shouldReplaceSlabs() {
+        return BuildingBricksPolicy.shouldReplaceSlabs(isInstalled(),
+                SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs());
+    }
+
     public static String buildingBricksBlockId(Block block) {
         return buildingBricksBlocks.get(block);
     }
@@ -98,15 +108,17 @@ public final class BuildingBricksCompat {
                 stack.getItem() == Item.getItemFromBlock(grassSlab());
     }
 
+    static boolean isDirtSlabItem(ItemStack stack) {
+        return stack != null && dirtSlab() != null &&
+                stack.getItem() == Item.getItemFromBlock(dirtSlab());
+    }
+
     public static void registerBridgeRecipes() {
-        if (!isInstalled()) {
+        if (!isInstalled() || bridgeRecipesRegistered) {
             return;
         }
-        resolveBlocks();
-        if (dirtSlab != null) {
-            GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ModBlocks.GRASS_SLAB),
-                    new ItemStack(dirtSlab), ModRecipes.SEED_ORE));
-        }
+        GameRegistry.addRecipe(new BuildingBricksDirtSlabRecipe());
+        bridgeRecipesRegistered = true;
     }
 
     private BuildingBricksCompat() {

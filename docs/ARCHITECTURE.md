@@ -2,10 +2,11 @@
 
 ## Product contract
 
-Version `0.3.0.110021` is the Minecraft 1.10.2 backport of the complete grass
+Version `1.0.0.110021` is the Minecraft 1.10.2 release of the complete grass
 slab and turf product. It retains mod ID `skysgrassslabs`, package root
 `zone.moddev.mc.skysgrassslabs`, all established block/item IDs, common config
-key `worldgen.generateGrassSlabs`, and schema-1 world state
+keys `worldgen.generateGrassSlabs` and
+`compat.forceReplaceBuildingBricksSlabs`, and schema-1 world state
 `skysgrassslabs_world_state`.
 
 The four permanent blocks are `dirt_slab`, `grass_slab`, `path_slab`, and
@@ -103,18 +104,30 @@ mod runs first, makes a one time backup of the old configuration, and disables
 the overlapping generator. If configuration arbitration fails, Sky smoothing
 is disabled for that process so duplicate generation cannot occur.
 
+Replacement of supported installed legacy slabs is a separate decision.
+`compat.forceReplaceBuildingBricksSlabs` defaults to false. When false, chunk,
+placement, entity and inventory migration handlers make no changes and do not
+mark chunks. Recipes still accept the supported legacy slabs. When true, the
+existing migration operates independently of the world generation setting.
+Removing the legacy mod always leaves missing mapping recovery active for the
+supported IDs so those blocks and items do not disappear.
+
 Chunk migration reads the original serialized 1.10 section arrays to locate
 numeric legacy IDs efficiently, writes only supported grass and dirt slab
 states into `ExtendedBlockStorage`, and marks each processed chunk with
 `buildingbricks_migration_version=1`. Tile/entity stacks are migrated through
 serialized NBT so unopened loot containers are not forced open. Player and
-ender chest inventories are checked on login. See `LEGACY-MIGRATION.md` for the
-exact supported IDs and qualification evidence.
+ender chest inventories are checked on login. Current and future migration
+markers are copied back into the chunk data on every later save so a completed
+chunk remains complete across repeated reloads. See `LEGACY-MIGRATION.md` for
+the exact supported IDs and qualification evidence.
 
 ## Save state
 
 `ModWorldState` is stored in the Overworld map storage so all dimensions share
 one aggregate. It records schema version, migration version, processed chunks,
 top and bottom block conversions, item conversions, and unsupported shape
-totals. The readable migration report is written atomically under the world's
-`serverconfig` directory.
+totals. While forced replacement is active, the readable migration report is
+written atomically under the world's `serverconfig` directory and records the
+active replacement mode. Disabling replacement does not erase historical
+state or an earlier report.
