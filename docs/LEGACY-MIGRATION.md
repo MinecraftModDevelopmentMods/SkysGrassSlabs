@@ -118,8 +118,8 @@ It reported and left unchanged 6,663 unsupported block shapes across 13 IDs:
 - wood corners `95`, steps `2,244`, vertical slabs `2,276`
 
 Minecraft completed some old boundary terrain while the fixture was loaded,
-increasing the corrected candidate's reload traversal and durable processed
-marker total to 88,026 chunk headers. Those newly completed chunks
+increasing the release candidate's reload traversal to 87,849 chunk headers
+and its durable processed marker total to 87,867. Those newly completed chunks
 were marked once but produced no supported conversions and no unsupported
 recount. The second complete load retained every block, orientation, item, and
 unsupported total unchanged and wrote `migration_reload_complete=true`.
@@ -139,3 +139,8 @@ Normal player chunk tracking in virgin terrain generated 1,985 Sky grass slabs
 and no BuildingBricks grass slabs. With BuildingBricks removed, the supported
 blocks and items remapped with the same orientation split, and Forge created a
 481,716,701 byte backup before removing unsupported content.
+
+The later manual acceptance journey generated 1,694 new chunks in a disposable
+copy. Those chunks contained 46,692 Sky grass slabs, all in the expected bottom
+orientation, and no newly generated BuildingBricks grass or dirt slabs.
+OreSpawn and Mineralogy generation remained active throughout the journey.

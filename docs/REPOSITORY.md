@@ -14,9 +14,6 @@ can be opened and worked on independently.
 
 Source changes are pushed only to the SkyBlade1978 fork and proposed to MMD
 through pull requests. Never push implementation commits directly to upstream.
-If the upstream `master-1.10.2` branch does not yet exist, an MMD maintainer must
-create it before the backport PR can be opened.
-
 Do not use development tool names in branch, folder, commit, artifact or other
 public project names.
 
@@ -32,8 +29,8 @@ check. It does not publish. Maven, CurseForge project `1677588`, and GitHub
 release publication must be performed only by the separately approved manual
 dispatcher using the same immutable candidate bundle.
 
-MMD administrators must expose the existing organisation Maven and CurseForge
-secrets to this repository. Credentials must never be committed.
+The manual dispatcher uses the existing organisation Maven and CurseForge
+secrets. Credentials must never be committed.
 
 ## Publication guardrails
 

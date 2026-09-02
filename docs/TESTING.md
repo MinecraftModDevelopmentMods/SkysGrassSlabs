@@ -24,7 +24,7 @@ $env:GRADLE_USER_HOME='<dedicated Gradle cache>'
   writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon --stacktrace
 ```
 
-`check` includes focused Java tests plus a Forge runtime mod used only during
+`check` includes 33 focused Java tests plus a Forge runtime mod used only during
 the build. The runtime creates a fresh world, executes 74 gameplay and 8 world
 generation assertions,
 stops, reloads the same world, and verifies schema state. Probe classes and
@@ -100,6 +100,9 @@ Completed local evidence includes:
 - complete Sylvester default coexistence, first and second forced migrations,
   and missing mapping recovery with the exact totals in
   `LEGACY-MIGRATION.md` and unchanged source fingerprint.
+- accepted manual new terrain testing in a disposable Sylvester copy: 1,694
+  new chunks contained 46,692 correctly oriented Sky grass slabs, no newly
+  generated BuildingBricks slabs, and active OreSpawn and Mineralogy terrain.
 
 The default Sylvester coexistence check retained the same supported legacy
 block and item totals without creating migration markers or changing counters.
@@ -123,8 +126,23 @@ jar. Audit all release jars for expected metadata, resources, licenses, LF line
 endings, absence of tests, probes, local paths and local context, and exact
 checksums.
 
-Manual visual acceptance remains pending for grass tinting; visual grass/dirt
-snow caps in several mountain arrangements; top/bottom joins; support
-dirtification and stable turf fields; sheep animation; turf geometry and
-spread; path height; shovel interaction; placement; breaking; and generated
-slopes.
+Manual visual and gameplay acceptance is complete for grass tinting, grass and
+dirt snow caps, joins, support dirtification, stable turf fields, turf, paths,
+placement, breaking and generated slopes. The accepted disposable world test
+used the same current OreSpawn and Mineralogy candidates as the integration
+matrix.
+
+## Qualified 1.0.0.110021 artifacts
+
+Two clean builds produced byte for byte identical release artifacts:
+
+- main jar: `78,891` bytes,
+  `BE21FC77DA4A79664B289376BB9EE4B802E042AF323073FC1A6010EEBD4C00AD`
+- sources jar: `48,198` bytes,
+  `67D17DD4DFB0462AE8C88D6B60DF8DAC79A564B448441BB89A356692BB5EF2EF`
+- Javadocs jar: `141,871` bytes,
+  `B15BC6FB3BA73FA4A0FBE458DA0984D292B88BA3462E306902695D93926F97DA`
+
+All production classes use Java 8 bytecode. The archive audit found the
+expected licences and resources and found no credentials, machine paths,
+agent material, test probes or local evidence.

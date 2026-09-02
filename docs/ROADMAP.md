@@ -13,17 +13,14 @@
   coverings on dirt, preventing covered targets, transient visual grass and
   dirt snow caps, sheep eating turf, and replacement of installed compatible
   legacy slabs only when explicitly enabled.
+- `1.0.0.110021` promotes the manually accepted 1.10.2 implementation without
+  changing gameplay, save identities, migration rules or world generation.
 
-## 1.10.2 beta handoff
+## 1.10.2 release handoff
 
 Remaining external steps are deliberately separate from implementation:
 
-- manual visual acceptance of grass tinting, grass/dirt snow caps, slab joins,
-  support dirtification, stable turf fields, sheep animation, turf, path
-  height, placement, breaking, and generated slopes;
-- creation of the upstream `master-1.10.2` branch by an MMD maintainer if it is
-  still absent;
-- fork push and pull request after the exact source candidate is approved;
+- review and merge of the approved source pull request;
 - tag and publication only after separate approval of the exact artifact.
 
 ## Forward ports through 26.2

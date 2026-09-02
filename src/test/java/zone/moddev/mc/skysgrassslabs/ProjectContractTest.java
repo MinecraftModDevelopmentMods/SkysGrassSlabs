@@ -20,7 +20,7 @@ class ProjectContractTest {
         assertTrue(properties.contains("minecraft_version=1.10.2"));
         assertTrue(properties.contains("forge_version=12.18.3.2511"));
         assertTrue(properties.contains("mapping_version=29-1.10.2"));
-        assertTrue(properties.contains("mod_version=0.3.0.110021"));
+        assertTrue(properties.contains("mod_version=1.0.0.110021"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
@@ -58,6 +58,18 @@ class ProjectContractTest {
                 assertFalse(paths.anyMatch(Files::isRegularFile));
             }
         }
+    }
+
+    @Test
+    void releaseTagWorkflowPointsAtTheManualDispatcherInputs() throws Exception {
+        String workflow = read(".github/workflows/release-on-tag.yml");
+        assertTrue(workflow.contains("release_version:"));
+        assertTrue(workflow.contains("curseforge_release_level:"));
+        assertTrue(workflow.contains("confirm_live_publication:"));
+        assertFalse(workflow.contains("release_ref:"));
+        assertFalse(workflow.contains("curseforge_channel:"));
+        assertFalse(workflow.contains("confirm_version:"));
+        assertTrue(new File("docs/RELEASE-1.0.0.110021.md").isFile());
     }
 
     @Test

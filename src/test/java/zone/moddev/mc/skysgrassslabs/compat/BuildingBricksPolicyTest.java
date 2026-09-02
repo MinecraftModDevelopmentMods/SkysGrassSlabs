@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import net.minecraft.util.ResourceLocation;
 import org.junit.jupiter.api.Test;
+import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 
 class BuildingBricksPolicyTest {
@@ -53,6 +54,7 @@ class BuildingBricksPolicyTest {
 
         List<String> lines = LegacyMigrationHandler.migrationReportLines(state);
 
+        assertTrue(lines.get(0).contains(SkysGrassSlabs.VERSION));
         assertTrue(lines.contains("schema_version=1"));
         assertTrue(lines.contains("migration_version=1"));
         assertTrue(lines.contains("force_replacement_enabled=true"));

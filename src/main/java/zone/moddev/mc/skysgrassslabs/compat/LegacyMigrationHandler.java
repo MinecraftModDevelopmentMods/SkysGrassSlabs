@@ -322,7 +322,8 @@ public final class LegacyMigrationHandler {
 
     static List<String> migrationReportLines(ModWorldState state) {
         List<String> lines = new ArrayList<String>();
-        lines.add("Sky's Grass Slabs 0.3.0.110021 BuildingBricks Migration Report");
+        lines.add("Sky's Grass Slabs " + SkysGrassSlabs.VERSION
+                + " BuildingBricks Migration Report");
         lines.add("schema_version=1");
         lines.add("migration_version=1");
         lines.add("force_replacement_enabled=true");

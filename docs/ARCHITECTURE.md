@@ -2,7 +2,7 @@
 
 ## Product contract
 
-Version `0.3.0.110021` is the Minecraft 1.10.2 backport of the complete grass
+Version `1.0.0.110021` is the Minecraft 1.10.2 release of the complete grass
 slab and turf product. It retains mod ID `skysgrassslabs`, package root
 `zone.moddev.mc.skysgrassslabs`, all established block/item IDs, common config
 keys `worldgen.generateGrassSlabs` and
