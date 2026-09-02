@@ -68,6 +68,13 @@ public class ProjectContractTest {
         assertTrue(build.contains("if (preparedReleaseDir.isPresent())"));
     }
 
+    @Test
+    public void codeQlCannotReuseCachedCompilationOutput() throws Exception {
+        String workflow = Files.readString(
+                Path.of(".github/workflows/codeql-analysis.yml"), StandardCharsets.UTF_8);
+        assertTrue(workflow.contains("clean classes --rerun-tasks --no-daemon"));
+    }
+
 
     @Test
     public void commonConfigAndWorldStateUsePermanentKeys() throws Exception {
