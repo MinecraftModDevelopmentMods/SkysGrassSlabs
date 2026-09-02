@@ -24,7 +24,7 @@ $env:GRADLE_USER_HOME='<dedicated Gradle cache>'
   writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon --stacktrace
 ```
 
-`check` includes 33 focused Java tests plus a Forge runtime mod used only during
+`check` includes 34 focused Java tests plus a Forge runtime mod used only during
 the build. The runtime creates a fresh world, executes 74 gameplay and 8 world
 generation assertions,
 stops, reloads the same world, and verifies schema state. Probe classes and

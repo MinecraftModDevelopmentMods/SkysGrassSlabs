@@ -73,6 +73,12 @@ class ProjectContractTest {
     }
 
     @Test
+    void codeQlCannotReuseCachedCompilationOutput() throws Exception {
+        String workflow = read(".github/workflows/codeql-analysis.yml");
+        assertTrue(workflow.contains("clean classes --rerun-tasks --no-daemon"));
+    }
+
+    @Test
     void localContextIsNotTracked() throws Exception {
         Process process = new ProcessBuilder("git", "ls-files", "-z")
                 .redirectErrorStream(true).start();
