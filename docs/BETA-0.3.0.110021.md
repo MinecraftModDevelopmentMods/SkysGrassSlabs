@@ -37,7 +37,8 @@ Forge build, and Java 8.
   accept compatible seeds.
 - Added grass slabs to suitable height changes in newly generated terrain.
 - Added migration support for compatible grass and dirt slabs and items from
-  older worlds. Other block shapes are left unchanged.
+  older worlds. Replacement while the older content remains installed is
+  optional and disabled by default. Other block shapes are left unchanged.
 - Grass no longer remains beneath grass slabs or turf.
 - Snowy grass and dirt slabs now have a complete snow cap with snowy side
   edges.
@@ -53,8 +54,8 @@ License: GNU Lesser General Public License 2.1 only. Copyright SkyBlade1978.
 ## Candidate evidence
 
 The candidate was built with Gradle 9.6.1 on Java 17, then compiled, tested and
-launched with Temurin Java 8. All 24 focused tests in seven suites pass. The
-Forge test runtime passes fresh world and reload checks with 72 gameplay
+launched with Temurin Java 8. All 32 focused tests in nine suites pass. The
+Forge test runtime passes fresh world and reload checks with 74 gameplay
 assertions and 8 world generation assertions, including occupied replaceable
 targets. The fixed seed 9×9 chunk comparison passes in forward, reverse and
 shuffled orders. The focused 256 column benchmark measured approximately
@@ -74,15 +75,22 @@ shapes across 13 IDs. The source fixture contains 1,080 files and 1,380,450,555
 bytes. Its aggregate SHA-256 remained
 `45C0A84913A71D0F7832F76719A4C3B745DAEA9BE5C8EFD9FEF6B97077EFBF44`.
 
+That migration result uses
+`compat.forceReplaceBuildingBricksSlabs=true`. With the setting omitted or
+false, installed legacy slabs remain unchanged. Recovery of the supported IDs
+when the older mod is removed remains automatic. The full default coexistence,
+forced replacement, second load, and missing content backup paths were checked
+on fresh disposable copies without changing the source fixture.
+
 Two clean builds produced identical main, sources and Javadocs jars. The
 release files are:
 
-- `SkysGrassSlabs-0.3.0.110021.jar` - 75,300 bytes - SHA-256
-  `DBF2D4EDECCD853600420656846B028D689CB8091459E75D2EB095AFFABF25A5`
-- `SkysGrassSlabs-0.3.0.110021-sources.jar` - 46,457 bytes - SHA-256
-  `8CBFBE18F5739D7D4428AEBFACDFCB7B039AC6B1A9A65D2F49C01C4741B28369`
-- `SkysGrassSlabs-0.3.0.110021-javadoc.jar` - 141,607 bytes - SHA-256
-  `14A2136ECF76148A2DED53A5B0B5876C51D7FC90D02FD37CF8B1EA32109A66F9`
+- `SkysGrassSlabs-0.3.0.110021.jar` - 78,897 bytes - SHA-256
+  `9F52887FF538CB6C6ADB86E939FA70F4508B66547343C372198DA0745FED0435`
+- `SkysGrassSlabs-0.3.0.110021-sources.jar` - 48,200 bytes - SHA-256
+  `50FF954A77FF94D3CC6B9A8B465D8AE9FC9BB28A72FA2F2AE19AB230424E16ED`
+- `SkysGrassSlabs-0.3.0.110021-javadoc.jar` - 141,919 bytes - SHA-256
+  `4B4934513508A7486276D1E77736E733C35B7E9F3C3805AEF8466F4890D79523`
 
 Eclipse run generation and production classpath verification pass. The
 development client identifies the mod, initializes OpenAL, builds the 512x512

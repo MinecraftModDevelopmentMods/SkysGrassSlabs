@@ -25,14 +25,14 @@ $env:GRADLE_USER_HOME='<dedicated Gradle cache>'
 ```
 
 `check` includes focused Java tests plus a Forge runtime mod used only during
-the build. The runtime creates a fresh world, executes 72 gameplay and 8 world
+the build. The runtime creates a fresh world, executes 74 gameplay and 8 world
 generation assertions,
 stops, reloads the same world, and verifies schema state. Probe classes and
 resources are excluded from distributable jars.
 
 ## Focused automated coverage
 
-- permanent registry IDs, configuration and version metadata, recipe sorter identity,
+- permanent registry IDs, both independent configuration settings and version metadata, recipe sorter identity,
   resources, legacy model parents, and repository hygiene;
 - slab metadata conversions, top and bottom geometry, combination normalization,
   drops, Silk Touch, plants, bonemeal, grass lifecycle, and turf support;
@@ -47,8 +47,8 @@ resources are excluded from distributable jars.
   without a drop, wool regrowth, child growth, and `mobGriefing` behavior;
 - turf recipe matching and exact unchanged shovel/dirt remainders;
 - compatible Forge shovel detection and flattening interactions;
-- migration mappings, orientation counts, schema persistence, configuration
-  backup/arbitration, and failure fallback;
+- migration mappings, orientation counts, schema persistence, replacement
+  gating, chunk markers, configuration backup/arbitration, and failure fallback;
 - worldgen eligibility, cliffs, flat terrain, fluid, occupied targets, block
   entities, loaded east and south borders, west and north omission, and second pass
   idempotence;
@@ -85,17 +85,36 @@ a fresh world and after a reload:
 
 1. Forge plus Sky's Grass Slabs.
 2. Sky's Grass Slabs plus BuildingBricks 1.10.2-2.0.13, including config backup
-   and ownership by only one generator.
+   and ownership by only one generator. Test both default retained content and
+   explicitly enabled replacement.
 3. Sky's Grass Slabs plus the current OreSpawn and Mineralogy 1.10 candidates.
-4. The complete disposable Sylvester fixture.
+4. Complete disposable Sylvester copies with BuildingBricks present and
+   replacement disabled, present and replacement enabled, and absent for
+   missing mapping recovery.
 
 Completed local evidence includes:
 
-- solo and BuildingBricks fresh/reload: 72 gameplay and 8 worldgen checks;
+- solo and BuildingBricks fresh/reload: 74 gameplay and 8 worldgen checks;
 - OreSpawn `4.0.8.110021` plus Mineralogy `6.0.1.110021`: fresh/reload, same
-  72/8 checks, active Mineralogy provider, no error or crash directory;
-- complete Sylvester first and second migrations with the exact totals in
+  74/8 checks, active Mineralogy provider, no audit failure or crash directory;
+- complete Sylvester default coexistence, first and second forced migrations,
+  and missing mapping recovery with the exact totals in
   `LEGACY-MIGRATION.md` and unchanged source fingerprint.
+
+The default Sylvester coexistence check retained the same supported legacy
+block and item totals without creating migration markers or changing counters.
+The missing mod check remapped the supported IDs and preserved orientation.
+Forge's warning contained 110 remaining BuildingBricks block and item registry
+entries, but neither supported slab ID. The disposable run confirmed the
+warning, automatic backup, and subsequent removal path rather than hiding any
+unsupported content.
+
+New terrain takeover must use normal player chunk tracking. The build only
+probe starts with virgin Overworld region `r.122.0.mca` and may try a bounded
+series of further unused regions until eligible grass terrain is encountered.
+It requires Sky grass slabs, no newly generated BuildingBricks grass slabs,
+and an unchanged already disabled BuildingBricks generator setting. A real
+player journey to new terrain remains part of manual acceptance.
 
 ## Final artifact gate
 

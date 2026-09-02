@@ -28,6 +28,9 @@ class ProjectContractTest {
     @Test
     void saveFacingIdsAndLegacyRecipeKeyRemainStable() throws Exception {
         String blocks = read("src/main/java/zone/moddev/mc/skysgrassslabs/init/ModBlocks.java");
+        String compatibilityRecipe = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/BuildingBricksDirtSlabRecipe.java");
+        String config = read("src/main/java/zone/moddev/mc/skysgrassslabs/config/SkysGrassSlabsConfig.java");
         String worldState = read("src/main/java/zone/moddev/mc/skysgrassslabs/world/ModWorldState.java");
         String recipes = read("src/main/java/zone/moddev/mc/skysgrassslabs/init/ModRecipes.java");
         for (String id : new String[] {"dirt_slab", "grass_slab", "path_slab", "turf"}) {
@@ -36,6 +39,9 @@ class ProjectContractTest {
         assertTrue(worldState.contains("skysgrassslabs_world_state"));
         assertTrue(worldState.contains("SCHEMA_VERSION = 1"));
         assertTrue(recipes.contains("skysgrassslabs:turf_cutting"));
+        assertTrue(config.contains("forceReplaceBuildingBricksSlabs"));
+        assertTrue(config.contains("COMPAT_CATEGORY, false"));
+        assertTrue(compatibilityRecipe.contains("BuildingBricksCompat.isDirtSlabItem"));
     }
 
     @Test

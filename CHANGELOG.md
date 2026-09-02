@@ -16,7 +16,9 @@
 - Grass slabs can appear in newly generated terrain to smooth suitable one
   block height changes.
 - Added migration support for compatible grass and dirt slabs and items from
-  older worlds. Other block shapes are left alone.
+  older worlds. Automatic replacement while the older content remains
+  installed is optional and disabled by default. Other block shapes are left
+  alone.
 - Grass no longer remains beneath grass slabs or turf.
 - Sheep can eat turf and regrow their wool. The normal `mobGriefing` game rule
   is respected.

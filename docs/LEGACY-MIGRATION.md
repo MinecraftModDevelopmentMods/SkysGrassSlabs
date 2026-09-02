@@ -18,6 +18,24 @@ selects the half from the click exactly like an ordinary slab.
 Stairs, vertical slabs, corners, steps, walls, glass shapes, rock shapes, wood
 shapes, and every other BuildingBricks block remain untouched.
 
+## Replacement setting
+
+`compat.forceReplaceBuildingBricksSlabs` controls migration while
+BuildingBricks remains installed. It defaults to false and is read during
+startup, so changing it requires a restart.
+
+When false, existing blocks and items keep their BuildingBricks identity.
+Chunks are not marked, counters and reports are not updated, and newly placed
+BuildingBricks slabs are not replaced. Bridge recipes remain available. This
+allows both mods to run together while Sky handles only its own blocks and any
+enabled new terrain smoothing.
+
+When true, all supported block and item conversions described below run. The
+setting is independent of world generation: replacement can run with smoothing
+enabled or disabled. Turning it off later stops future replacement but cannot
+reconstruct slabs that were already converted. Historical counters, chunk
+markers and reports are retained.
+
 ## Generator ownership
 
 Sky declares optional load ordering before BuildingBricks without requiring it.
@@ -34,8 +52,10 @@ If both are installed and Sky smoothing is enabled:
 
 ## Chunk and inventory migration
 
-`ChunkDataEvent.Load` checks a compound named `skysgrassslabs` in each chunk. A
-chunk already marked with migration version 1 is skipped.
+When forced replacement is enabled, `ChunkDataEvent.Load` checks a compound
+named `skysgrassslabs` in each chunk. A chunk already marked with migration
+version 1 is skipped. With replacement disabled, the handler returns before
+scanning or marking the chunk.
 
 Unmarked chunks are scanned from their serialized `Blocks`, `Data`, and
 optional `Add` arrays. This avoids a full registry/state lookup for every block
@@ -51,8 +71,18 @@ event. Player inventory and ender chest stacks are migrated at login. Newly
 placed supported legacy slabs are replaced immediately.
 
 Missing mappings remap supported block and item IDs when BuildingBricks is no
-longer installed. Seed and turf recipes accept its supported slab items when it
-is installed.
+longer installed. This recovery is always active and does not use the force
+replacement setting. Unsupported shapes follow Forge's normal missing content
+warning and backup process and may then be removed. Seed and turf recipes
+accept supported slab items while BuildingBricks is installed.
+
+Forge 1.10.2 reports every remaining BuildingBricks registry entry when the
+mod is removed, including entries that are not placed in the world. In the
+qualified Sylvester copy the confirmation listed 110 unsupported block and
+item mappings. Neither supported slab ID appeared because both were remapped.
+Forge created its normal world backup before continuing. The saved world
+contained 6,663 unsupported blocks across the 13 IDs listed in the report
+below; those are deliberately left for Forge to report and remove.
 
 ## Sylvester safety boundary
 
@@ -70,7 +100,7 @@ The source fingerprint before and after qualification was identical:
 The aggregate hashes each sorted relative path followed by LF and then the
 file's bytes, so path changes and content changes are both detected.
 
-## Qualified migration result
+## Qualified forced migration result
 
 The disposable complete fixture contained 87,759 existing chunk headers. Its
 first pass converted:
@@ -99,3 +129,13 @@ furnace tile class without a public constructor that takes no arguments. Forge s
 those old tile entities. These warnings predate this mod and did not prevent the
 complete server from reaching the started state or the migration audit from
 passing.
+
+The figures above were recorded with forced replacement enabled. Default side
+by side retention and missing mapping recovery without BuildingBricks are
+separate acceptance scenarios and used fresh disposable copies. With
+replacement disabled, the copy retained exactly 1,656,276 grass slabs, 2,968
+dirt slabs, and 7,186 dirt slab items without migration state or a report.
+Normal player chunk tracking in virgin terrain generated 1,985 Sky grass slabs
+and no BuildingBricks grass slabs. With BuildingBricks removed, the supported
+blocks and items remapped with the same orientation split, and Forge created a
+481,716,701 byte backup before removing unsupported content.

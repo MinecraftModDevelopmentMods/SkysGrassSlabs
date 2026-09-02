@@ -11,7 +11,8 @@
   Sylvester migration anchor. Its complete disposable fixture migration and
   second load check pass locally. The 1.10 contract also includes keeping grass
   coverings on dirt, preventing covered targets, transient visual grass and
-  dirt snow caps, and sheep eating turf.
+  dirt snow caps, sheep eating turf, and replacement of installed compatible
+  legacy slabs only when explicitly enabled.
 
 ## 1.10.2 beta handoff
 

@@ -50,13 +50,10 @@ public final class LegacyMigrationHandler {
     @SubscribeEvent
     public void loadChunk(ChunkDataEvent.Load event) {
         World world = event.getWorld();
-        if (world.isRemote || !BuildingBricksCompat.isInstalled()) {
-            return;
-        }
+        if (world.isRemote) return;
         NBTTagCompound marker = event.getData().getCompoundTag(CHUNK_MARKER);
-        if (marker.getInteger(CHUNK_MIGRATION_VERSION) >= ModWorldState.MIGRATION_VERSION) {
-            return;
-        }
+        if (!shouldMigrateChunk(BuildingBricksCompat.shouldReplaceSlabs(),
+                marker.getInteger(CHUNK_MIGRATION_VERSION))) return;
         BuildingBricksCompat.resolveBlocks();
         if (BuildingBricksCompat.grassSlab() == null || BuildingBricksCompat.dirtSlab() == null) {
             SkysGrassSlabs.logger.error("BuildingBricks is loaded but its grass or dirt slab is not registered");
@@ -86,7 +83,7 @@ public final class LegacyMigrationHandler {
     @SubscribeEvent
     public void convertPlacedBlock(BlockEvent.PlaceEvent event) {
         World world = event.getWorld();
-        if (world.isRemote || !BuildingBricksCompat.isInstalled()) {
+        if (world.isRemote || !BuildingBricksCompat.shouldReplaceSlabs()) {
             return;
         }
         IBlockState placed = event.getPlacedBlock();
@@ -105,7 +102,7 @@ public final class LegacyMigrationHandler {
 
     @SubscribeEvent
     public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.player instanceof EntityPlayer) || !BuildingBricksCompat.isInstalled()) {
+        if (!(event.player instanceof EntityPlayer) || !BuildingBricksCompat.shouldReplaceSlabs()) {
             return;
         }
         EntityPlayer player = event.player;
@@ -117,7 +114,8 @@ public final class LegacyMigrationHandler {
     @SubscribeEvent
     public void saveWorld(WorldEvent.Save event) {
         World world = event.getWorld();
-        if (world.isRemote || world.provider.getDimension() != 0) {
+        if (world.isRemote || world.provider.getDimension() != 0 ||
+                !BuildingBricksCompat.shouldReplaceSlabs()) {
             return;
         }
         writeReport(world, ModWorldState.get(world));
@@ -125,19 +123,27 @@ public final class LegacyMigrationHandler {
 
     public static void remapMissingMappings(FMLMissingMappingsEvent event) {
         for (FMLMissingMappingsEvent.MissingMapping mapping : event.getAll()) {
-            ResourceLocation id = mapping.resourceLocation;
-            boolean grass = id.equals(BuildingBricksCompat.GRASS_SLAB_ID) ||
-                    id.equals(BuildingBricksCompat.HISTORICAL_GRASS_SLAB_ID);
-            boolean dirt = id.equals(BuildingBricksCompat.DIRT_SLAB_ID);
-            if (!grass && !dirt) {
-                continue;
-            }
+            LegacySlabKind kind = legacySlabKind(mapping.resourceLocation);
+            if (kind == null) continue;
+            boolean grass = kind == LegacySlabKind.GRASS;
             if (mapping.type == GameRegistry.Type.BLOCK) {
                 mapping.remap(grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB);
             } else if (mapping.type == GameRegistry.Type.ITEM) {
                 mapping.remap(Item.getItemFromBlock(grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB));
             }
         }
+    }
+
+    static LegacySlabKind legacySlabKind(ResourceLocation id) {
+        if (id.equals(BuildingBricksCompat.GRASS_SLAB_ID) ||
+                id.equals(BuildingBricksCompat.HISTORICAL_GRASS_SLAB_ID)) {
+            return LegacySlabKind.GRASS;
+        }
+        return id.equals(BuildingBricksCompat.DIRT_SLAB_ID) ? LegacySlabKind.DIRT : null;
+    }
+
+    static boolean shouldMigrateChunk(boolean replacementEnabled, int markerVersion) {
+        return replacementEnabled && markerVersion < ModWorldState.MIGRATION_VERSION;
     }
 
     private static void migrateBlocks(Chunk chunk, NBTTagCompound chunkData,
@@ -299,10 +305,27 @@ public final class LegacyMigrationHandler {
         File directory = new File(world.getSaveHandler().getWorldDirectory(), "serverconfig");
         File report = new File(directory, "skysgrassslabs-migration-report.txt");
         File temporary = new File(directory, "skysgrassslabs-migration-report.txt.tmp");
+        List<String> lines = migrationReportLines(state);
+        try {
+            Files.createDirectories(directory.toPath());
+            Files.write(temporary.toPath(), lines, StandardCharsets.UTF_8);
+            try {
+                Files.move(temporary.toPath(), report.toPath(), StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException exception) {
+                Files.move(temporary.toPath(), report.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException exception) {
+            SkysGrassSlabs.logger.error("Could not write BuildingBricks migration report", exception);
+        }
+    }
+
+    static List<String> migrationReportLines(ModWorldState state) {
         List<String> lines = new ArrayList<String>();
         lines.add("Sky's Grass Slabs 0.3.0.110021 BuildingBricks Migration Report");
         lines.add("schema_version=1");
         lines.add("migration_version=1");
+        lines.add("force_replacement_enabled=true");
         lines.add("migrated_chunks=" + state.migratedChunks());
         lines.add("migrated_grass_blocks=" + state.migratedGrassBlocks());
         lines.add("migrated_grass_blocks_top=" + state.migratedGrassBlocksTop());
@@ -316,18 +339,12 @@ public final class LegacyMigrationHandler {
         for (Map.Entry<String, Long> entry : state.unsupported().entrySet()) {
             lines.add("unsupported." + entry.getKey() + "=" + entry.getValue());
         }
-        try {
-            Files.createDirectories(directory.toPath());
-            Files.write(temporary.toPath(), lines, StandardCharsets.UTF_8);
-            try {
-                Files.move(temporary.toPath(), report.toPath(), StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException exception) {
-                Files.move(temporary.toPath(), report.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-        } catch (IOException exception) {
-            SkysGrassSlabs.logger.error("Could not write BuildingBricks migration report", exception);
-        }
+        return lines;
+    }
+
+    enum LegacySlabKind {
+        GRASS,
+        DIRT
     }
 
     /** Stable identity retained between Forge's separate chunk load and save events. */

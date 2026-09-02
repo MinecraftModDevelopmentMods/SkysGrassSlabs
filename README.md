@@ -27,6 +27,11 @@ World smoothing is enabled by default. It can be disabled in the common Forge
 configuration with `worldgen.generateGrassSlabs=false`; the setting affects
 only chunks generated afterwards.
 
+Compatible grass and dirt slabs from an installed older mod are left alone by
+default. World owners who want Sky's Grass Slabs to replace them can enable
+`compat.forceReplaceBuildingBricksSlabs=true` and restart the game or server.
+This replacement cannot be undone automatically, so make a world backup first.
+
 ## Development
 
 Run Gradle with Java 17. Production code, tests, and Minecraft launches use the
