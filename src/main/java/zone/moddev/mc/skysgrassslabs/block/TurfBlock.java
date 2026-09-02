@@ -48,7 +48,8 @@ public final class TurfBlock extends Block {
     }
 
     @Override
-    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock) {
+    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock,
+            BlockPos changedPos) {
         if (!world.isRemote && world.getBlockState(pos.down()).getBlock() == Blocks.GRASS) {
             world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
             return;

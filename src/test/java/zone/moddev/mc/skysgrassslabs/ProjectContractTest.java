@@ -17,10 +17,10 @@ class ProjectContractTest {
     @Test
     void releaseIdentityAndToolchainArePinned() throws Exception {
         String properties = read("gradle.properties");
-        assertTrue(properties.contains("minecraft_version=1.10.2"));
-        assertTrue(properties.contains("forge_version=12.18.3.2511"));
-        assertTrue(properties.contains("mapping_version=29-1.10.2"));
-        assertTrue(properties.contains("mod_version=1.0.0.110021"));
+        assertTrue(properties.contains("minecraft_version=1.11.2"));
+        assertTrue(properties.contains("forge_version=13.20.1.2588"));
+        assertTrue(properties.contains("mapping_version=32-1.11"));
+        assertTrue(properties.contains("mod_version=1.0.0.111021"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
@@ -42,6 +42,26 @@ class ProjectContractTest {
         assertTrue(config.contains("forceReplaceBuildingBricksSlabs"));
         assertTrue(config.contains("COMPAT_CATEGORY, false"));
         assertTrue(compatibilityRecipe.contains("BuildingBricksCompat.isDirtSlabItem"));
+    }
+
+    @Test
+    void oneElevenResourcesAndLegacyRecoveryUseTheTargetNativeContracts() throws Exception {
+        String pack = read("src/main/resources/pack.mcmeta");
+        String compatibility = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/BuildingBricksCompat.java");
+        String migration = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyMigrationHandler.java");
+        String client = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/proxy/ClientProxy.java");
+        assertTrue(pack.contains("\"pack_format\": 3"));
+        assertTrue(compatibility.contains("registerLegacyAlias(GRASS_SLAB_ID, true)"));
+        assertTrue(compatibility.contains("registerLegacyAlias(DIRT_SLAB_ID, false)"));
+        assertTrue(compatibility.contains(
+                "registerLegacyAlias(HISTORICAL_GRASS_SLAB_ID, true)"));
+        assertTrue(migration.contains("BuildingBricksCompat.hasLegacyAliases()"));
+        assertTrue(migration.contains("migrateBlocks(chunk, event.getData(), null)"));
+        assertTrue(client.contains("ModelLoader.setCustomStateMapper(block"));
+        assertTrue(client.contains("BuildingBricksCompat.historicalGrassSlab()"));
     }
 
     @Test
@@ -69,7 +89,7 @@ class ProjectContractTest {
         assertFalse(workflow.contains("release_ref:"));
         assertFalse(workflow.contains("curseforge_channel:"));
         assertFalse(workflow.contains("confirm_version:"));
-        assertTrue(new File("docs/RELEASE-1.0.0.110021.md").isFile());
+        assertTrue(new File("docs/RELEASE-1.0.0.111021.md").isFile());
     }
 
     @Test
@@ -108,7 +128,7 @@ class ProjectContractTest {
     }
 
     @Test
-    void blockModelsUseMinecraftOneTenParents() throws Exception {
+    void blockModelsUseLegacySlabParents() throws Exception {
         Path models = new File("src/main/resources/assets/skysgrassslabs/models/block").toPath();
         try (Stream<Path> paths = Files.walk(models)) {
             for (Path path : (Iterable<Path>) paths.filter(Files::isRegularFile)::iterator) {

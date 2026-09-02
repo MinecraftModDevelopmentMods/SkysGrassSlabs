@@ -36,7 +36,7 @@ public final class CommonEvents {
     @SubscribeEvent
     public void flattenSlab(PlayerInteractEvent.RightClickBlock event) {
         ItemStack stack = event.getItemStack();
-        if (stack == null || event.getFace() == EnumFacing.DOWN || !isShovel(stack)) {
+        if (stack.isEmpty() || event.getFace() == EnumFacing.DOWN || !isShovel(stack)) {
             return;
         }
         World world = event.getWorld();

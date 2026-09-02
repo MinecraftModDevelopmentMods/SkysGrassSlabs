@@ -48,6 +48,7 @@ import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -96,12 +97,15 @@ public final class IntegrationTestMod {
     @Mod.EventHandler
     public void serverStarted(FMLServerStartedEvent event) {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-        WorldServer world = server.worldServerForDimension(0);
+        WorldServer world = server.getWorld(0);
         File marker = new File(world.getSaveHandler().getWorldDirectory(), MARKER_NAME);
         String phase = System.getProperty("skysgrassslabs.integrationPhase", "fresh");
         try {
             Properties evidence = load(marker);
-            if ("fresh".equals(phase)) {
+            if ("upgrade-first".equals(phase) || "upgrade-reload".equals(phase)) {
+                verifyForwardUpgradeFixture(world);
+                evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
+            } else if ("fresh".equals(phase)) {
                 int gameplayChecks = verifyGameplay(server, world);
                 int worldgenChecks = verifyWorldgen(world);
                 evidence.setProperty("gameplay_checks", Integer.toString(gameplayChecks));
@@ -114,6 +118,9 @@ public final class IntegrationTestMod {
                     evidence.setProperty("compat_fixture_seeded", "true");
                     evidence.setProperty("takeover_sky_slabs", Integer.toString(takeoverSlabs));
                     evidence.setProperty("takeover_complete", "true");
+                } else {
+                    seedLegacyAliasFixture(world);
+                    evidence.setProperty("legacy_alias_fixture_seeded", "true");
                 }
                 evidence.setProperty("fresh_complete", "true");
             } else if ("reload".equals(phase)) {
@@ -130,6 +137,10 @@ public final class IntegrationTestMod {
                     require(ModWorldState.get(world).migratedChunks() == 0,
                             "Disabled replacement marked or counted a chunk");
                     evidence.setProperty("compat_retention_complete", "true");
+                }
+                if ("true".equals(evidence.getProperty("legacy_alias_fixture_seeded"))) {
+                    verifyLegacyAliasFixture(world);
+                    evidence.setProperty("legacy_alias_recovery_complete", "true");
                 }
                 evidence.setProperty("reload_complete", "true");
             } else if ("compat-replacement".equals(phase)) {
@@ -181,6 +192,28 @@ public final class IntegrationTestMod {
                         "Missing mapping recovery created a forced migration report");
                 writeLegacyContentEvidence(evidence, "remapped", counts);
                 evidence.setProperty("missing_mapping_complete", "true");
+            } else if ("forward-sylvester".equals(phase) ||
+                    "forward-sylvester-reload".equals(phase)) {
+                require(!Loader.isModLoaded(BuildingBricksCompat.MOD_ID),
+                        "Forward Sylvester audit requires the converted Sky world");
+                LegacyContentCounts counts = auditExistingLegacyContent(server, false);
+                verifyForwardSylvesterContent(counts);
+                verifyLegacyContentSamples(server, counts, false);
+                ModWorldState state = ModWorldState.get(world);
+                require(ModWorldState.SCHEMA_VERSION == 1 && state != null,
+                        "Sylvester world state did not survive the forward port");
+                if ("forward-sylvester".equals(phase)) {
+                    writeLegacyContentEvidence(evidence, "forward_sylvester", counts);
+                    writeForwardStateEvidence(evidence, state);
+                    evidence.setProperty("forward_sylvester_complete", "true");
+                } else {
+                    require("true".equals(evidence.getProperty(
+                                    "forward_sylvester_complete")),
+                            "First Sylvester forward audit was not retained");
+                    verifyLegacyContentEvidence(evidence, "forward_sylvester", counts);
+                    verifyForwardStateEvidence(evidence, state);
+                    evidence.setProperty("forward_sylvester_reload_complete", "true");
+                }
             } else if ("migration".equals(phase)) {
                 require(SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs(),
                         "Sylvester migration requires compat.forceReplaceBuildingBricksSlabs=true");
@@ -234,10 +267,125 @@ public final class IntegrationTestMod {
         }
     }
 
+    private static void verifyForwardUpgradeFixture(WorldServer world) throws Exception {
+        File sourceMarker = new File(world.getSaveHandler().getWorldDirectory(),
+                "skysgrassslabs-forward-fixture.properties");
+        Properties source = load(sourceMarker);
+        require("1.10.2".equals(source.getProperty("source_minecraft")),
+                "Forward fixture did not originate from Minecraft 1.10.2");
+        require("1.0.0.110021".equals(source.getProperty("source_mod_version")),
+                "Forward fixture used the wrong source mod version");
+        require("2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861"
+                        .equals(source.getProperty("source_jar_sha256")),
+                "Forward fixture used the wrong source jar");
+
+        BlockPos origin = new BlockPos(8, 65, 8);
+        verifyFixtureSlab(world, origin, ModBlocks.DIRT_SLAB, BlockSlab.EnumBlockHalf.TOP);
+        verifyFixtureSlab(world, origin.east(), ModBlocks.DIRT_SLAB,
+                BlockSlab.EnumBlockHalf.BOTTOM);
+        verifyFixtureSlab(world, origin.east(2), ModBlocks.GRASS_SLAB,
+                BlockSlab.EnumBlockHalf.TOP);
+        verifyFixtureSlab(world, origin.east(3), ModBlocks.GRASS_SLAB,
+                BlockSlab.EnumBlockHalf.BOTTOM);
+        verifyFixtureSlab(world, origin.east(4), ModBlocks.PATH_SLAB,
+                BlockSlab.EnumBlockHalf.TOP);
+        verifyFixtureSlab(world, origin.east(5), ModBlocks.PATH_SLAB,
+                BlockSlab.EnumBlockHalf.BOTTOM);
+        require(world.getBlockState(origin.east(6)).getBlock() == ModBlocks.TURF,
+                "Forward fixture turf was lost");
+
+        TileEntity chestEntity = world.getTileEntity(origin.south(2));
+        require(chestEntity instanceof IInventory,
+                "Forward fixture chest was lost");
+        IInventory chest = (IInventory) chestEntity;
+        verifyFixtureStack(chest.getStackInSlot(0), ModBlocks.DIRT_SLAB, 2);
+        verifyFixtureStack(chest.getStackInSlot(1), ModBlocks.GRASS_SLAB, 3);
+        require(chest.getStackInSlot(1).hasTagCompound() && "retained".equals(
+                chest.getStackInSlot(1).getTagCompound().getString("fixture")),
+                "Forward fixture stack NBT was lost");
+        verifyFixtureStack(chest.getStackInSlot(2), ModBlocks.PATH_SLAB, 4);
+        verifyFixtureStack(chest.getStackInSlot(3), ModBlocks.TURF, 5);
+
+        List<EntityItem> items = world.getEntitiesWithinAABB(EntityItem.class,
+                new AxisAlignedBB(origin.add(2, 0, 0), origin.add(7, 4, 5)));
+        require(items.size() == 1, "Forward fixture entity stack count changed: " + items.size());
+        verifyFixtureStack(items.get(0).getItem(), ModBlocks.GRASS_SLAB, 6);
+
+        ModWorldState state = ModWorldState.get(world);
+        require(ModWorldState.SCHEMA_VERSION == 1 && state.migratedChunks() == 2,
+                "Forward fixture world-state schema or chunk count changed");
+        require(state.migratedGrassBlocks() == 8 && state.migratedGrassBlocksTop() == 3 &&
+                state.migratedGrassBlocksBottom() == 5,
+                "Forward fixture grass migration totals changed");
+        require(state.migratedDirtBlocks() == 18 && state.migratedDirtBlocksTop() == 7 &&
+                state.migratedDirtBlocksBottom() == 11,
+                "Forward fixture dirt migration totals changed");
+        require(state.migratedGrassItems() == 13 && state.migratedDirtItems() == 17,
+                "Forward fixture item migration totals changed");
+        require(Long.valueOf(19).equals(state.unsupported().get("fixture:unsupported_shape")),
+                "Forward fixture unsupported-shape total changed");
+    }
+
+    private static void seedLegacyAliasFixture(WorldServer world) {
+        BlockPos origin = legacyAliasOrigin(world);
+        Block grass = Block.REGISTRY.getObject(BuildingBricksCompat.GRASS_SLAB_ID);
+        Block dirt = Block.REGISTRY.getObject(BuildingBricksCompat.DIRT_SLAB_ID);
+        Block historical = Block.REGISTRY.getObject(
+                BuildingBricksCompat.HISTORICAL_GRASS_SLAB_ID);
+        require(grass != null && dirt != null && historical != null,
+                "Supported legacy compatibility holders were not registered");
+        world.setBlockState(origin, grass.getStateFromMeta(0), 2);
+        world.setBlockState(origin.east(), dirt.getStateFromMeta(1), 2);
+        world.setBlockState(origin.east(2), historical.getStateFromMeta(1), 2);
+        world.setBlockState(origin.south(), Blocks.CHEST.getDefaultState(), 2);
+        IInventory chest = (IInventory) world.getTileEntity(origin.south());
+        chest.setInventorySlotContents(0, new ItemStack(grass, 2, 0));
+        chest.setInventorySlotContents(1, new ItemStack(dirt, 3, 0));
+        chest.setInventorySlotContents(2, new ItemStack(historical, 4, 0));
+        chest.markDirty();
+    }
+
+    private static void verifyLegacyAliasFixture(WorldServer world) {
+        BlockPos origin = legacyAliasOrigin(world);
+        verifyFixtureSlab(world, origin, ModBlocks.GRASS_SLAB, BlockSlab.EnumBlockHalf.TOP);
+        verifyFixtureSlab(world, origin.east(), ModBlocks.DIRT_SLAB,
+                BlockSlab.EnumBlockHalf.BOTTOM);
+        verifyFixtureSlab(world, origin.east(2), ModBlocks.GRASS_SLAB,
+                BlockSlab.EnumBlockHalf.BOTTOM);
+        IInventory chest = (IInventory) world.getTileEntity(origin.south());
+        require(chest != null, "Legacy compatibility holder chest was lost");
+        verifyFixtureStack(chest.getStackInSlot(0), ModBlocks.GRASS_SLAB, 2);
+        verifyFixtureStack(chest.getStackInSlot(1), ModBlocks.DIRT_SLAB, 3);
+        verifyFixtureStack(chest.getStackInSlot(2), ModBlocks.GRASS_SLAB, 4);
+        ModWorldState state = ModWorldState.get(world);
+        require(state.migratedGrassBlocks() == 0 && state.migratedDirtBlocks() == 0 &&
+                state.migratedGrassItems() == 0 && state.migratedDirtItems() == 0,
+                "Automatic missing content recovery changed forced migration counters");
+    }
+
+    private static BlockPos legacyAliasOrigin(World world) {
+        BlockPos spawn = world.getSpawnPoint();
+        return new BlockPos((spawn.getX() & ~15) + 2, 140,
+                (spawn.getZ() & ~15) + 2);
+    }
+
+    private static void verifyFixtureSlab(World world, BlockPos pos, Block expected,
+            BlockSlab.EnumBlockHalf half) {
+        IBlockState state = world.getBlockState(pos);
+        require(state.getBlock() == expected && state.getValue(BlockSlab.HALF) == half,
+                "Forward fixture slab changed at " + pos + ": " + state);
+    }
+
+    private static void verifyFixtureStack(ItemStack stack, Block expected, int count) {
+        require(!stack.isEmpty() && stack.getItem() == Item.getItemFromBlock(expected) &&
+                stack.getCount() == count,
+                "Forward fixture item stack changed for " + expected.getRegistryName());
+    }
+
     private static int migrateExistingChunks(MinecraftServer server) throws Exception {
         int total = 0;
         for (int dimension : new int[] {0, -1, 1}) {
-            WorldServer world = server.worldServerForDimension(dimension);
+            WorldServer world = server.getWorld(dimension);
             if (world == null) continue;
             File dimensionDirectory = dimension == 0
                     ? world.getSaveHandler().getWorldDirectory()
@@ -255,8 +403,15 @@ public final class IntegrationTestMod {
         LegacyContentCounts counts = new LegacyContentCounts();
         Block grass = expectBuildingBricks ? legacyBlock(true) : ModBlocks.GRASS_SLAB;
         Block dirt = expectBuildingBricks ? legacyBlock(false) : ModBlocks.DIRT_SLAB;
+        File worldDirectory = server.getWorld(0).getSaveHandler().getWorldDirectory();
+        int grassId = savedBlockId(worldDirectory, grass.getRegistryName().toString(),
+                Block.getIdFromBlock(grass));
+        int dirtId = savedBlockId(worldDirectory, dirt.getRegistryName().toString(),
+                Block.getIdFromBlock(dirt));
+        SkysGrassSlabs.logger.info("Auditing saved slab ids grass={}, dirt={}",
+                grassId, dirtId);
         for (int dimension : new int[] {0, -1, 1}) {
-            WorldServer world = server.worldServerForDimension(dimension);
+            WorldServer world = server.getWorld(dimension);
             if (world == null) continue;
             File dimensionDirectory = dimension == 0
                     ? world.getSaveHandler().getWorldDirectory()
@@ -264,7 +419,9 @@ public final class IntegrationTestMod {
                             world.provider.getSaveFolder());
             List<int[]> chunks = existingChunks(new File(dimensionDirectory, "region"));
             counts.chunks += chunks.size();
-            auditSavedChunks(dimensionDirectory, chunks, dimension, grass, dirt, counts);
+            auditSavedChunks(dimensionDirectory, chunks, dimension,
+                    grassId, dirtId, grass.getRegistryName().toString(),
+                    dirt.getRegistryName().toString(), counts);
         }
         return counts;
     }
@@ -327,9 +484,8 @@ public final class IntegrationTestMod {
     }
 
     private static void auditSavedChunks(File dimensionDirectory, List<int[]> coordinates,
-            int dimension, Block grass, Block dirt, LegacyContentCounts counts) throws Exception {
-        int grassId = Block.getIdFromBlock(grass);
-        int dirtId = Block.getIdFromBlock(dirt);
+            int dimension, int grassId, int dirtId, String grassItemId, String dirtItemId,
+            LegacyContentCounts counts) throws Exception {
         int processed = 0;
         for (int[] coordinate : coordinates) {
             DataInputStream input = RegionFileCache.getChunkInputStream(dimensionDirectory,
@@ -346,12 +502,10 @@ public final class IntegrationTestMod {
                     grassId, dirtId, counts);
             NBTTagCompound level = serialized.getCompoundTag("Level");
             countStacks(level.getTagList("TileEntities", 10),
-                    BuildingBricksCompat.GRASS_SLAB_ID.toString(),
-                    BuildingBricksCompat.DIRT_SLAB_ID.toString(), counts,
+                    grassItemId, dirtItemId, counts,
                     dimension, coordinate[0], coordinate[1]);
             countStacks(level.getTagList("Entities", 10),
-                    BuildingBricksCompat.GRASS_SLAB_ID.toString(),
-                    BuildingBricksCompat.DIRT_SLAB_ID.toString(), counts,
+                    grassItemId, dirtItemId, counts,
                     dimension, coordinate[0], coordinate[1]);
             if (++processed % 1000 == 0) {
                 SkysGrassSlabs.logger.info("Sylvester saved content audit dimension {}: {}/{} chunks",
@@ -361,6 +515,31 @@ public final class IntegrationTestMod {
         RegionFileCache.clearRegionFileReferences();
         SkysGrassSlabs.logger.info("Sylvester saved content audit dimension {} complete: {} chunks",
                 dimension, coordinates.size());
+    }
+
+    private static int savedBlockId(File worldDirectory, String name, int fallback)
+            throws Exception {
+        NBTTagCompound root;
+        try (FileInputStream input = new FileInputStream(
+                new File(worldDirectory, "level.dat"))) {
+            root = CompressedStreamTools.readCompressed(input);
+        }
+        NBTTagCompound data = root.getCompoundTag("Data");
+        NBTTagCompound fml = data.getCompoundTag("FML");
+        if (!fml.hasKey("Registries", 10)) {
+            fml = root.getCompoundTag("FML");
+        }
+        NBTTagCompound registries = fml.getCompoundTag("Registries");
+        for (String registryName : new String[] {"minecraft:blocks", "fml:blocks"}) {
+            NBTTagList ids = registries.getCompoundTag(registryName).getTagList("ids", 10);
+            for (int index = 0; index < ids.tagCount(); ++index) {
+                NBTTagCompound entry = ids.getCompoundTagAt(index);
+                if (name.equals(entry.getString("K"))) {
+                    return entry.getInteger("V");
+                }
+            }
+        }
+        return fallback;
     }
 
     private static void auditSavedBlocks(NBTTagCompound serialized, int dimension, int chunkX,
@@ -410,12 +589,12 @@ public final class IntegrationTestMod {
             LegacyContentCounts counts) {
         for (TileEntity tileEntity : chunk.getTileEntityMap().values()) {
             countStacks(tileEntity.writeToNBT(new NBTTagCompound()), grassId, dirtId, counts,
-                    chunk.getWorld().provider.getDimension(), chunk.xPosition, chunk.zPosition);
+                    chunk.getWorld().provider.getDimension(), chunk.x, chunk.z);
         }
         for (ClassInheritanceMultiMap<Entity> list : chunk.getEntityLists()) {
             for (Entity entity : list) {
                 countStacks(entity.serializeNBT(), grassId, dirtId, counts,
-                        chunk.getWorld().provider.getDimension(), chunk.xPosition, chunk.zPosition);
+                        chunk.getWorld().provider.getDimension(), chunk.x, chunk.z);
             }
         }
     }
@@ -462,7 +641,7 @@ public final class IntegrationTestMod {
     private static void flushAndUnload(ChunkProviderServer provider, List<Chunk> chunks) {
         if (chunks.isEmpty()) return;
         saveChunks(provider);
-        for (Chunk chunk : chunks) provider.unload(chunk);
+        for (Chunk chunk : chunks) provider.queueUnload(chunk);
         for (int remaining = chunks.size(); remaining > 0; remaining -= 100) {
             tickProvider(provider);
         }
@@ -505,6 +684,18 @@ public final class IntegrationTestMod {
                 " grass, " + counts.dirtItems + " dirt");
     }
 
+    private static void verifyForwardSylvesterContent(LegacyContentCounts counts) {
+        require(counts.grassTop == 0 && counts.grassBottom >= 1656276L,
+                "Sky grass slabs were lost or changed orientation during the forward upgrade: " +
+                counts.grassTop + " top, " + counts.grassBottom + " bottom");
+        require(counts.dirtTop == 12 && counts.dirtBottom >= 2956L,
+                "Sky dirt slabs were lost or changed orientation during the forward upgrade: " +
+                counts.dirtTop + " top, " + counts.dirtBottom + " bottom");
+        require(counts.grassItems == 0 && counts.dirtItems == 7186L,
+                "Sky item stacks changed during the forward upgrade: " + counts.grassItems +
+                " grass, " + counts.dirtItems + " dirt");
+    }
+
     private static void verifyLegacyContentSamples(MinecraftServer server,
             LegacyContentCounts counts, boolean expectBuildingBricks) {
         require(counts.grassSample != null && counts.dirtSample != null &&
@@ -515,7 +706,7 @@ public final class IntegrationTestMod {
         verifyLegacyBlockSample(server, counts.grassSample, grass, "grass");
         verifyLegacyBlockSample(server, counts.dirtSample, dirt, "dirt");
 
-        WorldServer world = server.worldServerForDimension(counts.itemSample.dimension);
+        WorldServer world = server.getWorld(counts.itemSample.dimension);
         require(world != null, "Legacy item sample dimension was unavailable");
         Chunk chunk = loadChunk(world.getChunkProvider(), counts.itemSample.chunkX,
                 counts.itemSample.chunkZ);
@@ -528,12 +719,14 @@ public final class IntegrationTestMod {
 
     private static void verifyLegacyBlockSample(MinecraftServer server, LegacyBlockSample sample,
             Block expected, String type) {
-        WorldServer world = server.worldServerForDimension(sample.dimension);
+        WorldServer world = server.getWorld(sample.dimension);
         require(world != null, "Legacy " + type + " sample dimension was unavailable");
         IBlockState state = world.getBlockState(sample.position);
         require(state.getBlock() == expected &&
                 (expected.getMetaFromState(state) & 1) == sample.metadata,
-                "Saved legacy " + type + " sample did not load with its identity and orientation");
+                "Saved legacy " + type + " sample at " + sample.position +
+                " did not load with its identity and orientation: expected " +
+                expected.getRegistryName() + " metadata " + sample.metadata + ", found " + state);
     }
 
     private static void writeLegacyContentEvidence(Properties evidence, String prefix,
@@ -545,6 +738,23 @@ public final class IntegrationTestMod {
         evidence.setProperty(prefix + "_dirt_blocks_bottom", Long.toString(counts.dirtBottom));
         evidence.setProperty(prefix + "_grass_items", Long.toString(counts.grassItems));
         evidence.setProperty(prefix + "_dirt_items", Long.toString(counts.dirtItems));
+    }
+
+    private static void verifyLegacyContentEvidence(Properties evidence, String prefix,
+            LegacyContentCounts counts) {
+        require(Long.toString(counts.grassTop).equals(
+                        evidence.getProperty(prefix + "_grass_blocks_top")) &&
+                Long.toString(counts.grassBottom).equals(
+                        evidence.getProperty(prefix + "_grass_blocks_bottom")) &&
+                Long.toString(counts.dirtTop).equals(
+                        evidence.getProperty(prefix + "_dirt_blocks_top")) &&
+                Long.toString(counts.dirtBottom).equals(
+                        evidence.getProperty(prefix + "_dirt_blocks_bottom")) &&
+                Long.toString(counts.grassItems).equals(
+                        evidence.getProperty(prefix + "_grass_items")) &&
+                Long.toString(counts.dirtItems).equals(
+                        evidence.getProperty(prefix + "_dirt_items")),
+                "Sylvester Sky content changed on the 1.11 reload");
     }
 
     private static File migrationReport(WorldServer world) {
@@ -574,6 +784,31 @@ public final class IntegrationTestMod {
         evidence.setProperty("unsupported_entries",
                 Integer.toString(state.unsupported().size()));
         evidence.setProperty("unsupported_total", Long.toString(unsupportedTotal(state)));
+    }
+
+    private static void writeForwardStateEvidence(Properties evidence, ModWorldState state) {
+        evidence.setProperty("forward_state_chunks", Long.toString(state.migratedChunks()));
+        evidence.setProperty("forward_state_grass", Long.toString(state.migratedGrassBlocks()));
+        evidence.setProperty("forward_state_dirt", Long.toString(state.migratedDirtBlocks()));
+        evidence.setProperty("forward_state_grass_items", Long.toString(state.migratedGrassItems()));
+        evidence.setProperty("forward_state_dirt_items", Long.toString(state.migratedDirtItems()));
+        evidence.setProperty("forward_state_unsupported", Long.toString(unsupportedTotal(state)));
+    }
+
+    private static void verifyForwardStateEvidence(Properties evidence, ModWorldState state) {
+        require(Long.toString(state.migratedChunks()).equals(
+                        evidence.getProperty("forward_state_chunks")) &&
+                Long.toString(state.migratedGrassBlocks()).equals(
+                        evidence.getProperty("forward_state_grass")) &&
+                Long.toString(state.migratedDirtBlocks()).equals(
+                        evidence.getProperty("forward_state_dirt")) &&
+                Long.toString(state.migratedGrassItems()).equals(
+                        evidence.getProperty("forward_state_grass_items")) &&
+                Long.toString(state.migratedDirtItems()).equals(
+                        evidence.getProperty("forward_state_dirt_items")) &&
+                Long.toString(unsupportedTotal(state)).equals(
+                        evidence.getProperty("forward_state_unsupported")),
+                "Sylvester world state changed during its 1.11 reload");
     }
 
     private static void seedLegacyCompatibilityFixture(WorldServer world) {
@@ -620,21 +855,21 @@ public final class IntegrationTestMod {
         require(chest != null, "Legacy compatibility chest was not retained");
         Item expectedGrassItem = Item.getItemFromBlock(expectedGrass);
         Item expectedDirtItem = Item.getItemFromBlock(expectedDirt);
-        require(chest.getStackInSlot(0) != null &&
+        require(!chest.getStackInSlot(0).isEmpty() &&
                 chest.getStackInSlot(0).getItem() == expectedGrassItem &&
-                chest.getStackInSlot(0).stackSize == 2 &&
+                chest.getStackInSlot(0).getCount() == 2 &&
                 "retained".equals(chest.getStackInSlot(0).getTagCompound().getString("probe")),
                 "Legacy chest grass slabs or their NBT did not match the selected mode");
-        require(chest.getStackInSlot(1) != null &&
+        require(!chest.getStackInSlot(1).isEmpty() &&
                 chest.getStackInSlot(1).getItem() == expectedDirtItem &&
-                chest.getStackInSlot(1).stackSize == 3,
+                chest.getStackInSlot(1).getCount() == 3,
                 "Legacy chest dirt slabs did not match the selected mode");
 
         List<EntityItem> drops = world.getEntitiesWithinAABB(EntityItem.class,
-                new AxisAlignedBB(origin.east(6)).expandXyz(2.0D));
-        require(drops.size() == 1 && drops.get(0).getEntityItem() != null &&
-                drops.get(0).getEntityItem().getItem() == expectedGrassItem &&
-                drops.get(0).getEntityItem().stackSize == 2,
+                new AxisAlignedBB(origin.east(6)).grow(2.0D));
+        require(drops.size() == 1 && !drops.get(0).getItem().isEmpty() &&
+                drops.get(0).getItem().getItem() == expectedGrassItem &&
+                drops.get(0).getItem().getCount() == 2,
                 "Dropped legacy slabs did not match the selected mode");
     }
 
@@ -695,11 +930,11 @@ public final class IntegrationTestMod {
         turfGrid.setInventorySlotContents(1, new ItemStack(Items.IRON_SHOVEL));
         require(turfRecipe.matches(turfGrid, world),
                 "BuildingBricks grass slab turf bridge recipe was not available");
-        ItemStack[] remaining = turfRecipe.getRemainingItems(turfGrid);
-        require(remaining[0] != null && remaining[0].getItem() ==
+        NonNullList<ItemStack> remaining = turfRecipe.getRemainingItems(turfGrid);
+        require(!remaining.get(0).isEmpty() && remaining.get(0).getItem() ==
                 Item.getItemFromBlock(ModBlocks.DIRT_SLAB),
                 "BuildingBricks turf recipe did not return a Sky dirt slab");
-        require(remaining[1] != null && remaining[1].getItem() == Items.IRON_SHOVEL,
+        require(!remaining.get(1).isEmpty() && remaining.get(1).getItem() == Items.IRON_SHOVEL,
                 "BuildingBricks turf recipe did not retain its shovel");
     }
 
@@ -909,7 +1144,7 @@ public final class IntegrationTestMod {
         EnumActionResult combined = useItem(dirtItem, dirtStack, player, world, origin,
                 EnumHand.MAIN_HAND, EnumFacing.UP, 0.5F, 1.0F, 0.5F);
         require(combined == EnumActionResult.SUCCESS && world.getBlockState(origin).getBlock() == Blocks.DIRT &&
-                dirtStack.stackSize == 0, "Dirt slabs did not normalize to vanilla dirt");
+                dirtStack.isEmpty(), "Dirt slabs did not normalize to vanilla dirt");
         checks++;
 
         Item grassItem = Item.getItemFromBlock(ModBlocks.GRASS_SLAB);
@@ -938,7 +1173,7 @@ public final class IntegrationTestMod {
                     .withProperty(BlockSlab.HALF, half), 3);
             EnumActionResult result = useItem(turfItem, turfStack, player, world, origin,
                     EnumHand.MAIN_HAND, EnumFacing.UP, 0.5F, 1.0F, 0.5F);
-            require(result == EnumActionResult.SUCCESS && turfStack.stackSize == 0 &&
+            require(result == EnumActionResult.SUCCESS && turfStack.isEmpty() &&
                     world.getBlockState(origin).getBlock() == ModBlocks.GRASS_SLAB &&
                     world.getBlockState(origin).getValue(BlockSlab.HALF) == half,
                     "Turf did not preserve dirt-slab orientation " + half);
@@ -1275,8 +1510,9 @@ public final class IntegrationTestMod {
         world.setBlockState(pos, grassTop, 3);
         ItemStack shovel = new ItemStack(Items.IRON_SHOVEL);
         shovel.setItemDamage(3);
+        player.setHeldItem(EnumHand.MAIN_HAND, shovel);
         PlayerInteractEvent.RightClickBlock event = new PlayerInteractEvent.RightClickBlock(player,
-                EnumHand.MAIN_HAND, shovel, pos, EnumFacing.UP, new Vec3d(0.5D, 1.0D, 0.5D));
+                EnumHand.MAIN_HAND, pos, EnumFacing.UP, new Vec3d(0.5D, 1.0D, 0.5D));
         events.flattenSlab(event);
         require(event.isCanceled() && world.getBlockState(pos).getBlock() == ModBlocks.PATH_SLAB &&
                 world.getBlockState(pos).getValue(BlockSlab.HALF) == BlockSlab.EnumBlockHalf.TOP &&
@@ -1290,7 +1526,8 @@ public final class IntegrationTestMod {
         }.setMaxDamage(64);
         ItemStack compatible = new ItemStack(compatibleShovel);
         world.setBlockState(pos, defaultState(ModBlocks.DIRT_SLAB), 3);
-        event = new PlayerInteractEvent.RightClickBlock(player, EnumHand.MAIN_HAND, compatible,
+        player.setHeldItem(EnumHand.MAIN_HAND, compatible);
+        event = new PlayerInteractEvent.RightClickBlock(player, EnumHand.MAIN_HAND,
                 pos, EnumFacing.UP, new Vec3d(0.5D, 1.0D, 0.5D));
         events.flattenSlab(event);
         require(world.getBlockState(pos).getBlock() == ModBlocks.PATH_SLAB &&
@@ -1298,14 +1535,15 @@ public final class IntegrationTestMod {
 
         world.setBlockState(pos, defaultState(ModBlocks.GRASS_SLAB), 3);
         ItemStack downward = new ItemStack(Items.IRON_SHOVEL);
-        event = new PlayerInteractEvent.RightClickBlock(player, EnumHand.MAIN_HAND, downward,
+        player.setHeldItem(EnumHand.MAIN_HAND, downward);
+        event = new PlayerInteractEvent.RightClickBlock(player, EnumHand.MAIN_HAND,
                 pos, EnumFacing.DOWN, new Vec3d(0.5D, 0.0D, 0.5D));
         events.flattenSlab(event);
         require(!event.isCanceled() && world.getBlockState(pos).getBlock() == ModBlocks.GRASS_SLAB &&
                 downward.getItemDamage() == 0, "Downward shovel face was incorrectly flattened");
 
         world.setBlockState(pos.up(), Blocks.STONE.getDefaultState(), 3);
-        event = new PlayerInteractEvent.RightClickBlock(player, EnumHand.MAIN_HAND, downward,
+        event = new PlayerInteractEvent.RightClickBlock(player, EnumHand.MAIN_HAND,
                 pos, EnumFacing.UP, new Vec3d(0.5D, 1.0D, 0.5D));
         events.flattenSlab(event);
         require(!event.isCanceled() && world.getBlockState(pos).getBlock() == ModBlocks.GRASS_SLAB,
@@ -1331,13 +1569,13 @@ public final class IntegrationTestMod {
         require(recipe.matches(grid, world), "Grass slab turf recipe did not match in 2x2 crafting");
         require(recipe.getCraftingResult(grid).getItem() == Item.getItemFromBlock(ModBlocks.TURF),
                 "Turf recipe output changed");
-        ItemStack[] remaining = recipe.getRemainingItems(grid);
-        require(remaining[0] != null && remaining[0].getItem() == Item.getItemFromBlock(ModBlocks.DIRT_SLAB),
+        NonNullList<ItemStack> remaining = recipe.getRemainingItems(grid);
+        require(!remaining.get(0).isEmpty() && remaining.get(0).getItem() == Item.getItemFromBlock(ModBlocks.DIRT_SLAB),
                 "Grass slab did not return a dirt slab");
-        require(remaining[1] != null && remaining[1].getItem() == shovel.getItem() &&
-                remaining[1].getItemDamage() == 17 && remaining[1].stackSize == 1 &&
-                remaining[1].hasTagCompound() && "retained".equals(
-                        remaining[1].getTagCompound().getString("probe")),
+        require(!remaining.get(1).isEmpty() && remaining.get(1).getItem() == shovel.getItem() &&
+                remaining.get(1).getItemDamage() == 17 && remaining.get(1).getCount() == 1 &&
+                remaining.get(1).hasTagCompound() && "retained".equals(
+                        remaining.get(1).getTagCompound().getString("probe")),
                 "Turf recipe changed the shovel remainder");
 
         grid.clear();
@@ -1345,7 +1583,7 @@ public final class IntegrationTestMod {
         grid.setInventorySlotContents(3, new ItemStack(Items.WOODEN_SHOVEL));
         require(recipe.matches(grid, world), "Grass block turf recipe did not match");
         remaining = recipe.getRemainingItems(grid);
-        require(remaining[0] != null && remaining[0].getItem() == Item.getItemFromBlock(Blocks.DIRT),
+        require(!remaining.get(0).isEmpty() && remaining.get(0).getItem() == Item.getItemFromBlock(Blocks.DIRT),
                 "Grass block did not return vanilla dirt");
 
         grid.setInventorySlotContents(2, new ItemStack(Items.STICK));
@@ -1460,7 +1698,7 @@ public final class IntegrationTestMod {
 
     private static boolean isOnlyDrop(List<ItemStack> drops, net.minecraft.block.Block expected) {
         return drops.size() == 1 && drops.get(0).getItem() == Item.getItemFromBlock(expected) &&
-                drops.get(0).stackSize == 1;
+                drops.get(0).getCount() == 1;
     }
 
     // Keep inherited vanilla calls owned by vanilla types in bytecode so the
@@ -1497,7 +1735,7 @@ public final class IntegrationTestMod {
 
     private static void neighborChanged(Block block, IBlockState state, World world,
             BlockPos pos, Block changedBlock) {
-        block.neighborChanged(state, world, pos, changedBlock);
+        block.neighborChanged(state, world, pos, changedBlock, pos.up());
     }
 
     private static boolean canSilkHarvest(Block block, World world, BlockPos pos,
@@ -1513,7 +1751,8 @@ public final class IntegrationTestMod {
     private static EnumActionResult useItem(Item item, ItemStack stack,
             EntityPlayer player, World world, BlockPos pos, EnumHand hand,
             EnumFacing facing, float hitX, float hitY, float hitZ) {
-        return item.onItemUse(stack, player, world, pos, hand, facing, hitX, hitY, hitZ);
+        player.setHeldItem(hand, stack);
+        return item.onItemUse(player, world, pos, hand, facing, hitX, hitY, hitZ);
     }
 
     private static void clearBox(World world, BlockPos from, BlockPos to) {

@@ -55,6 +55,12 @@ public final class LegacyMigrationHandler {
         int markerVersion = marker.getInteger(CHUNK_MIGRATION_VERSION);
         Chunk chunk = event.getChunk();
         ChunkKey chunkKey = ChunkKey.of(world, chunk);
+        if (BuildingBricksCompat.hasLegacyAliases()) {
+            boolean changed = migrateBlocks(chunk, event.getData(), null);
+            changed |= migrateChunkInventories(chunk, null);
+            if (changed) chunk.setModified(true);
+            return;
+        }
         if (shouldPreserveChunkMarker(markerVersion)) {
             chunkMarkersToSave.put(chunkKey, markerVersion);
             return;
@@ -88,7 +94,8 @@ public final class LegacyMigrationHandler {
     @SubscribeEvent
     public void convertPlacedBlock(BlockEvent.PlaceEvent event) {
         World world = event.getWorld();
-        if (world.isRemote || !BuildingBricksCompat.shouldReplaceSlabs()) {
+        if (world.isRemote || (!BuildingBricksCompat.shouldReplaceSlabs() &&
+                !BuildingBricksCompat.hasLegacyAliases())) {
             return;
         }
         IBlockState placed = event.getPlacedBlock();
@@ -107,11 +114,13 @@ public final class LegacyMigrationHandler {
 
     @SubscribeEvent
     public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.player instanceof EntityPlayer) || !BuildingBricksCompat.shouldReplaceSlabs()) {
+        if (!(event.player instanceof EntityPlayer) || (!BuildingBricksCompat.shouldReplaceSlabs() &&
+                !BuildingBricksCompat.hasLegacyAliases())) {
             return;
         }
         EntityPlayer player = event.player;
-        ModWorldState state = ModWorldState.get(player.getEntityWorld());
+        ModWorldState state = BuildingBricksCompat.hasLegacyAliases() ? null
+                : ModWorldState.get(player.getEntityWorld());
         migrateInventory(player.inventory, state);
         migrateInventory(player.getInventoryEnderChest(), state);
     }
@@ -127,6 +136,7 @@ public final class LegacyMigrationHandler {
     }
 
     public static void remapMissingMappings(FMLMissingMappingsEvent event) {
+        if (BuildingBricksCompat.hasLegacyAliases()) return;
         for (FMLMissingMappingsEvent.MissingMapping mapping : event.getAll()) {
             LegacySlabKind kind = legacySlabKind(mapping.resourceLocation);
             if (kind == null) continue;
@@ -155,7 +165,7 @@ public final class LegacyMigrationHandler {
         return markerVersion >= ModWorldState.MIGRATION_VERSION;
     }
 
-    private static void migrateBlocks(Chunk chunk, NBTTagCompound chunkData,
+    private static boolean migrateBlocks(Chunk chunk, NBTTagCompound chunkData,
             ModWorldState worldState) {
         long grassTop = 0;
         long grassBottom = 0;
@@ -168,6 +178,8 @@ public final class LegacyMigrationHandler {
         Map<Integer, String> buildingBricksIds =
                 BuildingBricksCompat.buildingBricksBlockIdsByNumericId();
         int grassId = Block.getIdFromBlock(BuildingBricksCompat.grassSlab());
+        int historicalGrassId = BuildingBricksCompat.historicalGrassSlab() == null ? -1
+                : Block.getIdFromBlock(BuildingBricksCompat.historicalGrassSlab());
         int dirtId = Block.getIdFromBlock(BuildingBricksCompat.dirtSlab());
         for (int sectionIndex = 0; sectionIndex < serializedSections.tagCount(); ++sectionIndex) {
             NBTTagCompound serializedSection = serializedSections.getCompoundTagAt(sectionIndex);
@@ -182,11 +194,12 @@ public final class LegacyMigrationHandler {
             for (int index = 0; index < blocks.length; ++index) {
                 int numericId = (blocks[index] & 255) |
                         (add == null ? 0 : add.getFromIndex(index) << 8);
-                if (numericId == grassId || numericId == dirtId) {
+                if (numericId == grassId || numericId == historicalGrassId || numericId == dirtId) {
                     int slabMetadata = metadata.getFromIndex(index) & 1;
                     section.set(index & 15, index >> 8 & 15, index >> 4 & 15,
-                            skyStateFor(numericId == grassId, slabMetadata));
-                    if (numericId == grassId) {
+                            skyStateFor(numericId == grassId || numericId == historicalGrassId,
+                                    slabMetadata));
+                    if (numericId == grassId || numericId == historicalGrassId) {
                         if (slabMetadata == 0) ++grassTop;
                         else ++grassBottom;
                     } else {
@@ -202,23 +215,28 @@ public final class LegacyMigrationHandler {
                 }
             }
         }
-        worldState.recordGrassBlocks(grassTop, 0);
-        worldState.recordGrassBlocks(grassBottom, 1);
-        worldState.recordDirtBlocks(dirtTop, 0);
-        worldState.recordDirtBlocks(dirtBottom, 1);
-        for (Map.Entry<String, Long> entry : unsupported.entrySet()) {
-            worldState.recordUnsupported("block:" + entry.getKey(), entry.getValue());
+        if (worldState != null) {
+            worldState.recordGrassBlocks(grassTop, 0);
+            worldState.recordGrassBlocks(grassBottom, 1);
+            worldState.recordDirtBlocks(dirtTop, 0);
+            worldState.recordDirtBlocks(dirtBottom, 1);
+            for (Map.Entry<String, Long> entry : unsupported.entrySet()) {
+                worldState.recordUnsupported("block:" + entry.getKey(), entry.getValue());
+            }
         }
+        return grassTop + grassBottom + dirtTop + dirtBottom > 0;
     }
 
     private static IBlockState replacementFor(IBlockState oldState) {
         Block oldBlock = oldState.getBlock();
         if (oldBlock != BuildingBricksCompat.grassSlab() &&
+                oldBlock != BuildingBricksCompat.historicalGrassSlab() &&
                 oldBlock != BuildingBricksCompat.dirtSlab()) {
             return null;
         }
         int metadata = oldBlock.getMetaFromState(oldState) & 1;
-        return skyStateFor(oldBlock == BuildingBricksCompat.grassSlab(), metadata);
+        return skyStateFor(oldBlock == BuildingBricksCompat.grassSlab() ||
+                oldBlock == BuildingBricksCompat.historicalGrassSlab(), metadata);
     }
 
     static IBlockState skyStateFor(boolean grass, int metadata) {
@@ -226,11 +244,13 @@ public final class LegacyMigrationHandler {
                 .getStateFromMeta(metadata & 1);
     }
 
-    private static void migrateChunkInventories(Chunk chunk, ModWorldState state) {
+    private static boolean migrateChunkInventories(Chunk chunk, ModWorldState state) {
+        boolean changed = false;
         for (TileEntity tileEntity : chunk.getTileEntityMap().values()) {
             NBTTagCompound serialized = tileEntity.writeToNBT(new NBTTagCompound());
             if (migrateStacksInNbt(serialized, state)) {
                 tileEntity.readFromNBT(serialized);
+                changed = true;
             }
         }
         for (ClassInheritanceMultiMap<Entity> list : chunk.getEntityLists()) {
@@ -238,9 +258,11 @@ public final class LegacyMigrationHandler {
                 NBTTagCompound serialized = entity.serializeNBT();
                 if (migrateStacksInNbt(serialized, state)) {
                     entity.deserializeNBT(serialized);
+                    changed = true;
                 }
             }
         }
+        return changed;
     }
 
     private static void migrateInventory(IInventory inventory, ModWorldState state) {
@@ -272,8 +294,8 @@ public final class LegacyMigrationHandler {
                             .getRegistryName().toString());
                     compound.setShort("Damage", (short) 0);
                     int count = compound.getByte("Count") & 255;
-                    if (grass) state.recordGrassItems(count);
-                    if (dirt) state.recordDirtItems(count);
+                    if (state != null && grass) state.recordGrassItems(count);
+                    if (state != null && dirt) state.recordDirtItems(count);
                     changed = true;
                 }
             }
@@ -291,20 +313,23 @@ public final class LegacyMigrationHandler {
     }
 
     private static ItemStack migrateStack(ItemStack stack, ModWorldState state) {
-        if (stack == null) {
+        if (stack == null || stack.isEmpty()) {
             return null;
         }
         Item oldItem = stack.getItem();
         Item grassItem = BuildingBricksCompat.grassSlab() == null ? null
                 : Item.getItemFromBlock(BuildingBricksCompat.grassSlab());
+        Item historicalGrassItem = BuildingBricksCompat.historicalGrassSlab() == null ? null
+                : Item.getItemFromBlock(BuildingBricksCompat.historicalGrassSlab());
         Item dirtItem = BuildingBricksCompat.dirtSlab() == null ? null
                 : Item.getItemFromBlock(BuildingBricksCompat.dirtSlab());
-        if (oldItem == grassItem || oldItem == dirtItem) {
-            ItemStack migrated = new ItemStack(oldItem == grassItem
-                    ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB, stack.stackSize, 0);
+        if (oldItem == grassItem || oldItem == historicalGrassItem || oldItem == dirtItem) {
+            boolean grass = oldItem == grassItem || oldItem == historicalGrassItem;
+            ItemStack migrated = new ItemStack(grass
+                    ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB, stack.getCount(), 0);
             if (stack.hasTagCompound()) migrated.setTagCompound(stack.getTagCompound().copy());
-            if (oldItem == grassItem) state.recordGrassItems(stack.stackSize);
-            if (oldItem == dirtItem) state.recordDirtItems(stack.stackSize);
+            if (state != null && grass) state.recordGrassItems(stack.getCount());
+            if (state != null && !grass) state.recordDirtItems(stack.getCount());
             return migrated;
         }
         return null;
@@ -370,7 +395,7 @@ public final class LegacyMigrationHandler {
         }
 
         private static ChunkKey of(World world, Chunk chunk) {
-            return new ChunkKey(world.provider.getDimension(), chunk.xPosition, chunk.zPosition);
+            return new ChunkKey(world.provider.getDimension(), chunk.x, chunk.z);
         }
 
         @Override

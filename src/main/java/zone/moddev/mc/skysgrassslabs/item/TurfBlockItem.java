@@ -19,8 +19,9 @@ public final class TurfBlockItem extends ItemBlock {
     }
 
     @Override
-    public EnumActionResult onItemUse(ItemStack stack, EntityPlayer player, World world, BlockPos pos,
+    public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos,
             EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
+        ItemStack stack = player.getHeldItem(hand);
         IBlockState state = world.getBlockState(pos);
         if (facing == EnumFacing.UP && state.getBlock() == ModBlocks.DIRT_SLAB) {
             if (!player.canPlayerEdit(pos, facing, stack)) {
@@ -30,12 +31,12 @@ public final class TurfBlockItem extends ItemBlock {
                     .withProperty(BlockSlab.HALF, state.getValue(BlockSlab.HALF));
             if (world.setBlockState(pos, grass, 3)) {
                 if (!player.capabilities.isCreativeMode) {
-                    --stack.stackSize;
+                    stack.shrink(1);
                 }
                 return EnumActionResult.SUCCESS;
             }
             return EnumActionResult.FAIL;
         }
-        return super.onItemUse(stack, player, world, pos, hand, facing, hitX, hitY, hitZ);
+        return super.onItemUse(player, world, pos, hand, facing, hitX, hitY, hitZ);
     }
 }

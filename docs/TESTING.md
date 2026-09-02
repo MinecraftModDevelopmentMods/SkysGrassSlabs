@@ -2,10 +2,10 @@
 
 ## Environment
 
-- Minecraft: 1.10.2
-- Forge: 12.18.3.2511
+- Minecraft: 1.11.2
+- Forge: 13.20.1.2588
 - ForgeGradle: 7.0.34
-- mappings: stable `29-1.10.2`
+- mappings: stable `32-1.11`
 - Gradle wrapper: 9.6.1
 - Gradle runtime: Java 17
 - production/test/Minecraft toolchain: Temurin `8.0.502+7`
@@ -24,11 +24,13 @@ $env:GRADLE_USER_HOME='<dedicated Gradle cache>'
   writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon --stacktrace
 ```
 
-`check` includes 39 focused Java tests plus a Forge runtime mod used only during
+`check` includes 42 focused Java tests plus a Forge runtime mod used only during
 the build. The runtime creates a fresh world, executes 74 gameplay and 8 world
 generation assertions,
-stops, reloads the same world, and verifies schema state. Probe classes and
-resources are excluded from distributable jars.
+stops, reloads the same world, and verifies schema state. It also runs packaged
+fresh/reload and 1.10.2 forward upgrade/reload servers using the exact
+reobfuscated jar. Probe classes and resources are excluded from distributable
+jars.
 
 ## Focused automated coverage
 
@@ -49,8 +51,9 @@ resources are excluded from distributable jars.
   without a drop, wool regrowth, child growth, and `mobGriefing` behavior;
 - turf recipe matching and exact unchanged shovel/dirt remainders;
 - compatible Forge shovel detection and flattening interactions;
-- migration mappings, orientation counts, schema persistence, replacement
-  gating, chunk markers, configuration backup/arbitration, and failure fallback;
+- migration mappings, 1.11 compatibility holders, orientation counts, schema
+  persistence, replacement gating, chunk markers, configuration
+  backup/arbitration, and failure fallback;
 - worldgen eligibility, cliffs, flat terrain, fluid, occupied targets, block
   entities, loaded east and south borders, west and north omission, and second pass
   idempotence;
@@ -73,58 +76,38 @@ nested project as an existing Gradle project.
 Then refresh the Gradle project and clean it in Eclipse. Buildship owns the
 classpath; do not manually add a second Gradle dependency container.
 
-ForgeGradle's 1.10 Slime Launcher is a Java multirelease jar. Forge 1.10's old
-ASM scanner logs and ignores its Java 11 entry while the launcher continues.
-The same warning occurs in the qualified OreSpawn 1.10 development launch. A
-client pass requires Sky's Grass Slabs to be identified, OpenAL initialized,
-the 512×512 texture atlas built, and Forge to report all four mods loaded with
-no missing project model or texture.
+The development client gate requires Sky's Grass Slabs to be identified,
+OpenAL to initialize, the texture atlas to build, and Forge to reach the title
+screen without a missing project model, texture, or startup crash.
 
 ## Packaged runtime matrix
 
-The exact reobfuscated candidate must pass Java 8 dedicated server checks with
-a fresh world and after a reload:
+The exact reobfuscated 1.11.2 candidate passes Java 8 dedicated server checks
+with a fresh world and after a reload. The build only runtime reports all 74
+gameplay and 8 world generation checks complete in both runs, with schema-1
+state readable and no cascading chunk generation warning.
 
-1. Forge plus Sky's Grass Slabs.
-2. Sky's Grass Slabs plus BuildingBricks 1.10.2-2.0.13, including config backup
-   and ownership by only one generator. Test both default retained content and
-   explicitly enabled replacement.
-3. Sky's Grass Slabs plus the current OreSpawn and Mineralogy 1.10 candidates.
-4. Complete disposable Sylvester copies with BuildingBricks present and
-   replacement disabled, present and replacement enabled, and absent for
-   missing mapping recovery.
+The committed forward fixture was generated with the accepted
+`SkysGrassSlabs-1.0.0.110021.jar`, whose SHA-256 is
+`2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861`.
+The fixture ZIP SHA-256 is
+`D6923BFFE062C1F0C454190AB11F031825949DF8080D8000133A723DEC2770BF`.
+The first packaged 1.11.2 load and its reload retain every fixture block,
+orientation, item count, custom item NBT, turf, path and world-state value.
+There is no missing Sky-owned content.
 
-Completed local evidence includes:
+A larger optional gate copied the already converted Sylvester world into the
+build directory and launched only that disposable copy. All original Sky slabs
+and 7,186 saved dirt slab items survived. The schema-1 counters remained
+1,656,276 migrated grass blocks, 2,968 migrated dirt blocks, 7,186 migrated
+dirt items and 6,663 unsupported shapes. Minecraft completed nearby old
+terrain, producing 5,251 additional correctly oriented Sky grass slabs. The
+new total of 1,661,527 was unchanged on reload. See `LEGACY-MIGRATION.md`.
 
-- solo and BuildingBricks fresh/reload: 74 gameplay and 8 worldgen checks;
-- OreSpawn `4.0.8.110021` plus Mineralogy `6.0.1.110021`: fresh/reload, same
-  74/8 checks, active Mineralogy provider, no audit failure or crash directory;
-- complete Sylvester default coexistence, three launch forced migration and
-  reload qualification, and missing mapping recovery with the exact totals in
-  `LEGACY-MIGRATION.md` and unchanged source fingerprint.
-- accepted manual new terrain testing in a disposable Sylvester copy: 1,694
-  new chunks contained 46,692 correctly oriented Sky grass slabs, no newly
-  generated BuildingBricks slabs, and active OreSpawn and Mineralogy terrain.
-- all 29 production class entries in the translated candidate match the
-  previously qualified jar byte for byte, so its Sylvester evidence remains
-  applicable without another launch of the large fixture.
-- the exact translated candidate reloaded successfully in the packaged solo,
-  BuildingBricks, and OreSpawn plus Mineralogy environments.
-
-The default Sylvester coexistence check retained the same supported legacy
-block and item totals without creating migration markers or changing counters.
-The missing mod check remapped the supported IDs and preserved orientation.
-Forge's warning contained 110 remaining BuildingBricks block and item registry
-entries, but neither supported slab ID. The disposable run confirmed the
-warning, automatic backup, and subsequent removal path rather than hiding any
-unsupported content.
-
-New terrain takeover must use normal player chunk tracking. The build only
-probe starts with virgin Overworld region `r.122.0.mca` and may try a bounded
-series of further unused regions until eligible grass terrain is encountered.
-It requires Sky grass slabs, no newly generated BuildingBricks grass slabs,
-and an unchanged already disabled BuildingBricks generator setting. A real
-player journey to new terrain remains part of manual acceptance.
+BuildingBricks has no supported Minecraft 1.11.2 release. Its 1.10.2
+coexistence, forced replacement, missing content recovery, OreSpawn and
+Mineralogy checks remain historical qualification of the source world rather
+than a claimed 1.11 runtime matrix.
 
 ## Final artifact gate
 
@@ -133,13 +116,28 @@ jar. Audit all release jars for expected metadata, resources, licenses, LF line
 endings, absence of tests, probes, local paths and local context, and exact
 checksums.
 
-Manual visual and gameplay acceptance is complete for grass tinting, grass and
-dirt snow caps, joins, support dirtification, stable turf fields, turf, paths,
-placement, breaking and generated slopes. The accepted disposable world test
-used the same current OreSpawn and Mineralogy candidates as the integration
-matrix.
+Manual visual and gameplay acceptance is still required for this 1.11.2
+candidate. The equivalent 1.10.2 visuals and gameplay were accepted before the
+port.
 
-## Qualified 1.0.0.110021 artifacts
+## Local 1.0.0.111021 candidate
+
+Two clean Windows builds produced byte for byte identical release files:
+
+- main jar: `87,685` bytes,
+  `FC2F47D15F7C3B02AFB700ED6D10ED0BE59CAD67C740E10B2A4F8DA9D1EF229D`
+- sources jar: `53,949` bytes,
+  `2989D408AB55407B30A5860C200FBFB4C04D5C924EF6363F940DD5E18D6EB80E`
+- Javadocs jar: `142,233` bytes,
+  `3D938767321C1CB78E813ED7E33BFABFAC8EBD48BC6B7548270D02D13A0691B1`
+- checksum file:
+  `1E8EDF318F39DD46C32F1B78156774060AB02A4616CD7A9B560E8568CB6CD891`
+
+The release audit found all 18 lowercase locale resources, licences and
+metadata, Java 8 production classes, and no build-only probe, local path,
+credential, local evidence or agent material.
+
+## Historical 1.0.0.110021 artifacts
 
 Independent Linux builds on the fork and MMD produced byte for byte identical
 publication artifacts:

@@ -4,8 +4,8 @@ Sky's Grass Slabs adds dirt, grass and lowered path slabs, along with a thin
 layer of cuttable turf. Grass spreads naturally between full blocks and slabs,
 and newly generated Overworld terrain uses grass slabs to soften small steps.
 
-This branch targets Minecraft 1.10.2 with Forge 12.18.3.2511. The current
-release candidate is `1.0.0.110021`.
+This branch targets Minecraft 1.11.2 with Forge 13.20.1.2588. The current
+release candidate is `1.0.0.111021`.
 
 ## Features
 
@@ -29,10 +29,11 @@ World smoothing is enabled by default. It can be disabled in the common Forge
 configuration with `worldgen.generateGrassSlabs=false`; the setting affects
 only chunks generated afterwards.
 
-Compatible grass and dirt slabs from an installed older mod are left alone by
-default. World owners who want Sky's Grass Slabs to replace them can enable
-`compat.forceReplaceBuildingBricksSlabs=true` and restart the game or server.
-This replacement cannot be undone automatically, so make a world backup first.
+The 1.11.2 release can open worlds saved with the 1.10.2 release. Compatible
+older grass and dirt slab identities are recovered when their original mod is
+not available. The optional `compat.forceReplaceBuildingBricksSlabs` setting is
+retained for established worlds, although there is no supported 1.11.2 release
+of that mod.
 
 ## Development
 

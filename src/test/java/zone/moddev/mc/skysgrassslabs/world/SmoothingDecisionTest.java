@@ -40,7 +40,7 @@ class SmoothingDecisionTest {
         int[] forward = chunkOrder(false);
         int[] reverse = chunkOrder(true);
         int[] shuffled = forward.clone();
-        Random random = new Random(0x110021L);
+        Random random = new Random(0x111021L);
         for (int index = shuffled.length - 1; index > 0; --index) {
             int swap = random.nextInt(index + 1);
             int value = shuffled[index];
@@ -55,7 +55,7 @@ class SmoothingDecisionTest {
 
     @Test
     void benchmarksTheTwoHundredAndFiftySixColumnDecisionPass() {
-        SyntheticArea area = new SyntheticArea(0x110021L);
+        SyntheticArea area = new SyntheticArea(0x111021L);
         int[] order = chunkOrder(false);
         int checksum = 0;
         long started = System.nanoTime();

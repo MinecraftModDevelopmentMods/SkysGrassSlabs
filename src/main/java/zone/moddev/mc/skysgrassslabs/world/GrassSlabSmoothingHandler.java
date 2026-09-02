@@ -8,6 +8,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.event.terraingen.DecorateBiomeEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -31,7 +32,7 @@ public final class GrassSlabSmoothingHandler {
             return;
         }
         ChunkPos chunkPos = new ChunkPos(event.getPos());
-        Chunk owner = loadedChunk(world, chunkPos.chunkXPos, chunkPos.chunkZPos);
+        Chunk owner = loadedChunk(world, chunkPos.x, chunkPos.z);
         if (owner == null) {
             return;
         }
@@ -48,7 +49,7 @@ public final class GrassSlabSmoothingHandler {
                 int worldX = startX + localX;
                 int worldZ = startZ + localZ;
                 int surfaceY = owner.getHeightValue(localX, localZ) - 1;
-                if (surfaceY < 0) {
+                if (surfaceY < 0 || surfaceY >= 255) {
                     continue;
                 }
                 BlockPos surface = new BlockPos(worldX, surfaceY, worldZ);
@@ -72,6 +73,7 @@ public final class GrassSlabSmoothingHandler {
             }
         }
 
+        boolean changed = false;
         for (int index = 0; index < decisions.length; ++index) {
             if (!decisions[index]) {
                 continue;
@@ -80,39 +82,57 @@ public final class GrassSlabSmoothingHandler {
             int localZ = index >>> 4;
             int surfaceY = owner.getHeightValue(localX, localZ) - 1;
             BlockPos target = new BlockPos(startX + localX, surfaceY + 1, startZ + localZ);
-            if (owner.setBlockState(target, ModBlocks.GRASS_SLAB.getDefaultState()) != null) {
-                BlockPos support = target.down();
-                if (owner.getBlockState(support).getBlock() == Blocks.GRASS) {
-                    owner.setBlockState(support, Blocks.DIRT.getDefaultState());
-                }
+            setGenerationState(owner, target, ModBlocks.GRASS_SLAB.getDefaultState());
+            BlockPos support = target.down();
+            if (owner.getBlockState(support).getBlock() == Blocks.GRASS) {
+                setGenerationState(owner, support, Blocks.DIRT.getDefaultState());
             }
+            changed = true;
         }
+        if (changed) {
+            // Chunk#setBlockState performs cross-chunk lighting work in 1.11.
+            // Rebuild the owning chunk once after the two-pass write instead.
+            owner.generateSkylightMap();
+            owner.markDirty();
+        }
+    }
+
+    private static void setGenerationState(Chunk chunk, BlockPos pos, IBlockState state) {
+        ExtendedBlockStorage[] storage = chunk.getBlockStorageArray();
+        int sectionIndex = pos.getY() >> 4;
+        ExtendedBlockStorage section = storage[sectionIndex];
+        if (section == Chunk.NULL_BLOCK_STORAGE) {
+            section = new ExtendedBlockStorage(sectionIndex << 4,
+                    chunk.getWorld().provider.hasSkyLight());
+            storage[sectionIndex] = section;
+        }
+        section.set(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15, state);
     }
 
     private static boolean hasHigherGrassNeighbour(World world, ChunkPos owner,
             int localX, int localZ, int lowerSurfaceY) {
-        if (localX > 0 && isHigherGrass(world, owner.chunkXPos, owner.chunkZPos,
+        if (localX > 0 && isHigherGrass(world, owner.x, owner.z,
                 localX - 1, localZ, lowerSurfaceY)) {
             return true;
         }
-        if (localZ > 0 && isHigherGrass(world, owner.chunkXPos, owner.chunkZPos,
+        if (localZ > 0 && isHigherGrass(world, owner.x, owner.z,
                 localX, localZ - 1, lowerSurfaceY)) {
             return true;
         }
         if (localX < 15) {
-            if (isHigherGrass(world, owner.chunkXPos, owner.chunkZPos,
+            if (isHigherGrass(world, owner.x, owner.z,
                     localX + 1, localZ, lowerSurfaceY)) {
                 return true;
             }
-        } else if (isHigherGrass(world, owner.chunkXPos + 1, owner.chunkZPos,
+        } else if (isHigherGrass(world, owner.x + 1, owner.z,
                 0, localZ, lowerSurfaceY)) {
             return true;
         }
         if (localZ < 15) {
-            return isHigherGrass(world, owner.chunkXPos, owner.chunkZPos,
+            return isHigherGrass(world, owner.x, owner.z,
                     localX, localZ + 1, lowerSurfaceY);
         }
-        return isHigherGrass(world, owner.chunkXPos, owner.chunkZPos + 1,
+        return isHigherGrass(world, owner.x, owner.z + 1,
                 localX, 0, lowerSurfaceY);
     }
 

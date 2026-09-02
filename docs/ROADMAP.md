@@ -15,15 +15,20 @@
   legacy slabs only when explicitly enabled.
 - `1.0.0.110021` promotes the manually accepted 1.10.2 implementation without
   changing gameplay, save identities, migration rules or world generation.
+- `1.0.0.111021` ports the complete product to Minecraft 1.11.2. A locked
+  1.10.2 fixture and a disposable converted Sylvester copy both pass packaged
+  upgrade and reload checks with identities, orientations, items and schema
+  state intact.
 
-## 1.10.2 release handoff
+## Current 1.11.2 handoff
 
 Remaining external steps are deliberately separate from implementation:
 
-- review and merge of the approved source pull request;
+- user gameplay and visual testing of the local candidate;
+- fork push and source review only after separate approval;
 - tag and publication only after separate approval of the exact artifact.
 
-## Forward ports through 26.2
+## Next ports through 26.2
 
 Port one supported Minecraft version at a time from the newest accepted
 implementation with the complete feature set. Each port must load:
@@ -47,3 +52,6 @@ invasive hook supported by the target version.
 Do not assume data flattening, registry, loader or world generation boundaries
 work because compilation succeeds. Prove each boundary with tests using the
 saved world fixtures before advancing to the next version.
+
+Minecraft 1.12.2 is the next port. The 1.12 to 1.13 transition must receive a
+separate data flattening and data fixer design before implementation.

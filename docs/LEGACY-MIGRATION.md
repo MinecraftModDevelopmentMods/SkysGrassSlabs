@@ -78,6 +78,29 @@ replacement setting. Unsupported shapes follow Forge's normal missing content
 warning and backup process and may then be removed. Seed and turf recipes
 accept supported slab items while BuildingBricks is installed.
 
+## Minecraft 1.11 forward recovery
+
+Minecraft 1.11 assigns registry IDs differently from 1.10. A world can contain
+both permanent Sky IDs and stale supported BuildingBricks IDs, so remapping the
+old numeric ID directly onto an existing Sky object would displace the Sky
+mapping. The 1.11 port registers hidden holders for only the two supported slab
+names and the historical grass alias when BuildingBricks is absent. Loaded
+holder blocks and items are changed to the permanent Sky IDs before gameplay,
+with metadata, count and NBT preserved. This path creates no forced migration
+report and does not change the schema-1 migration totals.
+
+A checksum locked compact world made by the exact accepted 1.10.2 jar covers
+top and bottom dirt, grass and path slabs, turf, container and entity item
+stacks, custom stack NBT, and populated schema-1 state. A packaged 1.11.2 server
+upgrade and second load preserve each value exactly.
+
+A disposable copy of the converted Sylvester world also passed the 1.11.2
+upgrade. It retained the original 1,656,276 bottom grass slabs, 12 top and 2,956
+bottom dirt slabs, 7,186 dirt slab items, and the existing schema counters.
+Minecraft completed nearby old terrain during the first load, adding 5,251
+valid bottom grass slabs. The resulting total of 1,661,527 remained unchanged
+on the second load.
+
 Forge 1.10.2 reports every remaining BuildingBricks registry entry when the
 mod is removed, including entries that are not placed in the world. In the
 qualified Sylvester copy the confirmation listed 110 unsupported block and

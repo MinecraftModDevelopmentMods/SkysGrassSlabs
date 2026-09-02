@@ -3,7 +3,7 @@
 ## Checkout layout
 
 Each Minecraft version uses an independent nested checkout. The Minecraft
-1.10.2 checkout uses branch `master-1.10.2`; its parent directory may be used
+1.11.2 checkout uses branch `master-1.11.2`; its parent directory may be used
 as the Eclipse workspace. Other versions should use sibling checkouts so they
 can be opened and worked on independently.
 
@@ -19,7 +19,7 @@ public project names.
 
 ## CI and publication
 
-The 1.10 branch CI runs Java 8 compilation and tests under Gradle on Java 17,
+The 1.11 branch CI runs Java 8 compilation and tests under Gradle on Java 17,
 the build only runtime harness, Javadocs, release artifact and checksum audits,
 and Eclipse production classpath verification. Separate workflows validate the
 Gradle wrapper and run CodeQL.

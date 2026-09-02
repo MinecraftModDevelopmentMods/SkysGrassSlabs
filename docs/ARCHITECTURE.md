@@ -2,7 +2,7 @@
 
 ## Product contract
 
-Version `1.0.0.110021` is the Minecraft 1.10.2 release of the complete grass
+Version `1.0.0.111021` is the Minecraft 1.11.2 release of the complete grass
 slab and turf product. It retains mod ID `skysgrassslabs`, package root
 `zone.moddev.mc.skysgrassslabs`, all established block/item IDs, common config
 keys `worldgen.generateGrassSlabs` and
@@ -14,7 +14,7 @@ The four permanent blocks are `dirt_slab`, `grass_slab`, `path_slab`, and
 There are no double slab registry entries. Combining matching items replaces
 the slab with vanilla dirt, grass, or grass path.
 
-Minecraft 1.10 has no waterlogged block state. Slabs reject fluid placement and
+Minecraft 1.11 has no waterlogged block state. Slabs reject fluid placement and
 ordinary fluid behaviour is left to Minecraft.
 
 ## Block lifecycle
@@ -46,7 +46,7 @@ with an untinted vanilla snow top and vanilla dirt sides with snowy edges. Snowy
 dirt and grass slabs deliberately share that complete cap treatment so the dirt
 version does not look like a white top pasted onto an ordinary dirt side. The
 property is never serialized and cannot affect the `0 = top`, `1 = bottom`
-metadata contract. This is visual only because Minecraft 1.10.2 cannot support
+metadata contract. This is visual only because Minecraft 1.11.2 cannot support
 an ordinary snow layer when the half slab is not an opaque full block without
 invasive engine changes.
 
@@ -88,6 +88,8 @@ Each pass:
 4. Requires an adjacent natural grass surface exactly one block higher.
 5. Writes bottom grass slabs only inside the owning chunk in a separate pass,
    then converts each slab's supporting grass surface to dirt.
+6. Rebuilds skylight once and marks the owning chunk dirty after all accepted
+   writes.
 
 Interior neighbours are always considered. East and south border comparisons
 are considered only when those chunks are already loaded; comparisons across
@@ -109,10 +111,19 @@ Replacement of supported installed legacy slabs is a separate decision.
 placement, entity and inventory migration handlers make no changes and do not
 mark chunks. Recipes still accept the supported legacy slabs. When true, the
 existing migration operates independently of the world generation setting.
-Removing the legacy mod always leaves missing mapping recovery active for the
-supported IDs so those blocks and items do not disappear.
+Removing the legacy mod always leaves recovery active for the supported IDs so
+those blocks and items do not disappear.
 
-Chunk migration reads the original serialized 1.10 section arrays to locate
+Minecraft 1.11's registry cannot safely remap an old numeric ID onto a Sky
+block that already has its own saved numeric ID. When the original mod is
+absent, hidden compatibility holders therefore claim only the three supported
+old IDs. A chunk load replaces those temporary holders with the permanent Sky
+blocks and items before gameplay. This preserves both already converted Sky
+content and still unconverted supported slabs in the same upgraded world. The
+holders have no creative entry, recipe or public API, and migration through
+them does not alter the forced replacement counters or report.
+
+Installed legacy migration reads the original serialized section arrays to locate
 numeric legacy IDs efficiently, writes only supported grass and dirt slab
 states into `ExtendedBlockStorage`, and marks each processed chunk with
 `buildingbricks_migration_version=1`. Tile/entity stacks are migrated through

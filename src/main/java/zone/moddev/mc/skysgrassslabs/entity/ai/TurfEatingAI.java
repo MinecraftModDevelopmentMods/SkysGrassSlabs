@@ -38,7 +38,7 @@ public final class TurfEatingAI extends EntityAIBase {
     }
 
     @Override
-    public boolean continueExecuting() {
+    public boolean shouldContinueExecuting() {
         return eatingTimer > 0;
     }
 

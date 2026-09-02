@@ -1,9 +1,9 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
-import java.util.List;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.oredict.OreDictionary;
@@ -16,10 +16,10 @@ final class BuildingBricksDirtSlabRecipe implements IRecipe {
     public boolean matches(InventoryCrafting inventory, World world) {
         boolean dirtSlab = false;
         boolean seed = false;
-        List<ItemStack> seeds = OreDictionary.getOres(ModRecipes.SEED_ORE);
+        NonNullList<ItemStack> seeds = OreDictionary.getOres(ModRecipes.SEED_ORE);
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
             ItemStack stack = inventory.getStackInSlot(slot);
-            if (stack == null) continue;
+            if (stack.isEmpty()) continue;
             if (!dirtSlab && BuildingBricksCompat.isDirtSlabItem(stack)) {
                 dirtSlab = true;
             } else if (!seed && OreDictionary.containsMatch(false, seeds, stack)) {
@@ -33,7 +33,7 @@ final class BuildingBricksDirtSlabRecipe implements IRecipe {
 
     @Override
     public ItemStack getCraftingResult(InventoryCrafting inventory) {
-        return matches(inventory, null) ? new ItemStack(ModBlocks.GRASS_SLAB) : null;
+        return matches(inventory, null) ? new ItemStack(ModBlocks.GRASS_SLAB) : ItemStack.EMPTY;
     }
 
     @Override
@@ -47,7 +47,7 @@ final class BuildingBricksDirtSlabRecipe implements IRecipe {
     }
 
     @Override
-    public ItemStack[] getRemainingItems(InventoryCrafting inventory) {
+    public NonNullList<ItemStack> getRemainingItems(InventoryCrafting inventory) {
         return ForgeHooks.defaultRecipeGetRemainingItems(inventory);
     }
 }

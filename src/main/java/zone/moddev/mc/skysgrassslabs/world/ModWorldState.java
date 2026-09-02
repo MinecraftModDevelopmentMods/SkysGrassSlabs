@@ -32,7 +32,7 @@ public final class ModWorldState extends WorldSavedData {
     public static ModWorldState get(World world) {
         if (!world.isRemote && world.provider.getDimension() != 0 &&
                 world.getMinecraftServer() != null) {
-            World overworld = world.getMinecraftServer().worldServerForDimension(0);
+            World overworld = world.getMinecraftServer().getWorld(0);
             if (overworld != null) world = overworld;
         }
         MapStorage storage = world.getMapStorage();

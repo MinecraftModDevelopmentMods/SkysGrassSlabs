@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.0.111021 - Minecraft 1.11.2
+
+- Ported the complete dirt, grass, path slab and turf feature set to Minecraft
+  1.11.2.
+- Preserved the permanent block and item names, slab orientation, recipes and world
+  state used by the 1.10.2 release.
+- Added a compact 1.10.2 world fixture and packaged upgrade and reload checks.
+- Kept recovery for supported older grass and dirt slab identities when their
+  original mod is absent.
+- Updated all 18 language resources for Minecraft 1.11's lowercase locale
+  paths.
+- Kept the same grass lifecycle, snow appearance, sheep interaction, recipes
+  and deterministic terrain smoothing.
+
 ## 1.0.0.110021 - Minecraft 1.10.2
 
 - First stable release for Minecraft 1.10.2.

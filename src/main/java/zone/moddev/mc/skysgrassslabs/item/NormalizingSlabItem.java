@@ -32,9 +32,10 @@ public final class NormalizingSlabItem extends ItemBlock {
     }
 
     @Override
-    public EnumActionResult onItemUse(ItemStack stack, EntityPlayer player, World world, BlockPos pos,
+    public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos,
             EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
-        if (stack == null || stack.stackSize == 0 ||
+        ItemStack stack = player.getHeldItem(hand);
+        if (stack.isEmpty() ||
                 !player.canPlayerEdit(pos.offset(facing), facing, stack)) {
             return EnumActionResult.FAIL;
         }
@@ -52,7 +53,7 @@ public final class NormalizingSlabItem extends ItemBlock {
         if (world.getBlockState(adjacent).getBlock() == slab) {
             return combine(stack, player, world, adjacent);
         }
-        return super.onItemUse(stack, player, world, pos, hand, facing, hitX, hitY, hitZ);
+        return super.onItemUse(player, world, pos, hand, facing, hitX, hitY, hitZ);
     }
 
     @Override
@@ -85,7 +86,7 @@ public final class NormalizingSlabItem extends ItemBlock {
         world.playSound(player, pos, sound.getPlaceSound(), SoundCategory.BLOCKS,
                 (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
         if (!player.capabilities.isCreativeMode) {
-            --stack.stackSize;
+            stack.shrink(1);
         }
         return EnumActionResult.SUCCESS;
     }

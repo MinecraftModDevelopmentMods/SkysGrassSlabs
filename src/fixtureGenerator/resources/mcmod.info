@@ -1,0 +1,11 @@
+[
+  {
+    "modid": "skysgrassslabsforwardfixture",
+    "name": "Sky's Grass Slabs Forward Upgrade Fixture",
+    "description": "Build-only source-world fixture generator.",
+    "version": "1",
+    "mcversion": "1.10.2",
+    "authorList": ["SkyBlade1978"],
+    "dependencies": ["required-after:skysgrassslabs"]
+  }
+]

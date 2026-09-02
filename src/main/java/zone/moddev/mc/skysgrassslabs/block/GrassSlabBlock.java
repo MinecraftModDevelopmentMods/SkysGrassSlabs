@@ -61,8 +61,9 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     }
 
     @Override
-    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock) {
-        super.neighborChanged(state, world, pos, changedBlock);
+    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock,
+            BlockPos changedPos) {
+        super.neighborChanged(state, world, pos, changedBlock, changedPos);
         dirtifyGrassSupport(world, pos);
     }
 

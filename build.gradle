@@ -99,24 +99,24 @@ minecraft {
     }
 }
 
-// Forge 1.10 discovers a development mod from one classes/resources root.
-def forge10DevelopmentOutput = layout.buildDirectory.dir('forge10-development/main')
-def syncForge10DevelopmentResources = tasks.register('syncForge10DevelopmentResources', Sync) {
+// Forge 1.11 discovers a development mod from one classes/resources root.
+def forge11DevelopmentOutput = layout.buildDirectory.dir('forge11-development/main')
+def syncForge11DevelopmentResources = tasks.register('syncForge11DevelopmentResources', Sync) {
     group = 'ide'
     dependsOn tasks.named('classes')
     from tasks.named('compileJava', JavaCompile).flatMap { it.destinationDirectory }
     from sourceSets.main.output.resourcesDir
-    into forge10DevelopmentOutput
+    into forge11DevelopmentOutput
 }
 tasks.configureEach {
     if (name in ['runClient', 'runServer', 'runTestClient', 'runTestServer']) {
-        dependsOn syncForge10DevelopmentResources
+        dependsOn syncForge11DevelopmentResources
         doFirst {
             Set<File> splitMainOutputs = [
                     tasks.named('compileJava', JavaCompile).get().destinationDirectory.get().asFile,
                     sourceSets.main.output.resourcesDir
             ] as Set<File>
-            classpath = files(forge10DevelopmentOutput, classpath.filter {
+            classpath = files(forge11DevelopmentOutput, classpath.filter {
                 !splitMainOutputs.contains(it)
             })
         }
@@ -157,7 +157,7 @@ def configureFromForgeRun = { JavaExec process, String runTaskName ->
                     tasks.named('compileJava', JavaCompile).get().destinationDirectory.get().asFile,
                     sourceSets.main.output.resourcesDir
             ] as Set<File>
-            run.setClasspath(files(forge10DevelopmentOutput, run.classpath.filter {
+            run.setClasspath(files(forge11DevelopmentOutput, run.classpath.filter {
                 !splitMainOutputs.contains(it)
             }))
             run.exec()
@@ -241,6 +241,17 @@ tasks.register('preparePackagedIntegrationProbe') {
     dependsOn packagedIntegrationTestModJar
 }
 
+def sha256Of = { File inputFile ->
+    MessageDigest digest = MessageDigest.getInstance('SHA-256')
+    inputFile.withInputStream { input ->
+        byte[] buffer = new byte[8192]
+        for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
+            if (read > 0) digest.update(buffer, 0, read)
+        }
+    }
+    digest.digest().encodeHex().toString().toUpperCase(Locale.ROOT)
+}
+
 def integrationRunDirectory = layout.buildDirectory.dir('integration-test-run')
 def prepareIntegrationTest = tasks.register('prepareIntegrationTest') {
     group = 'verification'
@@ -317,8 +328,278 @@ tasks.register('integrationTest') {
     }
 }
 
+def java8Launcher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(8)
+}
+def forgeInstallerName =
+        "forge-${project.minecraft_version}-${project.forge_version}-installer.jar"
+def forgeUniversalName =
+        "forge-${project.minecraft_version}-${project.forge_version}-universal.jar"
+def forgeInstaller = layout.buildDirectory.file("forge-installer/${forgeInstallerName}")
+def packagedServerBase = layout.buildDirectory.dir('packaged-server-base')
+def expectedInstallerSha1 = '623A72990B4E9A730CE67DBCD23566A685A2912D'
+
+def downloadForgeServerInstaller = tasks.register('downloadForgeServerInstaller') {
+    group = 'verification'
+    description = 'Downloads and verifies the pinned Forge server installer.'
+    outputs.file(forgeInstaller)
+    doLast {
+        File target = forgeInstaller.get().asFile
+        target.parentFile.mkdirs()
+        if (!target.isFile()) {
+            String url = "https://maven.minecraftforge.net/net/minecraftforge/forge/" +
+                    "${project.minecraft_version}-${project.forge_version}/${forgeInstallerName}"
+            new URL(url).withInputStream { input ->
+                target.withOutputStream { output -> output << input }
+            }
+        }
+        MessageDigest digest = MessageDigest.getInstance('SHA-1')
+        target.withInputStream { input ->
+            byte[] buffer = new byte[8192]
+            for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
+                if (read > 0) digest.update(buffer, 0, read)
+            }
+        }
+        String actual = digest.digest().encodeHex().toString().toUpperCase(Locale.ROOT)
+        if (actual != expectedInstallerSha1) {
+            throw new GradleException("Forge installer SHA-1 differs: ${actual}")
+        }
+    }
+}
+
+def installPackagedServer = tasks.register('installPackagedServer', Exec) {
+    group = 'verification'
+    description = 'Installs the pinned Forge server into an isolated build directory.'
+    dependsOn downloadForgeServerInstaller
+    inputs.file(forgeInstaller)
+    outputs.file(packagedServerBase.map { it.file(forgeUniversalName) })
+    outputs.file(packagedServerBase.map { it.file("minecraft_server.${project.minecraft_version}.jar") })
+    outputs.dir(packagedServerBase.map { it.dir('libraries') })
+    workingDir packagedServerBase
+    doFirst {
+        File base = packagedServerBase.get().asFile
+        project.delete(base)
+        base.mkdirs()
+        commandLine java8Launcher.get().executablePath.asFile.absolutePath,
+                '-jar', forgeInstaller.get().asFile.absolutePath, '--installServer'
+    }
+}
+
+def preparePackagedRuntime = { String taskName, String directoryName, boolean forwardFixture ->
+    tasks.register(taskName) {
+        group = 'verification'
+        dependsOn installPackagedServer, tasks.named('assemble'), packagedIntegrationTestModJar
+        File runDirectory = layout.buildDirectory.dir(directoryName).get().asFile
+        outputs.dir(runDirectory)
+        outputs.upToDateWhen { false }
+        doLast {
+            project.delete(runDirectory)
+            project.copy {
+                from packagedServerBase
+                into runDirectory
+            }
+            File mods = new File(runDirectory, 'mods')
+            mods.mkdirs()
+            project.copy {
+                from layout.buildDirectory.file(
+                        "libs/${base.archivesName.get()}-${project.version}.jar")
+                from layout.buildDirectory.file(
+                        'integration-test-mod/skysgrassslabs-integration-test-reobf.jar')
+                into mods
+            }
+            if (forwardFixture) {
+                project.copy {
+                    from zipTree(file(
+                            'src/test/resources/fixtures/skysgrassslabs-1.10.2-forward-world.zip'))
+                    into new File(runDirectory, 'world')
+                }
+            }
+            new File(runDirectory, 'eula.txt').setText('eula=true\n', 'UTF-8')
+            new File(runDirectory, 'server.properties').setText('''\
+level-name=world
+level-seed=skys-grass-slabs-packaged
+level-type=default
+online-mode=false
+generate-structures=false
+spawn-animals=false
+spawn-monsters=false
+spawn-protection=0
+max-tick-time=120000
+''', 'UTF-8')
+        }
+    }
+}
+
+def createPackagedServerProcess = { String taskName, String phase, String directoryName,
+        Object dependency ->
+    tasks.register(taskName, Exec) {
+        group = 'verification'
+        dependsOn dependency
+        File runDirectory = layout.buildDirectory.dir(directoryName).get().asFile
+        workingDir runDirectory
+        doFirst {
+            List<String> command = [
+                    java8Launcher.get().executablePath.asFile.absolutePath,
+                    '-Djava.net.preferIPv4Stack=true',
+                    '-Dforge.logging.console.level=info',
+                    "-Dskysgrassslabs.integrationPhase=${phase}"
+            ]
+            if (phase.startsWith('forward-sylvester')) {
+                command.addAll(['-Xms1G', '-Xmx8G', '-Dfml.queryResult=confirm'])
+            }
+            command.addAll(['-jar', forgeUniversalName, 'nogui'])
+            commandLine command
+        }
+        doLast {
+            File marker = new File(runDirectory,
+                    'world/skysgrassslabs-integration.properties')
+            if (!marker.isFile()) {
+                throw new GradleException("Packaged ${phase} marker is missing: ${marker}")
+            }
+            Properties values = new Properties()
+            marker.withInputStream { values.load(it) }
+            String key = phase.replace('-', '_') + '_complete'
+            if (values.getProperty(key) != 'true') {
+                throw new GradleException("Packaged ${phase} did not complete: ${marker}")
+            }
+        }
+    }
+}
+
+def verifyPackagedRun = { File runDirectory, String label ->
+    List<File> crashReports = fileTree(new File(runDirectory, 'crash-reports')).files as List<File>
+    if (!crashReports.isEmpty()) {
+        throw new GradleException("${label} produced crash reports: ${crashReports}")
+    }
+    File latest = new File(runDirectory, 'logs/latest.log')
+    if (!latest.isFile()) {
+        throw new GradleException("${label} did not produce a server log")
+    }
+    String log = latest.getText('UTF-8')
+    if (log.contains('Encountered an unexpected exception') ||
+            log.contains('Missing Mods:') || log.contains('MissingModsException') ||
+            log.contains('cascading worldgen lag')) {
+        throw new GradleException("${label} log contains a server or missing-mod failure")
+    }
+}
+
+def packagedRunDirectoryName = 'packaged-integration-run'
+def preparePackagedIntegrationTest = preparePackagedRuntime(
+        'preparePackagedIntegrationTest', packagedRunDirectoryName, false)
+def packagedFreshProcess = createPackagedServerProcess(
+        'packagedFreshProcess', 'fresh', packagedRunDirectoryName,
+        preparePackagedIntegrationTest)
+def packagedReloadProcess = createPackagedServerProcess(
+        'packagedReloadProcess', 'reload', packagedRunDirectoryName,
+        packagedFreshProcess)
+tasks.register('packagedIntegrationTest') {
+    group = 'verification'
+    description = 'Runs fresh and reload checks using the exact release jar.'
+    dependsOn packagedReloadProcess
+    doLast {
+        verifyPackagedRun(layout.buildDirectory.dir(packagedRunDirectoryName).get().asFile,
+                'Packaged standalone runtime')
+    }
+}
+
+def forwardFixture = file(
+        'src/test/resources/fixtures/skysgrassslabs-1.10.2-forward-world.zip')
+def forwardFixtureSha256 = 'D6923BFFE062C1F0C454190AB11F031825949DF8080D8000133A723DEC2770BF'
+def forwardRunDirectoryName = 'forward-upgrade-run'
+def prepareForwardUpgradeTest = preparePackagedRuntime(
+        'prepareForwardUpgradeTest', forwardRunDirectoryName, true)
+def forwardUpgradeFirstProcess = createPackagedServerProcess(
+        'forwardUpgradeFirstProcess', 'upgrade-first', forwardRunDirectoryName,
+        prepareForwardUpgradeTest)
+def forwardUpgradeReloadProcess = createPackagedServerProcess(
+        'forwardUpgradeReloadProcess', 'upgrade-reload', forwardRunDirectoryName,
+        forwardUpgradeFirstProcess)
+tasks.register('forwardUpgradeTest') {
+    group = 'verification'
+    description = 'Upgrades and reloads the checksum-locked Minecraft 1.10.2 fixture.'
+    dependsOn forwardUpgradeReloadProcess
+    inputs.file(forwardFixture)
+    doFirst {
+        if (sha256Of(forwardFixture) != forwardFixtureSha256) {
+            throw new GradleException('The committed 1.10.2 forward fixture changed')
+        }
+    }
+    doLast {
+        verifyPackagedRun(layout.buildDirectory.dir(forwardRunDirectoryName).get().asFile,
+                'Forward upgrade runtime')
+        if (sha256Of(forwardFixture) != forwardFixtureSha256) {
+            throw new GradleException('The committed 1.10.2 forward fixture was modified')
+        }
+    }
+}
+
+def sylvesterWorld = providers.gradleProperty('sylvesterWorld')
+def sylvesterRunDirectoryName = 'sylvester-forward-upgrade-run'
+def prepareSylvesterForwardUpgradeTest = tasks.register(
+        'prepareSylvesterForwardUpgradeTest') {
+    group = 'verification'
+    description = 'Copies an already converted disposable Sylvester world for a 1.11 audit.'
+    dependsOn installPackagedServer, tasks.named('assemble'), packagedIntegrationTestModJar
+    outputs.upToDateWhen { false }
+    doLast {
+        if (!sylvesterWorld.isPresent()) {
+            throw new GradleException('Set -PsylvesterWorld to an already converted disposable world')
+        }
+        File sourceWorld = file(sylvesterWorld.get())
+        if (!new File(sourceWorld, 'level.dat').isFile()) {
+            throw new GradleException("Sylvester world is invalid: ${sourceWorld}")
+        }
+        File runDirectory = layout.buildDirectory.dir(
+                sylvesterRunDirectoryName).get().asFile
+        project.delete(runDirectory)
+        project.copy {
+            from packagedServerBase
+            into runDirectory
+        }
+        project.copy {
+            from sourceWorld
+            into new File(runDirectory, 'world')
+        }
+        File mods = new File(runDirectory, 'mods')
+        mods.mkdirs()
+        project.copy {
+            from layout.buildDirectory.file(
+                    "libs/${base.archivesName.get()}-${project.version}.jar")
+            from layout.buildDirectory.file(
+                    'integration-test-mod/skysgrassslabs-integration-test-reobf.jar')
+            into mods
+        }
+        new File(runDirectory, 'eula.txt').setText('eula=true\n', 'UTF-8')
+        new File(runDirectory, 'server.properties').setText('''\
+level-name=world
+online-mode=false
+generate-structures=false
+spawn-animals=false
+spawn-monsters=false
+spawn-protection=0
+max-tick-time=-1
+''', 'UTF-8')
+    }
+}
+def sylvesterForwardProcess = createPackagedServerProcess(
+        'sylvesterForwardProcess', 'forward-sylvester', sylvesterRunDirectoryName,
+        prepareSylvesterForwardUpgradeTest)
+def sylvesterForwardReloadProcess = createPackagedServerProcess(
+        'sylvesterForwardReloadProcess', 'forward-sylvester-reload',
+        sylvesterRunDirectoryName, sylvesterForwardProcess)
+tasks.register('sylvesterForwardUpgradeTest') {
+    group = 'verification'
+    description = 'Audits a disposable converted Sylvester world before and after a 1.11 reload.'
+    dependsOn sylvesterForwardReloadProcess
+    doLast {
+        verifyPackagedRun(layout.buildDirectory.dir(
+                sylvesterRunDirectoryName).get().asFile, 'Sylvester forward upgrade runtime')
+    }
+}
+
 tasks.named('check') {
-    dependsOn tasks.named('integrationTest')
+    dependsOn tasks.named('integrationTest'), tasks.named('packagedIntegrationTest'),
+            tasks.named('forwardUpgradeTest')
 }
 
 tasks.named('processResources', ProcessResources) {
@@ -389,12 +670,12 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.10.2' || project.forge_version != '12.18.3.2511' ||
-                project.mapping_channel != 'stable' || project.mapping_version != '29-1.10.2' ||
+        if (project.minecraft_version != '1.11.2' || project.forge_version != '13.20.1.2588' ||
+                project.mapping_channel != 'stable' || project.mapping_version != '32-1.11' ||
                 project.loader_name != 'forge' || project.loader_code != '1' ||
                 project.java_version != '8' || project.java_toolchain_version != '8.0.502+7' ||
                 project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 1.10.2 release metadata')
+            throw new GradleException('Unexpected 1.11.2 release metadata')
         }
     }
 }
@@ -449,11 +730,11 @@ tasks.register('verifyReleaseArtifacts') {
         }
 
         List<String> localeFiles = [
-                'de_AT.lang', 'de_AU.lang', 'de_DE.lang',
-                'en_CA.lang', 'en_EN.lang', 'en_GB.lang', 'en_PT.lang', 'en_US.lang',
-                'es_ES.lang', 'es_MX.lang', 'fr_CA.lang', 'fr_FR.lang',
-                'ja_JP.lang', 'ko_KR.lang', 'pt_BR.lang', 'pt_PT.lang',
-                'ru_RU.lang', 'zh_CN.lang'
+                'de_at.lang', 'de_au.lang', 'de_de.lang',
+                'en_ca.lang', 'en_en.lang', 'en_gb.lang', 'en_pt.lang', 'en_us.lang',
+                'es_es.lang', 'es_mx.lang', 'fr_ca.lang', 'fr_fr.lang',
+                'ja_jp.lang', 'ko_kr.lang', 'pt_br.lang', 'pt_pt.lang',
+                'ru_ru.lang', 'zh_cn.lang'
         ]
         releaseFiles.get()[0..1].each { artifactName ->
             ZipFile localizedZip = new ZipFile(new File(libs, artifactName))

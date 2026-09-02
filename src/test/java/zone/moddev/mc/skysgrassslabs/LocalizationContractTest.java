@@ -31,10 +31,10 @@ class LocalizationContractTest {
             "tile.skysgrassslabs.path_slab.name",
             "tile.skysgrassslabs.turf.name");
     private static final List<String> LOCALES = Arrays.asList(
-            "de_AT", "de_AU", "de_DE",
-            "en_CA", "en_EN", "en_GB", "en_PT", "en_US",
-            "es_ES", "es_MX", "fr_CA", "fr_FR", "ja_JP", "ko_KR",
-            "pt_BR", "pt_PT", "ru_RU", "zh_CN");
+            "de_at", "de_au", "de_de",
+            "en_ca", "en_en", "en_gb", "en_pt", "en_us",
+            "es_es", "es_mx", "fr_ca", "fr_fr", "ja_jp", "ko_kr",
+            "pt_br", "pt_pt", "ru_ru", "zh_cn");
 
     @Test
     void allEighteenLocalesHaveExactOrderedKeyParity() throws Exception {
@@ -73,35 +73,35 @@ class LocalizationContractTest {
 
     @Test
     void translationsAndRegionalDifferencesAreLocked() throws Exception {
-        assertValues("de_AT", "Eanstufn", "Grosstufn", "Steigstufn", "Grassodn");
-        assertValues("de_DE", "Erdstufe", "Grasblockstufe", "Trampelpfadstufe", "Grassode");
-        assertValues("es_ES", "Losa de tierra", "Losa de césped",
+        assertValues("de_at", "Eanstufn", "Grosstufn", "Steigstufn", "Grassodn");
+        assertValues("de_de", "Erdstufe", "Grasblockstufe", "Trampelpfadstufe", "Grassode");
+        assertValues("es_es", "Losa de tierra", "Losa de césped",
                 "Losa de camino de hierba", "Tepe de césped");
-        assertValues("es_MX", "Losa de tierra", "Losa de pasto",
+        assertValues("es_mx", "Losa de tierra", "Losa de pasto",
                 "Losa de sendero de pasto", "Tapete de pasto");
-        assertValues("fr_CA", "Dalle de terre", "Dalle de gazon",
+        assertValues("fr_ca", "Dalle de terre", "Dalle de gazon",
                 "Dalle de sentier de gazon", "Plaque de gazon");
-        assertValues("fr_FR", "Dalle de terre", "Dalle d'herbe",
+        assertValues("fr_fr", "Dalle de terre", "Dalle d'herbe",
                 "Dalle de chemin d'herbe", "Plaque de gazon");
-        assertValues("ja_JP", "土のハーフブロック", "草ブロックのハーフブロック",
+        assertValues("ja_jp", "土のハーフブロック", "草ブロックのハーフブロック",
                 "草の道のハーフブロック", "芝生");
-        assertValues("ko_KR", "흙 반 블록", "잔디 블록 반 블록", "잔디 길 반 블록", "잔디");
-        assertValues("pt_BR", "Laje de Terra", "Laje de Bloco de Grama",
+        assertValues("ko_kr", "흙 반 블록", "잔디 블록 반 블록", "잔디 길 반 블록", "잔디");
+        assertValues("pt_br", "Laje de Terra", "Laje de Bloco de Grama",
                 "Laje de Caminho de Grama", "Placa de Grama");
-        assertValues("pt_PT", "Degrau de Terra", "Degrau de Bloco de Relva",
+        assertValues("pt_pt", "Degrau de Terra", "Degrau de Bloco de Relva",
                 "Degrau de Caminho de Relva", "Placa de Relva");
-        assertValues("ru_RU", "Земляная плита", "Дёрновая плита", "Плита тропы", "Дёрн");
-        assertValues("zh_CN", "泥土台阶", "草方块台阶", "草径台阶", "草皮");
+        assertValues("ru_ru", "Земляная плита", "Дёрновая плита", "Плита тропы", "Дёрн");
+        assertValues("zh_cn", "泥土台阶", "草方块台阶", "草径台阶", "草皮");
 
-        byte[] english = Files.readAllBytes(file("en_US").toPath());
-        for (String locale : Arrays.asList("en_CA", "en_EN", "en_GB", "en_PT")) {
+        byte[] english = Files.readAllBytes(file("en_us").toPath());
+        for (String locale : Arrays.asList("en_ca", "en_en", "en_gb", "en_pt")) {
             assertArrayEquals(english, Files.readAllBytes(file(locale).toPath()), locale);
         }
-        assertArrayEquals(Files.readAllBytes(file("de_DE").toPath()),
-                Files.readAllBytes(file("de_AU").toPath()));
-        assertNotEquals(read("es_ES"), read("es_MX"));
-        assertNotEquals(read("fr_CA"), read("fr_FR"));
-        assertNotEquals(read("pt_BR"), read("pt_PT"));
+        assertArrayEquals(Files.readAllBytes(file("de_de").toPath()),
+                Files.readAllBytes(file("de_au").toPath()));
+        assertNotEquals(read("es_es"), read("es_mx"));
+        assertNotEquals(read("fr_ca"), read("fr_fr"));
+        assertNotEquals(read("pt_br"), read("pt_pt"));
     }
 
     private static void assertValues(String locale, String... values) throws Exception {

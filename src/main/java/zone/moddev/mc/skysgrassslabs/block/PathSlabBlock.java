@@ -31,8 +31,9 @@ public final class PathSlabBlock extends LegacySlabBlock {
     }
 
     @Override
-    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock) {
-        super.neighborChanged(state, world, pos, changedBlock);
+    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock,
+            BlockPos changedPos) {
+        super.neighborChanged(state, world, pos, changedBlock, changedPos);
         if (!world.isRemote && world.getBlockState(pos.up()).getMaterial().isSolid()) {
             world.setBlockState(pos, ModBlocks.DIRT_SLAB.getDefaultState()
                     .withProperty(HALF, state.getValue(HALF)), 3);
