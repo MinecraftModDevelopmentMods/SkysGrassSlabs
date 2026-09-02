@@ -54,7 +54,11 @@ public class ProjectContractTest {
         assertTrue(properties.contains("loader_code=1"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(workflow.contains("confirm_live_publication:"));
-        assertTrue(workflow.contains("name: release"));
+        assertFalse(workflow.contains("    environment:\n      name: release"));
+        assertTrue(workflow.contains("CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}"));
+        assertTrue(workflow.contains("MAVEN_UPLOAD_URL: ${{ secrets.MAVEN_UPLOAD_URL }}"));
+        assertTrue(workflow.contains("MAVEN_UPLOAD_USERNAME: ${{ secrets.MAVEN_UPLOAD_USERNAME }}"));
+        assertTrue(workflow.contains("MAVEN_UPLOAD_PASSWORD: ${{ secrets.MAVEN_UPLOAD_PASSWORD }}"));
         assertTrue(workflow.contains("-PpreparedReleaseDir="));
         assertTrue(workflow.contains("MinecraftModDevelopmentMods/SkysGrassSlabs"));
         assertTrue(workflow.indexOf("  publish_maven:") <
