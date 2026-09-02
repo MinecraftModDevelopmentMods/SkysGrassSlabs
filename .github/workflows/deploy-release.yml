@@ -340,8 +340,6 @@ jobs:
       - build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: release
     steps:
       - name: Confirm publication and release-secret access
         env:

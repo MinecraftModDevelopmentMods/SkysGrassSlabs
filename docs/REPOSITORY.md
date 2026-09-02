@@ -60,12 +60,11 @@ the Gradle wrapper and run CodeQL.
 The manual release dispatcher lives on `master-1.18.2` so GitHub can route a
 four-component version to its matching version/loader branch. It checks the
 branch metadata and successful audited CI result, builds one immutable bundle,
-then requires both the exact live-publication confirmation and approval of the
-`release` environment. Only that bundle may be sent to Maven, CurseForge
-project `1677588`, and the GitHub release. GitHub publication runs last.
+then requires the exact live publication confirmation. Only that bundle may be
+sent to Maven, CurseForge project `1677588`, and the GitHub release. GitHub
+publication runs last.
 
-MMD administrators must expose the existing organisation Maven and CurseForge
-secrets and configure the protected `release` environment for this repository.
+The dispatcher uses the existing organisation Maven and CurseForge secrets.
 No secret belongs in source control.
 
 ## Commits and local context
