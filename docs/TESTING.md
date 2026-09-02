@@ -24,7 +24,7 @@ $env:GRADLE_USER_HOME='<dedicated Gradle cache>'
   writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon --stacktrace
 ```
 
-`check` includes 34 focused Java tests plus a Forge runtime mod used only during
+`check` includes 35 focused Java tests plus a Forge runtime mod used only during
 the build. The runtime creates a fresh world, executes 74 gameplay and 8 world
 generation assertions,
 stops, reloads the same world, and verifies schema state. Probe classes and
@@ -134,15 +134,26 @@ matrix.
 
 ## Qualified 1.0.0.110021 artifacts
 
-Two clean builds produced byte for byte identical release artifacts:
+Independent Linux builds on the fork and MMD produced byte for byte identical
+publication artifacts:
 
-- main jar: `78,891` bytes,
-  `BE21FC77DA4A79664B289376BB9EE4B802E042AF323073FC1A6010EEBD4C00AD`
-- sources jar: `48,198` bytes,
-  `67D17DD4DFB0462AE8C88D6B60DF8DAC79A564B448441BB89A356692BB5EF2EF`
-- Javadocs jar: `141,871` bytes,
-  `B15BC6FB3BA73FA4A0FBE458DA0984D292B88BA3462E306902695D93926F97DA`
+- main jar: `78,749` bytes,
+  `C51C44B21814445DAC643C0221F91D0E4A5B36CE9E69D11636A1C0FBCFAE552F`
+- sources jar: `48,056` bytes,
+  `17B98EF5D8790D373C211E7D5EF3D6F89BDB9AB2ADB0CE32CBB36E671DB4DD1F`
+- Javadocs jar: `141,691` bytes,
+  `E6C99AB73B9896B9EC634968E6415F80FD5E818A1DBE9D8C2183871A70BF6A59`
+
+Two local Windows clean builds were also identical. Their main and sources
+jars match the Linux artifacts above. The Java 8 Javadoc formatter has a small
+platform specific whitespace difference: the Windows Javadocs jar is `141,729`
+bytes with SHA-256
+`D657E256ECCADE5250B21C9067AFEC74B79E1A7666C61DE197F8E4C0857FEA38`.
+The release dispatcher runs on Linux and uses the publication artifact listed
+above.
 
 All production classes use Java 8 bytecode. The archive audit found the
 expected licences and resources and found no credentials, machine paths,
-agent material, test probes or local evidence.
+agent material, test probes or local evidence. Licence entries are normalized,
+which makes the distributable main and sources jars identical on Windows and
+Linux.

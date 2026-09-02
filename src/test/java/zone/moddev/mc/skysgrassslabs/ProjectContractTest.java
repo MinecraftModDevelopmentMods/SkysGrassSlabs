@@ -79,6 +79,12 @@ class ProjectContractTest {
     }
 
     @Test
+    void releaseArchivesNormalizeLicenceLineEndings() throws Exception {
+        String build = read("build.gradle");
+        assertTrue(build.contains("'**/LICENSE', '**/LICENSE.spdx', '**/NOTICE'"));
+    }
+
+    @Test
     void localContextIsNotTracked() throws Exception {
         Process process = new ProcessBuilder("git", "ls-files", "-z")
                 .redirectErrorStream(true).start();

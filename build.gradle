@@ -75,7 +75,10 @@ def archiveTextSuffixes = [
         '.properties', '.txt', '.xml'
 ]
 def archiveTextPatterns = archiveTextSuffixes.collect { "**/*${it}".toString() }
-archiveTextPatterns.addAll(['**/element-list', '**/package-list'])
+archiveTextPatterns.addAll([
+        '**/element-list', '**/package-list',
+        '**/LICENSE', '**/LICENSE.spdx', '**/NOTICE'
+])
 def normalizeArchiveLineEndings = { details ->
     details.filter(FixCrLfFilter,
             eol: FixCrLfFilter.CrLf.newInstance('lf'),
