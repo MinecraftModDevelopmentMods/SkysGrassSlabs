@@ -29,11 +29,12 @@ build, and Java 8.
 
 The release candidate passed its automated gameplay, world generation,
 migration, reload, Eclipse and packaged server checks. It also passed manual
-testing in a large existing world and in newly generated terrain.
+testing in a large existing world and in newly generated terrain. Completed
+legacy conversions remained stable across repeated reloads.
 
-Two clean builds produced the same jars and checksums. The main jar is 78,749
+Two clean builds produced the same jars and checksums. The main jar is 78,900
 bytes with SHA-256
-`C51C44B21814445DAC643C0221F91D0E4A5B36CE9E69D11636A1C0FBCFAE552F`.
+`F609A9727DD510F3D384A86839FB98FCCE94E2E87C2540B1EE2E6C6E36D532C1`.
 All production classes use Java 8 bytecode.
 
 Publication remains a separate manual step. No tag or release has been created.

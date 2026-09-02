@@ -62,7 +62,9 @@ optional `Add` arrays. This avoids a full registry/state lookup for every block
 in the world. Supported positions are updated directly in chunk storage without
 neighbour notifications. Unsupported registered shapes are counted but not
 changed. A stable dimension/x/z key makes every save event carry the version
-marker, including the second save emitted by 1.10 during chunk unload.
+marker. Existing current or future markers are retained in memory and written
+back on later saves, including the second save emitted by 1.10 during chunk
+unload.
 
 Tile entities and entities are serialized and traversed recursively for item
 stacks. This covers inventories, item handlers, dropped items, item frames, and
@@ -117,12 +119,14 @@ It reported and left unchanged 6,663 unsupported block shapes across 13 IDs:
 - rock stairs `18`, steps `77`, vertical slabs `404`, walls `200`
 - wood corners `95`, steps `2,244`, vertical slabs `2,276`
 
-Minecraft completed some old boundary terrain while the fixture was loaded,
-increasing the release candidate's reload traversal to 87,849 chunk headers
-and its durable processed marker total to 87,867. Those newly completed chunks
-were marked once but produced no supported conversions and no unsupported
-recount. The second complete load retained every block, orientation, item, and
-unsupported total unchanged and wrote `migration_reload_complete=true`.
+Minecraft completed some old boundary terrain while the fixture was loaded.
+The initial pass marked 87,759 chunks, the first complete reload raised that to
+87,862, and a third launch raised it to 87,887. Those newly completed boundary
+chunks were marked once but produced no supported conversions and no
+unsupported recount. Every block, orientation, item, and unsupported total
+remained unchanged on both reloads. The third launch also proved that existing
+chunk markers survived an additional load and save cycle, and wrote
+`migration_reload_complete=true`.
 
 The old fixture also logs its existing malformed Mineralogy metadata and a rock
 furnace tile class without a public constructor that takes no arguments. Forge skips

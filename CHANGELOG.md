@@ -13,6 +13,7 @@
 - Added grass slabs to suitable height changes in newly generated terrain.
 - Added optional migration for compatible grass and dirt slabs from older
   worlds. Replacement is disabled by default and other shapes are left alone.
+- Kept completed legacy conversions marked across repeated world reloads.
 - Added complete visual snow caps for grass and dirt slabs.
 
 Snow on slabs is visual only in Minecraft 1.10.2. It adds no height, does not

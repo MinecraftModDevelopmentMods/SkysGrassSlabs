@@ -117,8 +117,10 @@ numeric legacy IDs efficiently, writes only supported grass and dirt slab
 states into `ExtendedBlockStorage`, and marks each processed chunk with
 `buildingbricks_migration_version=1`. Tile/entity stacks are migrated through
 serialized NBT so unopened loot containers are not forced open. Player and
-ender chest inventories are checked on login. See `LEGACY-MIGRATION.md` for the
-exact supported IDs and qualification evidence.
+ender chest inventories are checked on login. Current and future migration
+markers are copied back into the chunk data on every later save so a completed
+chunk remains complete across repeated reloads. See `LEGACY-MIGRATION.md` for
+the exact supported IDs and qualification evidence.
 
 ## Save state
 

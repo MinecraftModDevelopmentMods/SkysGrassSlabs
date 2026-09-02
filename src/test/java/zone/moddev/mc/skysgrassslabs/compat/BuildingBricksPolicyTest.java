@@ -33,6 +33,13 @@ class BuildingBricksPolicyTest {
     }
 
     @Test
+    void currentAndFutureChunkMarkersSurviveLaterSaves() {
+        assertFalse(LegacyMigrationHandler.shouldPreserveChunkMarker(0));
+        assertTrue(LegacyMigrationHandler.shouldPreserveChunkMarker(1));
+        assertTrue(LegacyMigrationHandler.shouldPreserveChunkMarker(2));
+    }
+
+    @Test
     void onlySupportedLegacyIdsAreClassifiedForMissingMappingRecovery() {
         assertTrue(LegacyMigrationHandler.legacySlabKind(BuildingBricksCompat.GRASS_SLAB_ID)
                 == LegacyMigrationHandler.LegacySlabKind.GRASS);

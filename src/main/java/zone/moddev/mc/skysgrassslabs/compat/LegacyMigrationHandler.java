@@ -8,10 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -45,38 +44,44 @@ public final class LegacyMigrationHandler {
     private static final String CHUNK_MARKER = "skysgrassslabs";
     private static final String CHUNK_MIGRATION_VERSION = "buildingbricks_migration_version";
 
-    private final Set<ChunkKey> processedChunks = new HashSet<ChunkKey>();
+    private final Map<ChunkKey, Integer> chunkMarkersToSave =
+            new HashMap<ChunkKey, Integer>();
 
     @SubscribeEvent
     public void loadChunk(ChunkDataEvent.Load event) {
         World world = event.getWorld();
         if (world.isRemote) return;
         NBTTagCompound marker = event.getData().getCompoundTag(CHUNK_MARKER);
-        if (!shouldMigrateChunk(BuildingBricksCompat.shouldReplaceSlabs(),
-                marker.getInteger(CHUNK_MIGRATION_VERSION))) return;
+        int markerVersion = marker.getInteger(CHUNK_MIGRATION_VERSION);
+        Chunk chunk = event.getChunk();
+        ChunkKey chunkKey = ChunkKey.of(world, chunk);
+        if (shouldPreserveChunkMarker(markerVersion)) {
+            chunkMarkersToSave.put(chunkKey, markerVersion);
+            return;
+        }
+        if (!shouldMigrateChunk(BuildingBricksCompat.shouldReplaceSlabs(), markerVersion)) return;
         BuildingBricksCompat.resolveBlocks();
         if (BuildingBricksCompat.grassSlab() == null || BuildingBricksCompat.dirtSlab() == null) {
             SkysGrassSlabs.logger.error("BuildingBricks is loaded but its grass or dirt slab is not registered");
             return;
         }
 
-        Chunk chunk = event.getChunk();
         ModWorldState state = ModWorldState.get(world);
         migrateBlocks(chunk, event.getData(), state);
         migrateChunkInventories(chunk, state);
         state.recordChunk();
         chunk.setModified(true);
-        processedChunks.add(ChunkKey.of(world, chunk));
+        chunkMarkersToSave.put(chunkKey, ModWorldState.MIGRATION_VERSION);
     }
 
     @SubscribeEvent
     public void saveChunk(ChunkDataEvent.Save event) {
-        if (!processedChunks.contains(ChunkKey.of(event.getWorld(), event.getChunk()))) {
-            return;
-        }
+        Integer markerVersion = chunkMarkersToSave.get(
+                ChunkKey.of(event.getWorld(), event.getChunk()));
+        if (markerVersion == null) return;
         NBTTagCompound marker = event.getData().hasKey(CHUNK_MARKER, 10)
                 ? event.getData().getCompoundTag(CHUNK_MARKER) : new NBTTagCompound();
-        marker.setInteger(CHUNK_MIGRATION_VERSION, ModWorldState.MIGRATION_VERSION);
+        marker.setInteger(CHUNK_MIGRATION_VERSION, markerVersion.intValue());
         event.getData().setTag(CHUNK_MARKER, marker);
     }
 
@@ -144,6 +149,10 @@ public final class LegacyMigrationHandler {
 
     static boolean shouldMigrateChunk(boolean replacementEnabled, int markerVersion) {
         return replacementEnabled && markerVersion < ModWorldState.MIGRATION_VERSION;
+    }
+
+    static boolean shouldPreserveChunkMarker(int markerVersion) {
+        return markerVersion >= ModWorldState.MIGRATION_VERSION;
     }
 
     private static void migrateBlocks(Chunk chunk, NBTTagCompound chunkData,

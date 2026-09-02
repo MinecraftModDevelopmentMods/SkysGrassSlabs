@@ -24,7 +24,7 @@ $env:GRADLE_USER_HOME='<dedicated Gradle cache>'
   writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon --stacktrace
 ```
 
-`check` includes 35 focused Java tests plus a Forge runtime mod used only during
+`check` includes 36 focused Java tests plus a Forge runtime mod used only during
 the build. The runtime creates a fresh world, executes 74 gameplay and 8 world
 generation assertions,
 stops, reloads the same world, and verifies schema state. Probe classes and
@@ -97,8 +97,8 @@ Completed local evidence includes:
 - solo and BuildingBricks fresh/reload: 74 gameplay and 8 worldgen checks;
 - OreSpawn `4.0.8.110021` plus Mineralogy `6.0.1.110021`: fresh/reload, same
   74/8 checks, active Mineralogy provider, no audit failure or crash directory;
-- complete Sylvester default coexistence, first and second forced migrations,
-  and missing mapping recovery with the exact totals in
+- complete Sylvester default coexistence, three launch forced migration and
+  reload qualification, and missing mapping recovery with the exact totals in
   `LEGACY-MIGRATION.md` and unchanged source fingerprint.
 - accepted manual new terrain testing in a disposable Sylvester copy: 1,694
   new chunks contained 46,692 correctly oriented Sky grass slabs, no newly
@@ -137,10 +137,10 @@ matrix.
 Independent Linux builds on the fork and MMD produced byte for byte identical
 publication artifacts:
 
-- main jar: `78,749` bytes,
-  `C51C44B21814445DAC643C0221F91D0E4A5B36CE9E69D11636A1C0FBCFAE552F`
-- sources jar: `48,056` bytes,
-  `17B98EF5D8790D373C211E7D5EF3D6F89BDB9AB2ADB0CE32CBB36E671DB4DD1F`
+- main jar: `78,900` bytes,
+  `F609A9727DD510F3D384A86839FB98FCCE94E2E87C2540B1EE2E6C6E36D532C1`
+- sources jar: `48,120` bytes,
+  `D1FBFF86C7750C96A5829CB623EDB4A2ACF69E0158980D4089DA46865527974D`
 - Javadocs jar: `141,691` bytes,
   `E6C99AB73B9896B9EC634968E6415F80FD5E818A1DBE9D8C2183871A70BF6A59`
 
