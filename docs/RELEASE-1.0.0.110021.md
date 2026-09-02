@@ -36,7 +36,7 @@ legacy conversions remained stable across repeated reloads.
 
 Two clean builds produced the same jars and checksums. The main jar is 83,251
 bytes with SHA-256
-`A2BCE3B32E64377B4C9FBF82048F132D3F1B2A7A91D3C7D1C62EA4BCC6659745`.
+`2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861`.
 All production classes use Java 8 bytecode.
 
 Publication remains a separate manual step. No tag or release has been created.

@@ -1,5 +1,6 @@
 import groovy.json.JsonSlurper
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.security.MessageDigest
 import java.util.zip.ZipFile
 import org.apache.tools.ant.filters.FixCrLfFilter
@@ -71,7 +72,7 @@ tasks.withType(AbstractArchiveTask).configureEach {
 }
 
 def archiveTextSuffixes = [
-        '.cfg', '.html', '.info', '.java', '.json', '.lang', '.mcmeta', '.md',
+        '.cfg', '.html', '.info', '.java', '.json', '.mcmeta', '.md',
         '.properties', '.txt', '.xml'
 ]
 def archiveTextPatterns = archiveTextSuffixes.collect { "**/*${it}".toString() }
@@ -445,6 +446,35 @@ tasks.register('verifyReleaseArtifacts') {
             }
         } finally {
             zip.close()
+        }
+
+        List<String> localeFiles = [
+                'de_AT.lang', 'de_AU.lang', 'de_DE.lang',
+                'en_CA.lang', 'en_EN.lang', 'en_GB.lang', 'en_PT.lang', 'en_US.lang',
+                'es_ES.lang', 'es_MX.lang', 'fr_CA.lang', 'fr_FR.lang',
+                'ja_JP.lang', 'ko_KR.lang', 'pt_BR.lang', 'pt_PT.lang',
+                'ru_RU.lang', 'zh_CN.lang'
+        ]
+        releaseFiles.get()[0..1].each { artifactName ->
+            ZipFile localizedZip = new ZipFile(new File(libs, artifactName))
+            try {
+                localeFiles.each { localeName ->
+                    String entryName = "assets/skysgrassslabs/lang/${localeName}"
+                    def entry = localizedZip.getEntry(entryName)
+                    if (entry == null) {
+                        throw new GradleException("${artifactName} is missing ${entryName}")
+                    }
+                    File source = file("src/main/resources/${entryName}")
+                    byte[] sourceBytes = Files.readAllBytes(source.toPath())
+                    byte[] archiveBytes = localizedZip.getInputStream(entry).bytes
+                    if (!Arrays.equals(sourceBytes, archiveBytes)) {
+                        throw new GradleException(
+                                "${artifactName} changed the UTF-8 bytes of ${entryName}")
+                    }
+                }
+            } finally {
+                localizedZip.close()
+            }
         }
     }
 }
