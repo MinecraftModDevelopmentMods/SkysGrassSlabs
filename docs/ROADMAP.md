@@ -1,46 +1,51 @@
 # Version and compatibility roadmap
 
-## 1.18.2 gameplay betas
+## Completed product lines
 
-Beta `0.1.0.118021` established the permanent namespace and initial gameplay
-contract:
-`dirt_slab`, `grass_slab`, `path_slab`, `grass_slab_smoothing`, common worldgen
-configuration, and world schema version 1. It has no BuildingBricks, OreSpawn,
-or Mineralogy runtime dependency or Java API.
+- `0.1.0.118021` established the permanent IDs, dirt, grass and path slab
+  gameplay, smoothing for new chunks, common config and schema 1 world state on
+  1.18.2.
+- `0.2.0.118021` fixed the grass overlay and added permanent turf and
+  `turf_cutting` identities.
+- `0.3.0.110021` backports the complete product to 1.10.2 and adds the
+  Sylvester migration anchor. Its complete disposable fixture migration and
+  second load check pass locally. The 1.10 contract also includes keeping grass
+  coverings on dirt, preventing covered targets, transient visual grass and
+  dirt snow caps, and sheep eating turf.
 
-Beta `0.2.0.118021` retains that contract, fixes grass-slab overlay rendering,
-and adds the permanent `turf` block/item plus the `turf_cutting` recipe
-serializer. Turf is a dirt-supported carpet-height grass source and can be used
-to green dry dirt slabs. The schema remains version 1 because no existing
-save-facing identity or data shape is migrated.
+## 1.10.2 beta handoff
 
-## 1.10.2 BuildingBricks and Sylvester compatibility
+Remaining external steps are deliberately separate from implementation:
 
-After the beta is manually accepted and its public identity is secured, port
-the product down to Minecraft 1.10.2 and validate it with BuildingBricks
-2.0.13 in complete disposable copies of the Sylvester world.
-
-- Detect BuildingBricks without making it a required dependency.
-- Establish a single owner for grass-slab world generation. Prefer switching
-  BuildingBricks' generator off through supported configuration and letting
-  Sky's Grass Slabs take over; otherwise disable this mod's overlapping pass.
-- Accept BuildingBricks dirt/grass slabs in the seed helper recipes.
-- Replace BuildingBricks dirt and grass slab blocks and items with the stable
-  Sky's Grass Slabs identities while preserving metadata, orientation,
-  inventories, entities, and reload idempotence.
-- Inventory unsupported BuildingBricks shapes rather than silently deleting or
-  coercing them.
-- Prove the immutable source fixture's hashes remain unchanged.
+- manual visual acceptance of grass tinting, grass/dirt snow caps, slab joins,
+  support dirtification, stable turf fields, sheep animation, turf, path
+  height, placement, breaking, and generated slopes;
+- creation of the upstream `master-1.10.2` branch by an MMD maintainer if it is
+  still absent;
+- fork push and pull request after the exact source candidate is approved;
+- tag and publication only after separate approval of the exact artifact.
 
 ## Forward ports through 26.2
 
-Port forward one supported Minecraft version at a time from the newest accepted
-product implementation. At every step test both a fresh world and disposable
-copies of worlds saved by the preceding Sky's Grass Slabs version. Continue to
-carry a converted Sylvester fixture so every data-flattening, registry, loader,
-and worldgen boundary is tested rather than assumed.
+Port one supported Minecraft version at a time from the newest accepted
+implementation with the complete feature set. Each port must load:
+
+- a fresh world;
+- a world saved by the preceding Sky's Grass Slabs version; and
+- a disposable copy descended from the converted Sylvester fixture whenever
+  the target version can load that format.
 
 Keep each Minecraft/loader line on its own branch and checkout. Preserve the
-permanent mod ID and save-facing IDs unless an explicit versioned migration is
-implemented. No port, migration candidate, or fixture result is published
-without fresh approval for that exact artifact.
+mod ID, block/item IDs, smoothing config, recipe identity appropriate to the
+target version, and schema-1 migration anchor unless an explicit versioned
+migration changes them.
+
+Every later port must also preserve the gameplay intent established here:
+grass coverings keep their supporting full block as dirt; grass cannot persist
+beneath turf or grass slabs; slab snow presentation covers the top and sides
+without corrupting saved orientation; and sheep can eat turf using the least
+invasive hook supported by the target version.
+
+Do not assume data flattening, registry, loader or world generation boundaries
+work because compilation succeeds. Prove each boundary with tests using the
+saved world fixtures before advancing to the next version.

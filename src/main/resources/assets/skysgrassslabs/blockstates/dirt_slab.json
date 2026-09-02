@@ -1,7 +1,8 @@
 {
   "variants": {
-    "type=bottom": { "model": "skysgrassslabs:block/dirt_slab" },
-    "type=double": { "model": "minecraft:block/dirt" },
-    "type=top": { "model": "skysgrassslabs:block/dirt_slab_top" }
+    "half=bottom,snowy=false": { "model": "skysgrassslabs:dirt_slab" },
+    "half=bottom,snowy=true": { "model": "skysgrassslabs:dirt_slab_snow" },
+    "half=top,snowy=false": { "model": "skysgrassslabs:dirt_slab_top" },
+    "half=top,snowy=true": { "model": "skysgrassslabs:dirt_slab_top_snow" }
   }
 }

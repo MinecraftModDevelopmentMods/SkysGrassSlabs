@@ -1,10 +1,8 @@
 {
   "variants": {
-    "snowy=false,type=bottom": { "model": "skysgrassslabs:block/grass_slab" },
-    "snowy=false,type=double": { "model": "minecraft:block/grass_block" },
-    "snowy=false,type=top": { "model": "skysgrassslabs:block/grass_slab_top" },
-    "snowy=true,type=bottom": { "model": "skysgrassslabs:block/grass_slab_snow" },
-    "snowy=true,type=double": { "model": "minecraft:block/grass_block_snow" },
-    "snowy=true,type=top": { "model": "skysgrassslabs:block/grass_slab_top_snow" }
+    "half=bottom,snowy=false": { "model": "skysgrassslabs:grass_slab" },
+    "half=bottom,snowy=true": { "model": "skysgrassslabs:grass_slab_snow" },
+    "half=top,snowy=false": { "model": "skysgrassslabs:grass_slab_top" },
+    "half=top,snowy=true": { "model": "skysgrassslabs:grass_slab_top_snow" }
   }
 }

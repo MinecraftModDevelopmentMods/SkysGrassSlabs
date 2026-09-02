@@ -1,27 +1,43 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
-import net.minecraft.world.item.crafting.RecipeSerializer;
-import net.minecraft.world.item.crafting.SimpleRecipeSerializer;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
-import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.CraftingManager;
+import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.oredict.OreDictionary;
+import net.minecraftforge.oredict.RecipeSorter;
+import net.minecraftforge.oredict.ShapelessOreRecipe;
+import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.recipe.TurfCuttingRecipe;
 
-/** Stable recipe serializer registrations. */
 public final class ModRecipes {
-    public static final DeferredRegister<RecipeSerializer<?>> SERIALIZERS =
-            DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, SkysGrassSlabs.MOD_ID);
+    public static final String SEED_ORE = "listAllseed";
 
-    public static final RegistryObject<RecipeSerializer<TurfCuttingRecipe>> TURF_CUTTING =
-            SERIALIZERS.register("turf_cutting",
-                    () -> new SimpleRecipeSerializer<>(TurfCuttingRecipe::new));
+    public static void register() {
+        registerVanillaSeeds();
+        GameRegistry.addShapedRecipe(new ItemStack(ModBlocks.DIRT_SLAB, 6),
+                "DDD", 'D', Blocks.DIRT);
+        GameRegistry.addShapedRecipe(new ItemStack(ModBlocks.GRASS_SLAB, 6),
+                "GGG", 'G', Blocks.GRASS);
+        GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(Blocks.GRASS),
+                new ItemStack(Blocks.DIRT), SEED_ORE));
+        GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ModBlocks.GRASS_SLAB),
+                new ItemStack(ModBlocks.DIRT_SLAB), SEED_ORE));
+        BuildingBricksCompat.registerBridgeRecipes();
 
-    private ModRecipes() {
+        RecipeSorter.register("skysgrassslabs:turf_cutting", TurfCuttingRecipe.class,
+                RecipeSorter.Category.SHAPELESS, "after:minecraft:shapeless");
+        CraftingManager.getInstance().getRecipeList().add(new TurfCuttingRecipe());
     }
 
-    public static void register(IEventBus eventBus) {
-        SERIALIZERS.register(eventBus);
+    private static void registerVanillaSeeds() {
+        OreDictionary.registerOre(SEED_ORE, new ItemStack(Items.WHEAT_SEEDS));
+        OreDictionary.registerOre(SEED_ORE, new ItemStack(Items.MELON_SEEDS));
+        OreDictionary.registerOre(SEED_ORE, new ItemStack(Items.PUMPKIN_SEEDS));
+        OreDictionary.registerOre(SEED_ORE, new ItemStack(Items.BEETROOT_SEEDS));
+    }
+
+    private ModRecipes() {
     }
 }

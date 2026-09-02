@@ -1,108 +1,48 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.block.Block;
+import net.minecraft.block.SoundType;
+import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
+import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-import javax.annotation.Nullable;
+public final class PathSlabBlock extends LegacySlabBlock {
+    public static final AxisAlignedBB BOTTOM_PATH_AABB =
+            new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 7.0D / 16.0D, 1.0D);
+    public static final AxisAlignedBB TOP_PATH_AABB =
+            new AxisAlignedBB(0.0D, 8.0D / 16.0D, 0.0D, 1.0D, 15.0D / 16.0D, 1.0D);
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.FenceGateBlock;
-import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
-
-/** Lowered dirt path slab with vanilla covered path decay. */
-public final class PathSlabBlock extends SlabBlock {
-    private static final VoxelShape BOTTOM_PATH = Block.box(0, 0, 0, 16, 7, 16);
-    private static final VoxelShape TOP_PATH = Block.box(0, 8, 0, 16, 15, 16);
-
-    public PathSlabBlock(Properties properties) {
-        super(properties);
+    public PathSlabBlock() {
+        super(Material.GROUND);
+        setHardness(0.65F);
+        setSoundType(SoundType.PLANT);
     }
 
     @Override
-    public boolean useShapeForLightOcclusion(BlockState state) {
-        return true;
+    public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess world, BlockPos pos) {
+        return state.getValue(HALF) == EnumBlockHalf.TOP ? TOP_PATH_AABB : BOTTOM_PATH_AABB;
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos,
-            CollisionContext context) {
-        return switch (state.getValue(TYPE)) {
-            case DOUBLE -> Shapes.block();
-            case TOP -> TOP_PATH;
-            default -> BOTTOM_PATH;
-        };
-    }
-
-    @Override
-    @Nullable
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        if (context.getLevel().getBlockState(context.getClickedPos()).is(this)) {
-            return Blocks.DIRT_PATH.defaultBlockState();
+    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock) {
+        super.neighborChanged(state, world, pos, changedBlock);
+        if (!world.isRemote && world.getBlockState(pos.up()).getMaterial().isSolid()) {
+            world.setBlockState(pos, ModBlocks.DIRT_SLAB.getDefaultState()
+                    .withProperty(HALF, state.getValue(HALF)), 3);
         }
-
-        BlockState placed = super.getStateForPlacement(context);
-
-        if (placed == null) {
-            return null;
-        }
-
-        return placed.getValue(WATERLOGGED) ? SlabTransitions.dirtFor(placed) : placed;
     }
 
     @Override
-    public boolean placeLiquid(LevelAccessor level, BlockPos pos, BlockState state,
-            FluidState fluid) {
-        boolean placed = super.placeLiquid(level, pos, state, fluid);
-
-        if (placed) {
-            level.scheduleTick(pos, this, 1);
-        }
-
-        return placed;
-    }
-
-    @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
-            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
-        BlockState updated = super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
-
-        if (updated.getValue(WATERLOGGED)
-                || direction == Direction.UP && !canSurvive(updated, level, pos)) {
-            level.scheduleTick(pos, this, 1);
-        }
-
-        return updated;
-    }
-
-    @Override
-    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-        if (state.getValue(WATERLOGGED)) {
-            return false;
-        }
-
-        BlockState above = level.getBlockState(pos.above());
-
-        return !above.getMaterial().isSolid() || above.getBlock() instanceof FenceGateBlock;
-    }
-
-    @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
-        if (!canSurvive(state, level, pos)) {
-            BlockState dirt = SlabTransitions.dirtFor(state);
-
-            level.setBlockAndUpdate(pos, Block.pushEntitiesUp(state, dirt, level, pos));
-        }
+    public List<ItemStack> getDrops(IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
+        List<ItemStack> drops = new ArrayList<ItemStack>();
+        drops.add(new ItemStack(ModBlocks.DIRT_SLAB));
+        return drops;
     }
 }

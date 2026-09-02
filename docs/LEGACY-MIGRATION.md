@@ -1,117 +1,101 @@
 # Legacy BuildingBricks migration
 
-## Delivery status
+## Supported source
 
-Migration is deferred from the first Minecraft 1.18.2 gameplay beta. The next
-product line targets Minecraft 1.10.2, where Sky's Grass Slabs must coexist
-with BuildingBricks in the Sylvester world. Nothing in beta `0.1.0.118021`
-detects BuildingBricks, changes its configuration, remaps its blocks, or
-retrofails existing chunks.
-
-On 1.10.2, detect BuildingBricks and choose one tested world-generation owner:
-prefer disabling BuildingBricks' grass-slab generator through its supported
-configuration when possible, otherwise suppress this mod's equivalent feature.
-Add helper recipes accepting BuildingBricks slabs. Convert BuildingBricks dirt
-and grass slabs to this mod's stable IDs on disposable world copies, preserving
-top/bottom metadata, items, inventories, and reload idempotence. The resulting
-fixture becomes an upgrade input for each later Minecraft port.
-
-## Safety boundary
-
-The authoritative legacy fixture is an operator-supplied Sylvester world kept
-outside this repository. Its machine-specific location must remain in local,
-ignored instructions rather than tracked files.
-
-The fixture is read-only. Never launch, upgrade, rewrite, repair, or add files
-to it. Every test must use a complete disposable copy and must verify that the
-source fixture's bytes remain unchanged.
-
-The Sylvester configuration has `generateGrassSlabs=true` and uses
-`BuildingBricks-1.10.2-2.0.13.jar`. Its `level.dat` Forge registry snapshot
-contains `buildingbricks:grass_slab` and other BuildingBricks registrations.
-Read saved numeric IDs from the selected world's own registry snapshot; never
-hardcode IDs observed in one copy.
-
-## Two migration paths are required
-
-Forge missing-mapping remaps are needed for already-flattened worlds, but they
-are insufficient for a raw Minecraft 1.10 world. Pre-flattening chunks store
-numeric block IDs plus metadata, and vanilla's later data fixer does not know
-arbitrary mod block states.
-
-Support both:
-
-1. Registry remapping for modern named block and item IDs.
-2. Pre-flattening state recovery before vanilla chunk datafixing, using the
-   saved Forge block registry to install the correct legacy state mapping.
-
-The strongest reference implementation is
-`src/main/java/zone/moddev/mc/mineralogy/patching/LegacyWorldDataHook.java` in
-the [Minecraft Mineralogy repository](https://github.com/MinecraftModDevelopmentMods/MinecraftMineralogy).
-
-Also inspect:
-
-- `patching/PatchHandler.java`
-- `src/main/resources/coremods/mineralogy_legacy_world_fix.js`
-- Base Metals 1.18's `Legacy112WorldMigrator` in the
-  [Base Metals repository](https://github.com/MinecraftModDevelopmentMods/BaseMetals)
-
-Mineralogy's hook currently selects Mineralogy states; it does not automatically
-migrate BuildingBricks. Any Sky's Grass Slabs hook must coexist with it in the
-same launch. Treat transform order, expansion of Minecraft's legacy state
-table, capture of `level.dat` registry data, chunk status preservation, and
-item/entity restoration as integration contracts rather than assumptions.
-
-## Initial aliases and state mapping
-
-At minimum investigate and cover:
+The 1.10.2 compatibility target is BuildingBricks `1.10.2-2.0.13`. Migration
+covers only:
 
 - `buildingbricks:grass_slab` to `skysgrassslabs:grass_slab`
 - `buildingbricks:dirt_slab` to `skysgrassslabs:dirt_slab`
-- historical `buildingbrickscompatvanilla:grass_slab`, if present in older
-  supported saves
-- matching block-item aliases
+- historical alias `buildingbrickscompatvanilla:grass_slab`
 
-The BuildingBricks 2.0.13 slab implementation decodes metadata bit zero as:
+Block metadata is preserved as `0 = top`, `1 = bottom`. Supported item stacks
+are replaced with the matching Sky item while their count and NBT are retained.
+The old item damage identifies BuildingBricks material rather than slab half,
+so the replacement item uses Sky's canonical item metadata; placement still
+selects the half from the click exactly like an ordinary slab.
 
-- metadata 0: top
-- metadata 1: bottom
+Stairs, vertical slabs, corners, steps, walls, glass shapes, rock shapes, wood
+shapes, and every other BuildingBricks block remain untouched.
 
-World generation placed its default bottom state. Preserve player-placed top
-states as well; verify the mapping against the exact tagged source before
-coding it.
+## Generator ownership
 
-## Migration inventory
+Sky declares optional load ordering before BuildingBricks without requiring it.
+If Sky smoothing is disabled, no BuildingBricks configuration is changed.
 
-"The world starts" is not sufficient proof. Inventory and preserve relevant
-occurrences in:
+If both are installed and Sky smoothing is enabled:
 
-- chunk section block arrays and metadata
-- player inventories and ender chests
-- ordinary containers
-- dropped item entities
-- item-bearing block entities and mod inventories
-- scheduled ticks or other data that names the old block, if present
+1. Load `config/BuildingBricks/general.cfg` through Forge Configuration.
+2. If `compat.vanilla.generateGrassSlabs` is already false, leave it untouched.
+3. Otherwise create `general.cfg.skysgrassslabs-backup` once and set the
+   property false before BuildingBricks begins its initialization.
+4. Reload the configuration to verify the write.
+5. Suppress Sky smoothing for the current process if any step fails.
 
-Before removing BuildingBricks from a real world, inventory every actually
-used `buildingbricks:*` block and item. Grass stairs, steps, corners, vertical
-slabs, and other material shapes were not world-generated, but players may
-have placed or stored them. Do not silently convert unimplemented shapes to
-air. Report them as a compatibility blocker or add an explicitly agreed alias.
+## Chunk and inventory migration
 
-## Required migration evidence
+`ChunkDataEvent.Load` checks a compound named `skysgrassslabs` in each chunk. A
+chunk already marked with migration version 1 is skipped.
 
-Use a disposable Sylvester copy and record:
+Unmarked chunks are scanned from their serialized `Blocks`, `Data`, and
+optional `Add` arrays. This avoids a full registry/state lookup for every block
+in the world. Supported positions are updated directly in chunk storage without
+neighbour notifications. Unsupported registered shapes are counted but not
+changed. A stable dimension/x/z key makes every save event carry the version
+marker, including the second save emitted by 1.10 during chunk unload.
 
-1. Hash/inventory of the untouched source fixture.
-2. Saved registry IDs and pre-conversion counts by old ID, metadata, and data
-   location.
-3. First 1.18.2 start and conversion log with no unresolved BuildingBricks
-   grass/dirt slab mappings.
-4. Post-conversion counts and representative top/bottom block states.
-5. Player/container/item preservation evidence.
-6. Clean save/stop and second start/reload with identical converted counts and
-   no repeated migration.
-7. No new smoothing writes in already-generated chunks unless an explicit
-   retrogen test was requested.
-8. Source-fixture hashes unchanged after all testing.
+Tile entities and entities are serialized and traversed recursively for item
+stacks. This covers inventories, item handlers, dropped items, item frames, and
+nested capability NBT without opening legacy loot containers during the load
+event. Player inventory and ender chest stacks are migrated at login. Newly
+placed supported legacy slabs are replaced immediately.
+
+Missing mappings remap supported block and item IDs when BuildingBricks is no
+longer installed. Seed and turf recipes accept its supported slab items when it
+is installed.
+
+## Sylvester safety boundary
+
+The authoritative Sylvester fixture is held outside this repository and is
+read only. Tests must copy the complete server to disposable storage and must
+never launch or repair the source directory.
+
+The source fingerprint before and after qualification was identical:
+
+- files: `1,080`
+- bytes: `1,380,450,555`
+- aggregate SHA-256:
+  `45C0A84913A71D0F7832F76719A4C3B745DAEA9BE5C8EFD9FEF6B97077EFBF44`
+
+The aggregate hashes each sorted relative path followed by LF and then the
+file's bytes, so path changes and content changes are both detected.
+
+## Qualified migration result
+
+The disposable complete fixture contained 87,759 existing chunk headers. Its
+first pass converted:
+
+- grass slabs: `1,656,276` (`0` top, `1,656,276` bottom)
+- dirt slabs: `2,968` (`12` top, `2,956` bottom)
+- grass slab items encountered: `0`
+- dirt slab items encountered: `7,186`
+
+It reported and left unchanged 6,663 unsupported block shapes across 13 IDs:
+
+- dirt stairs `10`, dirt vertical slabs `10`
+- glass slabs `336`, stairs `73`, steps `4`, vertical slabs `916`
+- rock stairs `18`, steps `77`, vertical slabs `404`, walls `200`
+- wood corners `95`, steps `2,244`, vertical slabs `2,276`
+
+Minecraft completed some old boundary terrain while the fixture was loaded,
+increasing the corrected candidate's reload traversal and durable processed
+marker total to 88,026 chunk headers. Those newly completed chunks
+were marked once but produced no supported conversions and no unsupported
+recount. The second complete load retained every block, orientation, item, and
+unsupported total unchanged and wrote `migration_reload_complete=true`.
+
+The old fixture also logs its existing malformed Mineralogy metadata and a rock
+furnace tile class without a public constructor that takes no arguments. Forge skips
+those old tile entities. These warnings predate this mod and did not prevent the
+complete server from reaching the started state or the migration audit from
+passing.

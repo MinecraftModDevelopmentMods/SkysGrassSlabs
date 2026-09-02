@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    { "item": "skysgrassslabs:dirt_slab" },
-    { "tag": "forge:seeds" }
-  ],
-  "result": { "item": "skysgrassslabs:grass_slab" }
-}

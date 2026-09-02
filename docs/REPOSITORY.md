@@ -1,69 +1,56 @@
 # Repository and release workflow
 
-## Current repository
+## Checkout layout
 
-The 1.18.2 source is the `master-1.18.2` branch of this repository. The clone
-location is developer-selected and is not part of the build or repository
-contract.
+Each Minecraft version uses an independent nested checkout. The Minecraft
+1.10.2 checkout uses branch `master-1.10.2`; its parent directory may be used
+as the Eclipse workspace. Other versions should use sibling checkouts so they
+can be opened and worked on independently.
 
-The public repository topology is:
+## Repository topology
 
-- `origin`: the SkyBlade1978 fork at
-  `https://github.com/SkyBlade1978/SkysGrassSlabs.git`
-- `upstream`: the MMD repository at
-  `https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs.git`
+- `origin`: `https://github.com/SkyBlade1978/SkysGrassSlabs.git`
+- `upstream`: `https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs.git`
 
-Ordinary pushes go to `origin`; MMD work is proposed through a pull request to
-`upstream`. The local pre-push guard blocks direct updates to the MMD repository.
+Source changes are pushed only to the SkyBlade1978 fork and proposed to MMD
+through pull requests. Never push implementation commits directly to upstream.
+If the upstream `master-1.10.2` branch does not yet exist, an MMD maintainer must
+create it before the backport PR can be opened.
 
-## Branching
+Do not use development tool names in branch, folder, commit, artifact or other
+public project names.
 
-- Current target branch: `master-1.18.2`; routine work may remain directly on
-  this branch while the project is in early local development.
-- Create a focused branch only when parallel or isolated work genuinely needs
-  one. Keep branch, folder, commit, artifact, and other project-facing names
-  free of coding-agent or tool branding.
-- Keep each Minecraft version and loader lineage on a distinct branch and,
-  when concurrent work begins, a distinct checkout or Git worktree.
-- Do not mix a future NeoForge line into a Forge branch.
-- Use the newest accepted feature-complete product branch as the product source
-  for a forward port, then overlay only the target MDK scaffold and deliberate
-  API/resource adaptations.
+## CI and publication
 
-An Eclipse workspace may live in any developer-selected directory outside the
-checkout; import the checkout itself as an existing Gradle project.
+The 1.10 branch CI runs Java 8 compilation and tests under Gradle on Java 17,
+the build only runtime harness, Javadocs, release artifact and checksum audits,
+and Eclipse production classpath verification. Separate workflows validate the
+Gradle wrapper and run CodeQL.
+
+The tag workflow validates four part version tags and the prior audited CI
+check. It does not publish. Maven, CurseForge project `1677588`, and GitHub
+release publication must be performed only by the separately approved manual
+dispatcher using the same immutable candidate bundle.
+
+MMD administrators must expose the existing organisation Maven and CurseForge
+secrets to this repository. Credentials must never be committed.
 
 ## Publication guardrails
 
-Automated success never authorizes publication. Do not push, open an MMD PR,
-tag, publish Maven/CurseForge/GitHub artifacts, or update an MMD branch until:
+Automated success never authorizes publication. A tag, Maven upload,
+CurseForge upload, GitHub release, or direct MMD update requires fresh approval
+for the exact version, commit, and artifact hash.
 
-1. The exact commit and artifact hashes are recorded.
-2. Required automated and packaged-runtime gates pass.
-3. The user manually tests that exact candidate.
-4. The user gives fresh, explicit approval naming this version/branch and the
-   requested external action.
+Before a fork push or PR:
 
-Approval for a different version or an earlier candidate does not carry
-forward. Once an upstream remote exists, install a local ignored pre-push guard
-that permits ordinary fork pushes but rejects direct upstream pushes unless
-the exact action has been freshly authorized.
+1. Run the complete local and packaged runtime checks.
+2. Record exact candidate hashes and retained evidence.
+3. Confirm the source fixture remains unchanged.
+4. Confirm no local context, cache, run output, or evidence is tracked.
+5. Keep manual visual acceptance and publication status explicit.
 
-Never force-push or delete an MMD branch as routine cleanup.
+## Local context
 
-## Commits and local context
-
-Keep commits focused and leave the worktree clean at handoff unless a candidate
-is intentionally awaiting manual testing. Do not include generated run data,
-Gradle caches, Eclipse metadata, evidence directories, or local paths.
-
-`AGENTS.md`, `agent-notes/`, and tool-specific working state are local and must
-remain untracked at every repository depth. Durable technical and contributor
-knowledge belongs in tracked `README.md` and `docs/`. Before any public push,
-verify that no local guidance or tool-state file is tracked or present in the
-candidate jar.
-
-The project is licensed `LGPL-2.1-only`, copyright SkyBlade1978. The root
-license, SPDX marker, and notice must be present in source and packaged jars.
-If substantial BuildingBricks code is copied, carry its MIT copyright and
-permission notice as required.
+`AGENTS.md`, `agent-notes/`, `.codex/`, `.claude/`, and other local tool state
+are ignored at every depth. They must not be tracked or packaged. Durable
+technical knowledge belongs in `README.md` and `docs/`.

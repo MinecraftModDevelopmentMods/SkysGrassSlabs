@@ -2,161 +2,119 @@
 
 ## Product contract
 
-The 1.18.2 beta product consists of:
+Version `0.3.0.110021` is the Minecraft 1.10.2 backport of the complete grass
+slab and turf product. It retains mod ID `skysgrassslabs`, package root
+`zone.moddev.mc.skysgrassslabs`, all established block/item IDs, common config
+key `worldgen.generateGrassSlabs`, and schema-1 world state
+`skysgrassslabs_world_state`.
 
-1. Dirt, grass, and path slabs with normal top, bottom, double, waterlogging,
-   placement, collision, rendering, loot, tool, sound, and creative-tab
-   behaviour.
-2. Grass survival, decay, and spreading that interoperates with vanilla grass
-   blocks and preserves slab orientation.
-3. Convenience recipes for dirt plus a seed to make grass, including slab
-   equivalents, plus ordinary slab recipes.
-4. Smooth grass-slab transitions on newly generated Overworld terrain.
-5. Carpet-height turf cut from grass blocks or grass slabs, with matching soil
-   and an unchanged Forge-compatible shovel returned by crafting.
-6. A permanent schema marker that future versions can use for save migration.
+The four permanent blocks are `dirt_slab`, `grass_slab`, `path_slab`, and
+`turf`. Slabs store only their half in metadata: `0 = top`, `1 = bottom`.
+There are no double slab registry entries. Combining matching items replaces
+the slab with vanilla dirt, grass, or grass path.
 
-BuildingBricks migration is deliberately not part of beta `0.2.0.118021`. It
-begins on the Minecraft 1.10.2 line and is then proved while the mod is ported
-forward. See `ROADMAP.md` and `LEGACY-MIGRATION.md`.
+Minecraft 1.10 has no waterlogged block state. Slabs reject fluid placement and
+ordinary fluid behaviour is left to Minecraft.
 
-Do not expand the initial implementation into BuildingBricks' general material,
-stairs, step, corner, vertical-slab, trowel, bag, or ladder systems. Those are
-separate product decisions.
+## Block lifecycle
 
-## Confirmed BuildingBricks behaviour
+`LegacySlabBlock` owns the slab half, shape, placement, metadata, drops and
+combination contract. Dirt and grass use eight pixel half shapes. Path slabs
+use seven pixel shapes at `0-7/16` and `8-15/16`. Turf uses a one pixel carpet
+shape.
 
-The exact Sylvester server mod is `BuildingBricks-1.10.2-2.0.13.jar`. Its
-matching source tag is `v1.10.2-2.0.13` in the
-[BuildingBricks repository](https://github.com/SkyBlade1978/BuildingBricks).
+`GrassSpread` contains the shared loaded area spread rules used by grass slabs
+and turf. It targets vanilla dirt and dry dirt slabs; a converted slab keeps
+its half. Grass slabs decay to matching dirt slabs when covered or too dark.
+Turf has no dirt stage: low light merely pauses it, while support other than
+dirt makes it break and drop on a random tick.
 
-Its only world-generation implementation is:
+Grass coverings never sustain a vanilla grass support. Placing a grass slab,
+along with later neighbour changes and random ticks, converts a directly
+supporting grass block to dirt. Spread targets with turf or a grass slab above
+them are
+rejected, and each covering excludes its own support from its spread attempts.
+If vanilla spreading temporarily changes covered dirt to grass, the covering's
+neighbour update changes it back to dirt. A turf block already loaded above
+grass remains deliberately invalid and removes itself on its random tick unless
+a later neighbour update repairs the support first.
 
-`src/main/java/com/hea3ven/buildingbricks/compat/vanilla/GrassSlabWorldGen.java`
+Grass and dirt slabs expose a calculated `snowy` property that is not saved.
+Snow directly above or in any of the four horizontal neighbours selects a model
+with an untinted vanilla snow top and vanilla dirt sides with snowy edges. Snowy
+dirt and grass slabs deliberately share that complete cap treatment so the dirt
+version does not look like a white top pasted onto an ordinary dirt side. The
+property is never serialized and cannot affect the `0 = top`, `1 = bottom`
+metadata contract. This is visual only because Minecraft 1.10.2 cannot support
+an ordinary snow layer when the half slab is not an opaque full block without
+invasive engine changes.
 
-Resolve that path from the tagged BuildingBricks checkout; its location on a
-developer's machine is deliberately not part of this repository's contract.
+Only top grass slabs provide the plant and bonemeal behaviour unique to grass.
+Dirt, path and turf do not impersonate a full grass block for plant support.
 
-The feature runs at Overworld chunk-population time. For each candidate grass
-surface, it places a bottom grass slab above the lower side of a one-block
-height transition when adjacent grass is exactly one block higher. It avoids
-water, unsupported steep edges, occupied cells, existing grass slabs, and
-recursive neighbour generation. It can remove an orphaned upper half of a
-double plant. It does not generate any of BuildingBricks' other shapes.
+`TurfEatingAI` is added once to each server side sheep at the vanilla grass
+eating priority and mutex setting. It mirrors vanilla attempt rates,
+animation timing, navigation pause, wool regrowth, and child growth. Eating
+destroys turf without a drop when `mobGriefing=true`; with mob griefing disabled
+the turf remains while the ordinary vanilla eating bonus still applies.
 
-Do not copy its old scan literally. It searches upward from Y=0 and changes
-scan bounds based on currently loaded neighbouring chunks. The new feature
-must be heightmap-driven, chunk-owned, deterministic, and safe at borders.
+Shovel flattening is implemented through `RightClickBlock` and Forge tool
+classes. It requires any face except the underside, an editable position, a
+clear block above and a compatible shovel. Successful conversion plays the
+vanilla sound and uses one durability unless the player is in creative mode.
 
-## World-generation design
+## Recipes
 
-Implement a feature that runs once per generated Overworld chunk at the start
-of `VEGETAL_DECORATION`:
+Vanilla seeds are registered under the legacy OreDictionary key `listAllseed`.
+Dirt plus a seed makes grass, and a dirt slab plus a seed makes a grass slab.
 
-- OreSpawn and other terrain/surface work in `LOCAL_MODIFICATIONS` must finish
-  first.
-- The smoother must run before grass, flowers, and trees are placed.
-- Scan only the owning chunk's 16 by 16 columns.
-- Read a one-block halo of neighbouring terrain but never write outside the
-  owning chunk.
-- Use a world-generation heightmap rather than scanning the build height.
-- Require eligible natural grass on both levels, exactly one block of height
-  difference, a clear and dry target, and suitable support.
-- Place bottom grass slabs only. Player-placed top slabs remain a block feature,
-  not a world-generation output.
-- Do not inspect config strings, registries, or tags repeatedly inside the hot
-  column loop. Resolve/bake required predicates before placement.
-- Do not smooth existing chunks silently. Existing-terrain smoothing, if ever
-  desired, must be an explicit bounded command or retrogen mode with markers.
+`TurfCuttingRecipe` is registered with RecipeSorter key
+`skysgrassslabs:turf_cutting`. Exactly one grass block or grass slab and one
+compatible shovel produce one turf. The matching dirt input and an unchanged
+copy of the exact shovel remain in the crafting grid.
 
-Use a pure decision function for the local height/state pattern so most edge
-cases can be unit tested without launching Minecraft.
+## World smoothing
 
-## Grass lifecycle
+`GrassSlabSmoothingHandler` runs at `DecorateBiomeEvent.Pre` with lowest event
+priority. It applies only in the Overworld when smoothing is active.
 
-Minecraft 1.18.2's `SpreadingSnowyDirtBlock` only propagates to a target that
-is exactly `Blocks.DIRT`; a dirt tag or subclass does not make vanilla grass
-convert a custom dirt slab.
+Each pass:
 
-Implement target-aware custom behaviour:
+1. Resolves the owning loaded chunk without requesting neighbours.
+2. Scans its 256 columns into a reusable boolean decision buffer.
+3. Accepts only natural grass surfaces with a clear, dry, supported target and
+   no block entity.
+4. Requires an adjacent natural grass surface exactly one block higher.
+5. Writes bottom grass slabs only inside the owning chunk in a separate pass,
+   then converts each slab's supporting grass surface to dirt.
 
-- A dirt slab can detect a nearby viable vanilla grass block or this mod's
-  grass slab and convert under vanilla-like light and water constraints.
-- A grass slab decays to the corresponding dirt slab when it cannot remain
-  grass.
-- Preserve `SlabType.TOP` or `SlabType.BOTTOM` during conversion.
-- Do not grow or retain grass while waterlogged.
-- Decide and test double-slab semantics explicitly. The recommended rule is
-  that a double dirt slab grows into a vanilla grass block and two combined
-  grass slabs normalize to a vanilla grass block, avoiding a full cube with
-  grass-slab side texturing.
-- Snowy appearance, Silk Touch, drops, bonemeal expectations, and plant support
-  all require explicit tests; do not inherit assumptions from full blocks.
+Interior neighbours are always considered. East and south border comparisons
+are considered only when those chunks are already loaded; comparisons across
+the west and north borders are deliberately omitted. The handler never loads
+or writes a neighbouring chunk and performs no retrogen.
 
-Grass slabs and turf share one target-aware spreading helper. This keeps the
-loaded-area guard, source light threshold, target eligibility, water checks,
-four-attempt pattern, snowy state, orientation preservation, and double-slab
-normalization identical for both sources. A turf block is also a viable source
-when a dirt slab performs its own source search.
+## Legacy compatibility
 
-## Turf
+Compatibility is internal and driven by registries and configuration. No class
+from another mod is linked and no public compatibility API is exposed.
 
-Turf is a one-pixel-high `CarpetBlock` with a grass-top texture and biome tint
-on every face. It intentionally has no block entity, wool/carpet tag, llama
-decoration role, or furnace-fuel entry. Normal placement requires a full
-collision block below, matching carpet support and support-loss behaviour.
+When older grass slab smoothing is present and Sky smoothing is enabled, the
+mod runs first, makes a one time backup of the old configuration, and disables
+the overlapping generator. If configuration arbitration fails, Sky smoothing
+is disabled for that process so duplicate generation cannot occur.
 
-Only exact vanilla dirt is a lasting substrate. A random tick on any other
-support destroys the turf and drops its item. Valid dirt-supported turf remains
-turf under cover or low light but does not spread. In adequate light it uses
-the shared grass-spread helper and excludes its own supporting dirt from target
-selection.
+Chunk migration reads the original serialized 1.10 section arrays to locate
+numeric legacy IDs efficiently, writes only supported grass and dirt slab
+states into `ExtendedBlockStorage`, and marks each processed chunk with
+`buildingbricks_migration_version=1`. Tile/entity stacks are migrated through
+serialized NBT so unopened loot containers are not forced open. Player and
+ender chest inventories are checked on login. See `LEGACY-MIGRATION.md` for the
+exact supported IDs and qualification evidence.
 
-The custom turf item intercepts an upward use on a dry dirt slab: bottom and
-top orientation are retained as grass slabs, a double slab normalizes to
-vanilla grass, and a waterlogged slab rejects the action without consuming the
-turf. Other uses delegate to normal carpet placement.
+## Save state
 
-The special shapeless `turf_cutting` recipe accepts exactly one vanilla grass
-block or this mod's grass slab plus one item that advertises Forge's
-`SHOVEL_FLATTEN` action. It works in 2 by 2 and 3 by 3 grids, produces one turf,
-returns the corresponding dirt block or slab, and returns an unchanged copy of
-the shovel including damage, enchantments, and NBT.
-
-## Path slabs
-
-Flatten dirt and grass slabs through Forge's `ToolActions.SHOVEL_FLATTEN` block
-hook. Vanilla `ShovelItem` remains untouched, so compatible third-party tools
-can use the same block contract. Reject waterlogged slabs, preserve top/bottom
-orientation, and normalize a double slab to vanilla dirt path. Vanilla owns
-the non-downward-face, clear-space, sound, and durability checks.
-
-A bottom path slab occupies Y 0 through 7/16. A top path slab occupies Y 8/16
-through 15/16. Path slabs use vanilla dirt-path textures, always drop dirt
-slabs, support no grass vegetation, and turn back into matching dirt slabs when
-covered or waterlogged.
-
-## OreSpawn boundary
-
-The 1.18.2 OreSpawn reference is the `master-1.18` line of the
-[OreSpawn repository](https://github.com/MinecraftModDevelopmentMods/OreSpawn).
-Re-verify its current commit before compatibility testing.
-
-Relevant reference points are:
-
-- `worldgen/BiomeFeatureInstaller.java` for ordered feature stages.
-- `worldgen/StoneReplacer.java` and `worldgen/BiomeSurfaceFeature.java` for
-  final terrain and surface ordering.
-- `api/WorldgenProvider.java` for the existing provider boundary.
-- `worldgen/WorldMaterialWeather.java` for a bounded per-column pass.
-
-OreSpawn can choose fixed top/filler/underwater/ceiling materials but cannot
-currently express a neighbour-height transition that outputs a partial block.
-Do not add an OreSpawn dependency or GrassSlabs-specific OreSpawn schema. If a
-second independent consumer later needs a generic surface-contouring contract,
-revisit that as a separately designed OreSpawn capability.
-
-The integration requirement is behavioural: with Mineralogy and OreSpawn
-installed, smoothing must observe the final grass surface, must not overwrite
-provider terrain, structures, fluids, or block entities, and must remain
-deterministic across chunk generation order.
+`ModWorldState` is stored in the Overworld map storage so all dimensions share
+one aggregate. It records schema version, migration version, processed chunks,
+top and bottom block conversions, item conversions, and unsupported shape
+totals. The readable migration report is written atomically under the world's
+`serverconfig` directory.

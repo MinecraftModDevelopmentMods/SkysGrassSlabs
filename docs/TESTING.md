@@ -2,156 +2,110 @@
 
 ## Environment
 
-- Minecraft: 1.18.2
-- Forge: 40.3.0
+- Minecraft: 1.10.2
+- Forge: 12.18.3.2511
 - ForgeGradle: 7.0.34
-- Mappings: official 1.18.2
+- mappings: stable `29-1.10.2`
 - Gradle wrapper: 9.6.1
-- Java runtime and bytecode: 17
-- Gradle runtime: set `JAVA_HOME` to a Java 17 JDK
-- Build-only Mavenizer toolchain: Java 25
-- Mavenizer JDK: provide an Adoptium Java 25 toolchain or allow Gradle's
-  configured Foojay resolver to provision one
-- Gradle user home: use any writable cache; a repository-local
-  `.gradle-verify-cache` is supported and ignored
+- Gradle runtime: Java 17
+- production/test/Minecraft toolchain: Temurin `8.0.502+7`
+- Mavenizer build toolchain: Java 25
+- Gradle user home: a dedicated shared cache outside the checkout
 
-Do not run Gradle concurrently against this checkout/cache. Review complete
-logs and crash-report directories after every client, server, or GameTest run.
+Run Gradle sequentially from the nested checkout. Do not run concurrent builds
+against the shared cache.
 
-## Eclipse
-
-Use a developer-selected Eclipse workspace outside the checkout and import the
-repository root as an existing Gradle project. Generate or refresh the launch
-configuration with the prescribed Gradle environment:
+## Primary clean gate
 
 ```powershell
-./gradlew.bat genEclipseRuns eclipse --no-daemon
+$env:JAVA_HOME='<Java 17 JDK>'
+$env:GRADLE_USER_HOME='<dedicated Gradle cache>'
+./gradlew.bat clean check build javadoc verifyReleaseArtifacts `
+  writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon --stacktrace
 ```
 
-After the command completes, use **Gradle > Refresh Gradle Project**. The
-`eclipse` task keeps Forge's mapped libraries in the FG7 model so Buildship can
-consume them; the refresh then exposes them through one **Project and External
-Dependencies** container. The verification also pins Buildship to the
-prescribed Gradle home, checks processed resources, and excludes test code from
-production launches. ForgeGradle 7 generates root `run*.launch` files using
-`net.minecraftforge.launcher.Main` and Slime Launcher; use those launches
-rather than any obsolete ForgeGradle 6 launch groups.
+`check` includes focused Java tests plus a Forge runtime mod used only during
+the build. The runtime creates a fresh world, executes 72 gameplay and 8 world
+generation assertions,
+stops, reloads the same world, and verifies schema state. Probe classes and
+resources are excluded from distributable jars.
 
-Do not manually add Gradle libraries to the Eclipse build path; Buildship owns
-the dependency container. Adding a second dependency path duplicates named
-Forge modules at startup. After regenerating files outside Eclipse, use
-**Gradle > Refresh Gradle Project** and **Project > Clean** to replace stale
-compiler markers and launch data.
+## Focused automated coverage
 
-## Development loop
+- permanent registry IDs, configuration and version metadata, recipe sorter identity,
+  resources, legacy model parents, and repository hygiene;
+- slab metadata conversions, top and bottom geometry, combination normalization,
+  drops, Silk Touch, plants, bonemeal, grass lifecycle, and turf support;
+- grass and dirt snow states that are not saved, untinted snow tops, matching snow edged
+  dirt sides, and unchanged slab metadata while snow appears and disappears
+  above or beside a slab;
+- top and bottom grass slab support dirtification during placement, world smoothing,
+  neighbour updates, and random ticks;
+- covered target rejection and immediate repair after both mod and vanilla
+  spread paths, including each grass covering's own support exclusion;
+- attaching only one turf eating task, vanilla animation timing, destruction
+  without a drop, wool regrowth, child growth, and `mobGriefing` behavior;
+- turf recipe matching and exact unchanged shovel/dirt remainders;
+- compatible Forge shovel detection and flattening interactions;
+- migration mappings, orientation counts, schema persistence, configuration
+  backup/arbitration, and failure fallback;
+- worldgen eligibility, cliffs, flat terrain, fluid, occupied targets, block
+  entities, loaded east and south borders, west and north omission, and second pass
+  idempotence;
+- fixed seed 9×9 chunk decisions across forward, reverse, and shuffled orders;
+- a 256-column benchmark with a 5 ms regression ceiling.
 
-For focused work, begin with red-to-green unit or contract tests, then run the
-smallest proportional compile/resource gate. Before handing off a candidate:
+The focused benchmark measured approximately 1,134 ns per synthetic
+256-column decision pass on the qualification machine. It is a regression
+signal, not a performance promise for other machines.
+
+## Eclipse and development launches
+
+Use the checkout's parent directory as the Eclipse workspace and import the
+nested project as an existing Gradle project.
 
 ```powershell
-./gradlew.bat clean test processResources build --no-daemon
-./gradlew.bat genEclipseRuns eclipse --no-daemon
+./gradlew.bat genEclipseRuns verifyEclipseProductionClasspath --no-daemon
 ```
 
-Run GameTests in a fresh disposable directory so saved state, configs, and
-world output cannot inherit an earlier result:
+Then refresh the Gradle project and clean it in Eclipse. Buildship owns the
+classpath; do not manually add a second Gradle dependency container.
 
-```powershell
-./gradlew.bat test runGameTestServer `
-  -PskysGrassSlabsGameTestRunDirectory=run-gametest-candidate --no-daemon
-```
+ForgeGradle's 1.10 Slime Launcher is a Java multirelease jar. Forge 1.10's old
+ASM scanner logs and ignores its Java 11 entry while the launcher continues.
+The same warning occurs in the qualified OreSpawn 1.10 development launch. A
+client pass requires Sky's Grass Slabs to be identified, OpenAL initialized,
+the 512×512 texture atlas built, and Forge to report all four mods loaded with
+no missing project model or texture.
 
-The beta suite has eleven independently batched runtime tests. The controlled
-world-generation test runs the whole owning chunk twice and requires the
-second pass to make no change.
+## Packaged runtime matrix
 
-## Required automated coverage
+The exact reobfuscated candidate must pass Java 8 dedicated server checks with
+a fresh world and after a reload:
 
-### Blocks and recipes
+1. Forge plus Sky's Grass Slabs.
+2. Sky's Grass Slabs plus BuildingBricks 1.10.2-2.0.13, including config backup
+   and ownership by only one generator.
+3. Sky's Grass Slabs plus the current OreSpawn and Mineralogy 1.10 candidates.
+4. The complete disposable Sylvester fixture.
 
-- top, bottom, double, and waterlogged placement
-- collision, occlusion, pathing, light, sound, tool and drop behaviour
-- Silk Touch and ordinary grass-slab drops
-- snow appearance and survival
-- dirt/grass and dirt-slab/grass-slab seed recipes
-- slab creation and combining behaviour
-- grass-slab `cutoutMipped` registration and biome tint resources
-- server-only classloading and resource completeness
+Completed local evidence includes:
 
-### Turf
+- solo and BuildingBricks fresh/reload: 72 gameplay and 8 worldgen checks;
+- OreSpawn `4.0.8.110021` plus Mineralogy `6.0.1.110021`: fresh/reload, same
+  72/8 checks, active Mineralogy provider, no error or crash directory;
+- complete Sylvester first and second migrations with the exact totals in
+  `LEGACY-MIGRATION.md` and unchanged source fingerprint.
 
-- exact one-pixel outline and collision geometry, carpet flammability, and no
-  block entity or wool-carpet tags
-- normal placement on full dirt and non-dirt blocks, rejection on partial
-  supports, and immediate carpet-style removal when support is lost
-- invalid-support random-tick destruction with a turf drop
-- persistence without a dirt stage when covered or too dark
-- spreading to vanilla dirt and every dry dirt-slab orientation without
-  converting its own support
-- turf as a viable source for dirt-slab random-tick growth
-- direct item conversion of bottom, top, and double dirt slabs, plus unchanged
-  waterlogged slabs
-- 2 by 2 special-recipe matching for both grass inputs and multiple compatible
-  shovels, exact dirt remainders, unchanged tool damage/NBT, and invalid inputs
+## Final artifact gate
 
-### Grass lifecycle
+Build twice from a clean state and require identical SHA-256 values for the main
+jar. Audit all release jars for expected metadata, resources, licenses, LF line
+endings, absence of tests, probes, local paths and local context, and exact
+checksums.
 
-- vanilla grass to dirt slab
-- grass slab to dirt slab
-- grass slab decay when covered
-- top/bottom orientation preservation
-- waterlogged rejection
-- double-slab normalization
-- loaded-area guards that never force neighbour chunk loads
-
-### World generation
-
-- one-block transition places exactly one bottom slab
-- flat terrain, two-block cliffs, unsupported edges, water and occupied targets
-  remain unchanged
-- structures and block entities remain unchanged
-- chunk edges produce the same result regardless of generation order
-- only the owning chunk is written
-- only intended dimensions/biomes/surface blocks participate
-- no second-pass duplicate output
-- no writes to existing chunks by default
-
-Use a fixed seed and compare at least several generation orders around the same
-chunk boundary. Benchmark the 256-column pass separately and together with
-Mineralogy/OreSpawn; cache predicates and avoid allocation in the hot loop.
-
-### Compatibility
-
-Run fresh and reload integration with:
-
-1. Forge plus Sky's Grass Slabs only.
-2. Sky's Grass Slabs plus the exact local OreSpawn candidate and Mineralogy.
-   Mineralogy-only is not a valid 1.18.2 row because Mineralogy declares
-   OreSpawn as mandatory.
-3. Starting with the 1.10.2 compatibility release, a disposable legacy
-   Sylvester conversion as specified in `LEGACY-MIGRATION.md`.
-
-The current reference OreSpawn checkout may move. Re-read its ignored handover,
-verify its `git status`, branch, exact commit and jar hash, and never assume the
-snapshot recorded in local agent notes is still current.
-
-## Runtime and release evidence
-
-A development launch does not prove the distributable jar. A final candidate
-requires:
-
-- deterministic unit/contract tests
-- data/resource parsing and locale-key audit
-- clean build, Javadocs, `genEclipseRuns`, and `eclipse`
-- artifact contents audit with no test classes, fixtures, agent files, local
-  paths, or unintended dependencies
-- exact reobfuscated jar in a clean launcher-like Forge 40 client and server
-- fresh world, clean save/stop, and reload
-- complete log and crash-directory review
-- manual visual acceptance of slab joins and side overlays, tinting, snow,
-  placement, breaking, walking, generated slopes, turf geometry, turf spread,
-  turf conversion, and invalid-support removal
-- legacy migration evidence where applicable
-
-Keep local pass, PR readiness, hosted CI, deployment/publication, packaged
-runtime proof, manual acceptance, and release approval as distinct states.
+Manual visual acceptance remains pending for grass tinting; visual grass/dirt
+snow caps in several mountain arrangements; top/bottom joins; support
+dirtification and stable turf fields; sheep animation; turf geometry and
+spread; path height; shovel interaction; placement; breaking; and generated
+slopes.

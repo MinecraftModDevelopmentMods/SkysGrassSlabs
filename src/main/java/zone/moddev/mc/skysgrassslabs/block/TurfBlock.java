@@ -1,58 +1,95 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.Random;
+import net.minecraft.block.Block;
+import net.minecraft.block.SoundType;
+import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
+import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.CarpetBlock;
-import net.minecraft.world.level.block.state.BlockState;
+public final class TurfBlock extends Block {
+    public static final AxisAlignedBB TURF_AABB =
+            new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 1.0D / 16.0D, 1.0D);
 
-/** Biome tinted grass source at carpet height with no dirt state. */
-public final class TurfBlock extends CarpetBlock {
-    public TurfBlock(Properties properties) {
-        super(properties);
+    public TurfBlock() {
+        super(Material.CARPET);
+        setHardness(0.1F);
+        setSoundType(SoundType.CLOTH);
+        setTickRandomly(true);
+        setLightOpacity(0);
     }
 
     @Override
-    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-        BlockPos supportPos = pos.below();
-
-        return level.getBlockState(supportPos).isCollisionShapeFullBlock(level, supportPos);
+    public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess world, BlockPos pos) {
+        return TURF_AABB;
     }
 
     @Override
-    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
-        BlockPos supportPos = pos.below();
+    public boolean isOpaqueCube(IBlockState state) {
+        return false;
+    }
 
-        if (!hasDirtSupport(level, supportPos)) {
-            level.destroyBlock(pos, true);
+    @Override
+    public boolean isFullCube(IBlockState state) {
+        return false;
+    }
+
+    @Override
+    public boolean canPlaceBlockAt(World world, BlockPos pos) {
+        return super.canPlaceBlockAt(world, pos) && hasFullSupport(world, pos);
+    }
+
+    @Override
+    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock) {
+        if (!world.isRemote && world.getBlockState(pos.down()).getBlock() == Blocks.GRASS) {
+            world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
             return;
         }
-
-        if (!SoilLifecycle.canPropagate(state, level, pos)) {
-            return;
+        if (!hasFullSupport(world, pos)) {
+            dropBlockAsItem(world, pos, state, 0);
+            world.setBlockToAir(pos);
         }
-
-        GrassSpread.spreadFrom(level, pos, random, supportPos);
-    }
-
-    static boolean hasDirtSupport(LevelReader level, BlockPos supportPos) {
-        return level.getBlockState(supportPos).is(Blocks.DIRT);
     }
 
     @Override
-    public int getFlammability(BlockState state, BlockGetter level, BlockPos pos,
-            Direction direction) {
+    public void updateTick(World world, BlockPos pos, IBlockState state, Random random) {
+        if (world.isRemote) {
+            return;
+        }
+        BlockPos support = pos.down();
+        if (world.getBlockState(support).getBlock() != Blocks.DIRT) {
+            dropBlockAsItem(world, pos, state, 0);
+            world.setBlockToAir(pos);
+            return;
+        }
+        GrassSpread.spreadFrom(world, pos, random, support);
+    }
+
+    @Override
+    public int getFlammability(IBlockAccess world, BlockPos pos, EnumFacing face) {
         return 20;
     }
 
     @Override
-    public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos,
-            Direction direction) {
+    public int getFireSpreadSpeed(IBlockAccess world, BlockPos pos, EnumFacing face) {
         return 60;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public BlockRenderLayer getBlockLayer() {
+        return BlockRenderLayer.CUTOUT_MIPPED;
+    }
+
+    private static boolean hasFullSupport(World world, BlockPos pos) {
+        return world.getBlockState(pos.down()).isFullCube();
     }
 }

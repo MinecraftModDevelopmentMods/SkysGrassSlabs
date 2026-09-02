@@ -1,0 +1,15 @@
+[
+  {
+    "modid": "${modid}",
+    "name": "${name}",
+    "description": "${description}",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://www.curseforge.com/minecraft/mc-mods/skys-grass-slabs",
+    "authorList": ["SkyBlade1978"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]

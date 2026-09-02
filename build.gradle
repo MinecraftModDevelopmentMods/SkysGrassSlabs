@@ -1,4 +1,8 @@
+import groovy.json.JsonSlurper
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.util.zip.ZipFile
+import org.apache.tools.ant.filters.FixCrLfFilter
 
 plugins {
     id 'java'
@@ -9,246 +13,562 @@ plugins {
     id 'net.minecraftforge.gradle' version '7.0.34'
 }
 
-def mavenizerCompatibilityJar = layout.projectDirectory.file(
-        'ci-fixtures/tools/minecraft-mavenizer-0.5.21-forge-1.18.jar')
-def mavenizerCompatibilitySha256 =
-        '28A6697BDF6D9500EC0AF9C1C949B9F3ED7DDFDA649CB5CAC4BEEA2E9567570A'
+group = project.mod_group
+version = project.mod_version
+base.archivesName = 'SkysGrassSlabs'
 
-// ForgeGradle 7's Mavenizer recompilation rejects a redundant accessor emitted
-// by Forge 40's 1.18.2 decompiler. This checksum-sealed build-only variant
-// removes that accessor; the mod and every shipped class remain Java 17.
-fgtools.configure('mavenizer') {
-    classpath.from(mavenizerCompatibilityJar)
-    mainClass.set('net.minecraftforge.mcmaven.cli.Main')
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(25)
-        vendor = JvmVendorSpec.ADOPTIUM
-    })
+def versionParts = project.mod_version.toString().tokenize('.')
+if (versionParts.size() != 4 || !versionParts.every { it ==~ /\d+/ }) {
+    throw new GradleException("mod_version must use Major.Minor.Bug.Target numeric form: ${project.mod_version}")
+}
+def minecraftVersionParts = project.minecraft_version.toString().tokenize('.')
+def expectedTargetVersion = "${minecraftVersionParts[0]}" +
+        "${minecraftVersionParts[1].padLeft(2, '0')}" +
+        "${minecraftVersionParts[2].padLeft(2, '0')}" + project.loader_code
+if (versionParts[3] != expectedTargetVersion) {
+    throw new GradleException("mod_version target ${versionParts[3]} does not match ${expectedTargetVersion}")
 }
 
-version = mod_version
-group = mod_group_id
+ext.functional_version = versionParts[0..2].join('.')
+ext.display_version = project.mod_version
+ext.release_tag = project.mod_version
 
-base {
-    archivesName = 'SkysGrassSlabs'
-}
-
-// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
     withSourcesJar()
     withJavadocJar()
 }
 
-sourceSets {
-    gameTest {
-        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
-        runtimeClasspath += output + compileClasspath
+tasks.withType(JavaCompile).configureEach {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(8)
     }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    options.encoding = 'UTF-8'
+    options.compilerArgs.addAll(['-Xmaxerrs', '1000'])
 }
 
-println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
-def gameTestRunDirectory = providers.gradleProperty('skysGrassSlabsGameTestRunDirectory')
-        .getOrElse('run-gametest')
+tasks.named('compileTestJava', JavaCompile) {
+    options.compilerArgs.add('-proc:none')
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    workingDir = project.projectDir
+}
+
+tasks.withType(Javadoc).configureEach {
+    failOnError = false
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addBooleanOption('notimestamp', true)
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+def archiveTextSuffixes = [
+        '.cfg', '.html', '.info', '.java', '.json', '.lang', '.mcmeta', '.md',
+        '.properties', '.txt', '.xml'
+]
+def archiveTextPatterns = archiveTextSuffixes.collect { "**/*${it}".toString() }
+archiveTextPatterns.addAll(['**/element-list', '**/package-list'])
+def normalizeArchiveLineEndings = { details ->
+    details.filter(FixCrLfFilter,
+            eol: FixCrLfFilter.CrLf.newInstance('lf'),
+            eof: FixCrLfFilter.AddAsisRemove.newInstance('asis'))
+}
+
+def developmentRunDirectory = providers.gradleProperty('skysGrassSlabsRunDirectory').getOrElse('run')
 minecraft {
-    // The mappings can be changed at any time and must be in the following format.
-    // Channel:   Version:
-    // official   MCVersion             Official field/method names from Mojang mapping files
-    // parchment  YYYY.MM.DD-MCVersion  Open community-sourced parameter names and javadocs layered on top of official
-    //
-    // You must be aware of the Mojang license when using the 'official' or 'parchment' mappings.
-    // See more information here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
-    //
-    // Parchment is an unofficial project maintained by ParchmentMC, separate from MinecraftForge
-    // Additional setup is needed to use their mappings: https://github.com/ParchmentMC/Parchment/wiki/Getting-Started
-    //
-    // Use non-default mappings at your own risk. They may not always work.
-    // Simply re-run your setup task after changing the mappings to update your workspace.
-    mappings channel: mapping_channel, version: mapping_version
-
-    // When true, this property will have all Eclipse/IntelliJ IDEA run configurations run the "prepareX" task for the given run configuration before launching the game.
-    // In most cases, it is not necessary to enable.
-    // enableEclipsePrepareRuns = true
-    // enableIdeaPrepareRuns = true
-
-    // When true, this property will add the folder name of all declared run configurations to generated IDE run configurations.
-    // The folder name can be set on a run configuration using the "folderName" property.
-    // By default, the folder name of a run configuration is the name of the Gradle project containing it.
-    // generateRunFolders = true
-
-    // This property enables access transformers for use in development.
-    // They will be applied to the Minecraft artifact.
-    // The access transformer file can be anywhere in the project.
-    // However, it must be at "META-INF/accesstransformer.cfg" in the final mod jar to be loaded by Forge.
-    // This default location is a best practice to automatically put the file in the right place in the final jar.
-    // See https://docs.minecraftforge.net/en/latest/advanced/accesstransformers/ for more information.
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    // Default run configurations.
-    // These can be tweaked, removed, or duplicated as needed.
+    mappings channel: project.mapping_channel, version: project.mapping_version
     runs {
         configureEach {
-            workingDir.convention layout.projectDirectory.dir('run')
-            jvmArgs '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED'
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            workingDir.convention layout.projectDirectory.dir(developmentRunDirectory)
             systemProperty 'forge.logging.console.level', 'debug'
-            systemProperty 'forge.enabledGameTestNamespaces', mod_id
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
         }
-
         register('client')
+        register('server') { args '--nogui' }
+    }
+}
 
-        register('server') {
-            args '--nogui'
-        }
-
-        register('gameTestServer') {
-            workingDir.convention layout.projectDirectory.dir(gameTestRunDirectory)
-            mods {
-                "${mod_id}" {
-                    source sourceSets.gameTest
-                }
-            }
-        }
-
-        register('data') {
-            workingDir.convention layout.projectDirectory.dir('run-data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+// Forge 1.10 discovers a development mod from one classes/resources root.
+def forge10DevelopmentOutput = layout.buildDirectory.dir('forge10-development/main')
+def syncForge10DevelopmentResources = tasks.register('syncForge10DevelopmentResources', Sync) {
+    group = 'ide'
+    dependsOn tasks.named('classes')
+    from tasks.named('compileJava', JavaCompile).flatMap { it.destinationDirectory }
+    from sourceSets.main.output.resourcesDir
+    into forge10DevelopmentOutput
+}
+tasks.configureEach {
+    if (name in ['runClient', 'runServer', 'runTestClient', 'runTestServer']) {
+        dependsOn syncForge10DevelopmentResources
+        doFirst {
+            Set<File> splitMainOutputs = [
+                    tasks.named('compileJava', JavaCompile).get().destinationDirectory.get().asFile,
+                    sourceSets.main.output.resourcesDir
+            ] as Set<File>
+            classpath = files(forge10DevelopmentOutput, classpath.filter {
+                !splitMainOutputs.contains(it)
+            })
         }
     }
 }
 
-// Include resources generated by data generators.
-sourceSets.main.resources { srcDir 'src/generated/resources' }
+// Clone ForgeGradle's generated launch at execution time so verification runs
+// use the same mappings and Java 8 runtime without exposing probe code to the
+// ordinary client or server classpath.
+def configureFromForgeRun = { JavaExec process, String runTaskName ->
+    process.actions.clear()
+    process.dependsOn {
+        JavaExec run = tasks.getByName(runTaskName) as JavaExec
+        run.taskDependencies.getDependencies(run)
+    }
+    process.doLast {
+        JavaExec run = tasks.getByName(runTaskName) as JavaExec
+        String runConfigurationName = runTaskName.substring(3).uncapitalize()
+        def runOptions = minecraft.runs.getByName(runConfigurationName)
+        File originalConfiguredWorkingDir = runOptions.workingDir.get().asFile
+        File originalWorkingDir = run.workingDir
+        List<String> originalArgs = new ArrayList<>(run.args)
+        List<String> originalJvmArgs = new ArrayList<>(run.jvmArgs)
+        Map<String, Object> originalSystemProperties = new LinkedHashMap<>(run.systemProperties)
+        Map<String, Object> originalEnvironment = new LinkedHashMap<>(run.environment)
+        FileCollection originalClasspath = files(run.classpath.files)
+        String originalMinHeap = run.minHeapSize
+        String originalMaxHeap = run.maxHeapSize
+        String originalMainClass = run.mainClass.orNull
+        try {
+            runOptions.workingDir.set(process.workingDir)
+            run.workingDir(process.workingDir)
+            run.args(process.args)
+            run.jvmArgs(process.jvmArgs)
+            run.systemProperties(process.systemProperties)
+            run.environment(process.environment)
+            Set<File> splitMainOutputs = [
+                    tasks.named('compileJava', JavaCompile).get().destinationDirectory.get().asFile,
+                    sourceSets.main.output.resourcesDir
+            ] as Set<File>
+            run.setClasspath(files(forge10DevelopmentOutput, run.classpath.filter {
+                !splitMainOutputs.contains(it)
+            }))
+            run.exec()
+        } finally {
+            runOptions.workingDir.set(originalConfiguredWorkingDir)
+            run.workingDir(originalWorkingDir)
+            run.setArgs(originalArgs)
+            run.setJvmArgs(originalJvmArgs)
+            run.setSystemProperties(originalSystemProperties)
+            run.setEnvironment(originalEnvironment)
+            run.setClasspath(originalClasspath)
+            run.minHeapSize = originalMinHeap
+            run.maxHeapSize = originalMaxHeap
+            if (originalMainClass == null) {
+                run.mainClass.unset()
+            } else {
+                run.mainClass.set(originalMainClass)
+            }
+        }
+    }
+}
 
 repositories {
     minecraft.mavenizer(it)
     maven fg.forgeMaven
     maven fg.minecraftLibsMaven
     exclusiveContent {
-        forRepository { maven { url = 'https://repo.spongepowered.org/repository/maven-public' } }
+        forRepository {
+            maven {
+                name = 'Sponge'
+                url = 'https://repo.spongepowered.org/repository/maven-public'
+            }
+        }
         filter { includeGroupAndSubgroups('org.spongepowered') }
     }
     mavenCentral()
-    maven { url = 'https://libraries.minecraft.net/' }
+    maven {
+        name = 'MinecraftLibraries'
+        url = 'https://libraries.minecraft.net/'
+    }
 }
 
 dependencies {
     implementation minecraft.dependency(
             "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}")
-    testImplementation 'junit:junit:4.13.2'
+    compileOnly 'org.lwjgl.lwjgl:lwjgl_util:2.9.4-nightly-20150209'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
 }
 
-def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompatibilityFixture') {
+def integrationTestClasses = layout.buildDirectory.dir('integration-test-mod/classes')
+def compileIntegrationTestMod = tasks.register('compileIntegrationTestMod', JavaCompile) {
     group = 'verification'
-    description = 'Verifies the checksum-sealed Forge 1.18 Mavenizer compatibility tool.'
-    inputs.file mavenizerCompatibilityJar
+    dependsOn tasks.named('classes')
+    source fileTree('src/integrationTest/java')
+    classpath = files(sourceSets.main.output, sourceSets.main.compileClasspath)
+    destinationDirectory = integrationTestClasses
+    options.encoding = 'UTF-8'
+}
+
+def integrationTestModJar = tasks.register('integrationTestModJar', Jar) {
+    group = 'verification'
+    dependsOn compileIntegrationTestMod
+    archiveFileName = 'skysgrassslabs-integration-test.jar'
+    destinationDirectory = layout.buildDirectory.dir('integration-test-mod')
+    from integrationTestClasses
+    from 'src/integrationTest/resources'
+}
+
+def packagedIntegrationTestModJar = renamer.classes(integrationTestModJar) {
+    map.from minecraft.dependency.toSrgFile
+    output = layout.buildDirectory.file(
+            'integration-test-mod/skysgrassslabs-integration-test-reobf.jar')
+}
+
+tasks.register('preparePackagedIntegrationProbe') {
+    group = 'verification'
+    description = 'Builds the reobfuscated probe used only in disposable packaged runtimes.'
+    dependsOn packagedIntegrationTestModJar
+}
+
+def integrationRunDirectory = layout.buildDirectory.dir('integration-test-run')
+def prepareIntegrationTest = tasks.register('prepareIntegrationTest') {
+    group = 'verification'
+    dependsOn integrationTestModJar
     doLast {
-        File fixture = mavenizerCompatibilityJar.asFile
-        if (!fixture.isFile()) {
-            throw new GradleException("Missing Mavenizer compatibility fixture: ${fixture}")
+        File runDirectory = integrationRunDirectory.get().asFile
+        project.delete(runDirectory)
+        File mods = new File(runDirectory, 'mods')
+        mods.mkdirs()
+        project.copy {
+            from integrationTestModJar.flatMap { it.archiveFile }
+            into mods
         }
-        MessageDigest digest = MessageDigest.getInstance('SHA-256')
-        fixture.withInputStream { input ->
-            byte[] buffer = new byte[8192]
-            for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
-                if (read > 0) digest.update(buffer, 0, read)
+        new File(runDirectory, 'eula.txt').setText('eula=true\n', 'UTF-8')
+        new File(runDirectory, 'server.properties').setText('''\
+level-name=world
+level-seed=skys-grass-slabs-integration
+level-type=default
+online-mode=false
+generate-structures=false
+spawn-animals=false
+spawn-monsters=false
+spawn-protection=0
+max-tick-time=120000
+''', 'UTF-8')
+    }
+}
+
+def createIntegrationProcess = { String phase, Object dependency ->
+    tasks.register("integration${phase}Process", JavaExec) {
+        group = 'verification'
+        dependsOn dependency
+        workingDir integrationRunDirectory
+        systemProperty 'skysgrassslabs.integrationPhase', phase.toLowerCase(Locale.ROOT)
+        configureFromForgeRun(delegate, 'runServer')
+        doLast {
+            File marker = new File(integrationRunDirectory.get().asFile,
+                    'world/skysgrassslabs-integration.properties')
+            if (!marker.isFile()) {
+                throw new GradleException("${phase} integration marker is missing: ${marker}")
+            }
+            Properties values = new Properties()
+            marker.withInputStream { values.load(it) }
+            if (values.getProperty("${phase.toLowerCase(Locale.ROOT)}_complete") != 'true') {
+                throw new GradleException("${phase} integration did not complete: ${marker}")
             }
         }
-        String actual = digest.digest().encodeHex().toString().toUpperCase()
-        if (actual != mavenizerCompatibilitySha256) {
-            throw new GradleException("Mavenizer compatibility fixture checksum mismatch: ${actual}")
+    }
+}
+
+def integrationFreshProcess = createIntegrationProcess('Fresh', prepareIntegrationTest)
+def integrationReloadProcess = createIntegrationProcess('Reload', integrationFreshProcess)
+
+tasks.register('integrationTest') {
+    group = 'verification'
+    description = 'Runs the build-only legacy gameplay probe through fresh and reload servers.'
+    dependsOn integrationReloadProcess
+    doLast {
+        File runDirectory = integrationRunDirectory.get().asFile
+        File marker = new File(runDirectory, 'world/skysgrassslabs-integration.properties')
+        Properties values = new Properties()
+        marker.withInputStream { values.load(it) }
+        ['fresh_complete', 'reload_complete', 'gameplay_checks', 'worldgen_checks'].each { key ->
+            if (!values.getProperty(key)) throw new GradleException("Missing integration evidence ${key}")
+        }
+        List<File> crashReports = fileTree(new File(runDirectory, 'crash-reports')).files as List<File>
+        if (!crashReports.isEmpty()) {
+            throw new GradleException("Integration runtime produced crash reports: ${crashReports}")
+        }
+        File latest = new File(runDirectory, 'logs/latest.log')
+        if (!latest.isFile() || latest.text.contains('Encountered an unexpected exception')) {
+            throw new GradleException("Integration runtime log is missing or contains a server failure: ${latest}")
         }
     }
 }
 
-tasks.named('compileJava', JavaCompile) {
-    dependsOn verifyMavenizerCompatibilityFixture
+tasks.named('check') {
+    dependsOn tasks.named('integrationTest')
 }
 
-tasks.named('processResources', ProcessResources).configure {
-    var replaceProperties = [
-            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
-            loader_version_range: loader_version_range,
-            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-            mod_authors: mod_authors, mod_description: mod_description,
-    ]
-    inputs.properties replaceProperties
-
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
-        expand replaceProperties + [project: project]
+tasks.named('processResources', ProcessResources) {
+    filteringCharset = 'UTF-8'
+    inputs.properties([
+            version: project.version,
+            mcversion: project.minecraft_version,
+            modid: project.mod_id,
+            name: project.mod_name,
+            description: project.mod_description
+    ])
+    filesMatching('mcmod.info') {
+        expand version: project.version, mcversion: project.minecraft_version,
+                modid: project.mod_id, name: project.mod_name,
+                description: project.mod_description
     }
+    filesMatching(archiveTextPatterns, normalizeArchiveLineEndings)
 }
 
-tasks.named('jar', Jar).configure {
+tasks.named('jar', Jar) {
     archiveClassifier = 'deobf'
     destinationDirectory = layout.buildDirectory.dir('libs-dev')
-    from(['LICENSE', 'LICENSE.spdx', 'NOTICE']) {
-        into 'META-INF'
-    }
-
+    from(['LICENSE', 'LICENSE.spdx', 'NOTICE']) { into 'META-INF' }
     manifest {
         attributes([
-                'Specification-Title'     : mod_id,
-                'Specification-Vendor'    : mod_authors,
-                'Specification-Version'   : '1', // We are version 1 of ourselves
-                'Implementation-Title'    : project.name,
-                'Implementation-Version'  : project.jar.archiveVersion,
-                'Implementation-Vendor'   : mod_authors,
-                'Built-On-Java'           : '17',
-                'Built-On'                : "${minecraft_version}-${forge_version}"
+                'Maven-Artifact': "${project.group}:${base.archivesName.get()}:${project.version}",
+                'Implementation-Title': base.archivesName.get(),
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': project.mod_authors,
+                'Built-On-Java': '8',
+                'Built-On': "${project.minecraft_version}-${project.forge_version}"
         ])
     }
+    filesMatching(archiveTextPatterns, normalizeArchiveLineEndings)
 }
 
 def releaseJar = renamer.classes(tasks.named('jar', Jar)) {
     map.from minecraft.dependency.toSrgFile
     archiveClassifier = null
-    output = layout.buildDirectory.file(
-            "libs/${base.archivesName.get()}-${project.version}.jar")
+    output = layout.buildDirectory.file("libs/${base.archivesName.get()}-${project.version}.jar")
+}
+
+tasks.named('sourcesJar', Jar) {
+    from(['LICENSE', 'LICENSE.spdx', 'NOTICE']) { into 'META-INF' }
+    filesMatching(archiveTextPatterns, normalizeArchiveLineEndings)
+}
+tasks.named('javadocJar', Jar) {
+    from(['LICENSE', 'LICENSE.spdx', 'NOTICE']) { into 'META-INF' }
+    filesMatching(archiveTextPatterns, normalizeArchiveLineEndings)
 }
 
 ['apiElements', 'runtimeElements'].each { configurationName ->
     configurations.named(configurationName) { artifacts.clear() }
     artifacts { add(configurationName, releaseJar) }
 }
-
 tasks.named('assemble') {
-    dependsOn releaseJar
-    dependsOn tasks.named('sourcesJar')
-    dependsOn tasks.named('javadocJar')
+    dependsOn releaseJar, tasks.named('sourcesJar'), tasks.named('javadocJar')
 }
 
+def releaseFiles = provider {
+    [
+            "${base.archivesName.get()}-${project.version}.jar",
+            "${base.archivesName.get()}-${project.version}-sources.jar",
+            "${base.archivesName.get()}-${project.version}-javadoc.jar"
+    ]
+}
+
+tasks.register('verifyReleaseMetadata') {
+    group = 'verification'
+    doLast {
+        if (project.minecraft_version != '1.10.2' || project.forge_version != '12.18.3.2511' ||
+                project.mapping_channel != 'stable' || project.mapping_version != '29-1.10.2' ||
+                project.loader_name != 'forge' || project.loader_code != '1' ||
+                project.java_version != '8' || project.java_toolchain_version != '8.0.502+7' ||
+                project.curseforge_project_id != '1677588') {
+            throw new GradleException('Unexpected 1.10.2 release metadata')
+        }
+    }
+}
+
+tasks.register('verifyReleaseArtifacts') {
+    group = 'verification'
+    dependsOn tasks.named('assemble'), tasks.named('verifyReleaseMetadata')
+    doLast {
+        File libs = layout.buildDirectory.dir('libs').get().asFile
+        releaseFiles.get().each { name ->
+            File candidate = new File(libs, name)
+            if (!candidate.isFile() || candidate.length() == 0) {
+                throw new GradleException("Missing release artifact: ${candidate}")
+            }
+        }
+        ZipFile zip = new ZipFile(new File(libs, releaseFiles.get()[0]))
+        try {
+            Set<String> names = zip.entries().collect { it.name } as Set<String>
+            ['mcmod.info', 'META-INF/LICENSE', 'META-INF/LICENSE.spdx', 'META-INF/NOTICE',
+             'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class'].each { required ->
+                if (!names.contains(required)) throw new GradleException("Release jar is missing ${required}")
+            }
+            Set<String> forbidden = names.findAll { entry ->
+                String lower = entry.toLowerCase(Locale.ROOT)
+                lower.contains('agent') || lower.contains('.codex') || lower.contains('.claude') ||
+                        lower.contains('/test/') || lower.contains('gametest') ||
+                        lower.startsWith('d' + ':' + '/') ||
+                        lower.startsWith('c' + ':' + '/users/')
+            }
+            if (!forbidden.isEmpty()) throw new GradleException("Forbidden release entries: ${forbidden}")
+
+            String windowsPathPrefix = ':' + ((char) 92)
+            List<String> forbiddenContent = [
+                    'c' + windowsPathPrefix + 'users' + ((char) 92),
+                    'd' + windowsPathPrefix + 'skysgrassslabs',
+                    '/' + 'home' + '/' + 'runner' + '/',
+                    'agent-notes', 'agent_notes', '.codex', '.claude', '.cursor'
+            ]
+            zip.entries().each { entry ->
+                if (!entry.directory) {
+                    String content = new String(zip.getInputStream(entry).bytes,
+                            StandardCharsets.ISO_8859_1).toLowerCase(Locale.ROOT)
+                    String match = forbiddenContent.find { content.contains(it) }
+                    if (match != null) {
+                        throw new GradleException(
+                                "Release entry ${entry.name} contains forbidden local context: ${match}")
+                    }
+                }
+            }
+        } finally {
+            zip.close()
+        }
+    }
+}
+
+tasks.register('writeReleaseChecksums') {
+    group = 'verification'
+    dependsOn tasks.named('verifyReleaseArtifacts')
+    def output = layout.buildDirectory.file('release/SHA256SUMS')
+    outputs.file(output)
+    doLast {
+        File libs = layout.buildDirectory.dir('libs').get().asFile
+        File checksumFile = output.get().asFile
+        checksumFile.parentFile.mkdirs()
+        checksumFile.setText(releaseFiles.get().collect { name ->
+            File candidate = new File(libs, name)
+            MessageDigest digest = MessageDigest.getInstance('SHA-256')
+            candidate.withInputStream { input ->
+                byte[] buffer = new byte[8192]
+                for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
+                    if (read > 0) digest.update(buffer, 0, read)
+                }
+            }
+            "${digest.digest().encodeHex().toString().toUpperCase()}  ${name}"
+        }.join('\n') + '\n', 'UTF-8')
+    }
+}
+
+def preparedReleaseDir = providers.gradleProperty('preparedReleaseDir')
+tasks.register('verifyPreparedReleaseArtifacts') {
+    group = 'verification'
+    onlyIf { preparedReleaseDir.isPresent() }
+    doLast {
+        File prepared = file(preparedReleaseDir.get())
+        Set<String> expected = (releaseFiles.get() + ['SHA256SUMS', 'CHANGELOG.md']) as Set<String>
+        Set<String> actual = prepared.listFiles()?.findAll { it.isFile() }*.name as Set<String>
+        if (actual != expected) {
+            throw new GradleException("Prepared release files differ: expected ${expected}, found ${actual}")
+        }
+    }
+}
+
+def mavenUploadUrl = providers.environmentVariable('MAVEN_UPLOAD_URL')
+def mavenUploadUsername = providers.environmentVariable('MAVEN_UPLOAD_USERNAME')
+def mavenUploadPassword = providers.environmentVariable('MAVEN_UPLOAD_PASSWORD')
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifact releaseJar
+            artifactId = base.archivesName.get()
+            if (preparedReleaseDir.isPresent()) {
+                artifact(file("${preparedReleaseDir.get()}/${releaseFiles.get()[0]}")) {
+                    extension = 'jar'
+                }
+                artifact(file("${preparedReleaseDir.get()}/${releaseFiles.get()[1]}")) {
+                    classifier = 'sources'
+                    extension = 'jar'
+                }
+                artifact(file("${preparedReleaseDir.get()}/${releaseFiles.get()[2]}")) {
+                    classifier = 'javadoc'
+                    extension = 'jar'
+                }
+            } else {
+                artifact releaseJar
+                artifact tasks.named('sourcesJar')
+                artifact tasks.named('javadocJar')
+            }
+            pom {
+                name = "Sky's Grass Slabs"
+                description = project.mod_description
+                url = 'https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs'
+                licenses {
+                    license {
+                        name = 'GNU Lesser General Public License, Version 2.1'
+                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/MinecraftModDevelopmentMods/SkysGrassSlabs.git'
+                    url = 'https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs'
+                }
+            }
         }
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/mcmodsrepo"
+            name = 'release'
+            url = mavenUploadUrl.isPresent()
+                    ? uri(mavenUploadUrl.get())
+                    : layout.buildDirectory.dir('forbidden-local-release').get().asFile.toURI()
+            credentials {
+                username = mavenUploadUsername.orNull ?: ''
+                password = mavenUploadPassword.orNull ?: ''
+            }
         }
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+tasks.register('validateMavenReleaseCredentials') {
+    group = 'publishing'
+    doLast {
+        if (!mavenUploadUrl.isPresent() || !mavenUploadUsername.isPresent() || !mavenUploadPassword.isPresent()) {
+            throw new GradleException('MAVEN_UPLOAD_URL, MAVEN_UPLOAD_USERNAME, and MAVEN_UPLOAD_PASSWORD are required')
+        }
+        if (mavenUploadUrl.get().startsWith('file:')) {
+            throw new GradleException('Maven release publication must use a remote repository')
+        }
+    }
+}
+tasks.withType(PublishToMavenRepository).configureEach {
+    dependsOn tasks.named('validateMavenReleaseCredentials')
+    if (preparedReleaseDir.isPresent()) {
+        dependsOn tasks.named('verifyPreparedReleaseArtifacts')
+    } else {
+        dependsOn tasks.named('verifyReleaseArtifacts')
+    }
 }
 
-tasks.withType(Test).configureEach {
-    workingDir = project.projectDir
+idea {
+    module { downloadSources = true; downloadJavadoc = true }
+}
+eclipse {
+    classpath { downloadSources = true; downloadJavadoc = true }
+    synchronizationTasks 'genEclipseRuns'
 }
 
 def prepareEclipseResources = tasks.register('prepareEclipseResources') {
     group = 'ide'
-    description = 'Copies processed resources into Eclipse production output.'
     dependsOn tasks.named('processResources')
     doLast {
         project.copy {
@@ -260,176 +580,84 @@ def prepareEclipseResources = tasks.register('prepareEclipseResources') {
 
 def configureEclipseBuildship = tasks.register('configureEclipseBuildship') {
     group = 'ide'
-    description = 'Pins Eclipse Buildship to the same Gradle home used to generate Forge runs.'
     doLast {
         File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
         Properties preferences = new Properties()
-        if (preferencesFile.isFile()) {
-            preferencesFile.withInputStream { preferences.load(it) }
-        }
-        preferences.setProperty('eclipse.preferences.version', '1')
-        preferences.setProperty('connection.gradle.distribution', 'GRADLE_DISTRIBUTION(WRAPPER)')
-        preferences.setProperty('connection.gradle.user.home', gradle.gradleUserHomeDir.canonicalPath)
-        preferences.setProperty('connection.project.dir', '')
-        preferences.setProperty('gradle.user.home', gradle.gradleUserHomeDir.canonicalPath)
-        preferences.setProperty('override.workspace.settings', 'true')
+        if (preferencesFile.isFile()) preferencesFile.withInputStream { preferences.load(it) }
+        [
+                'eclipse.preferences.version': '1',
+                'connection.gradle.distribution': 'GRADLE_DISTRIBUTION(WRAPPER)',
+                'connection.gradle.user.home': gradle.gradleUserHomeDir.canonicalPath,
+                'connection.project.dir': '',
+                'gradle.user.home': gradle.gradleUserHomeDir.canonicalPath,
+                'override.workspace.settings': 'true'
+        ].each { key, value -> preferences.setProperty(key, value) }
         preferencesFile.parentFile.mkdirs()
         preferencesFile.withOutputStream { preferences.store(it, 'Generated Buildship configuration.') }
     }
 }
 
-eclipse {
-    classpath {
-        downloadSources = true
-        downloadJavadoc = true
-        file.whenMerged { classpath ->
-            classpath.entries.removeAll { entry ->
-                entry instanceof org.gradle.plugins.ide.eclipse.model.SourceFolder &&
-                        ['src/main/resources', 'src/generated/resources'].contains(entry.path)
-            }
-            if (!classpath.entries.any { entry -> entry.path == 'build/resources/main' }) {
-                classpath.entries.add(new org.gradle.plugins.ide.eclipse.model.SourceFolder(
-                        'build/resources/main', 'bin/main'))
-            }
-        }
-    }
-    synchronizationTasks 'isolateEclipseProductionRuns'
-}
-
-def syncForge40EclipseLaunches = tasks.register('syncForge40EclipseLaunches') {
+tasks.register('isolateEclipseProductionRuns') {
     group = 'ide'
-    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 40.'
-    doLast {
-        String mainOutput = new File(projectDir, 'bin/main').absolutePath
-        String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
-        String productionModClasses = "${mod_id}%%${mainOutput}"
-        String gameTestModClasses = productionModClasses + File.pathSeparator +
-                "${mod_id}%%${gameTestOutput}"
-
-        ['Client', 'Server', 'Data'].each { String runName ->
-            File launch = file("run${runName}.launch")
-            if (!launch.isFile()) {
-                throw new GradleException("Missing generated Eclipse launch: ${launch}")
-            }
-            String text = launch.getText('UTF-8').replaceFirst(
-                    /<mapEntry key="MOD_CLASSES" value="[^"]*"\/>/,
-                    java.util.regex.Matcher.quoteReplacement(
-                            "<mapEntry key=\"MOD_CLASSES\" value=\"${productionModClasses}\"/>"))
-            if (!text.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE')) {
-                text = text.replace('</launchConfiguration>',
-                        '  <booleanAttribute key="org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE" value="true"/>\r\n' +
-                                '</launchConfiguration>')
-            }
-            launch.setText(text.replace('\r\n', '\n'), 'UTF-8')
-        }
-
-        File gameTestLaunch = file('runGameTestServer.launch')
-        if (!gameTestLaunch.isFile()) {
-            throw new GradleException("Missing generated Eclipse launch: ${gameTestLaunch}")
-        }
-        String gameTestText = gameTestLaunch.getText('UTF-8').replaceFirst(
-                /<mapEntry key="MOD_CLASSES" value="[^"]*"\/>/,
-                java.util.regex.Matcher.quoteReplacement(
-                        "<mapEntry key=\"MOD_CLASSES\" value=\"${gameTestModClasses}\"/>"))
-        gameTestLaunch.setText(gameTestText.replace('\r\n', '\n'), 'UTF-8')
-    }
-}
-
-tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
-    finalizedBy syncForge40EclipseLaunches
-}
-
-def isolateEclipseProductionRuns = tasks.register('isolateEclipseProductionRuns') {
-    group = 'ide'
-    description = 'Prepares the complete ForgeGradle 7 Eclipse project configuration.'
-    dependsOn tasks.named('genEclipseRuns')
-    dependsOn syncForge40EclipseLaunches
-    dependsOn configureEclipseBuildship
     dependsOn prepareEclipseResources
-}
-
-def verifyEclipseConfiguration = tasks.register('verifyEclipseConfiguration') {
-    group = 'verification'
-    description = 'Rejects duplicate Eclipse dependencies, caches, outputs, and test leakage.'
-    dependsOn isolateEclipseProductionRuns
-    dependsOn tasks.named('eclipseClasspath')
     doLast {
-        File classpathFile = file('.classpath')
-        String classpathText = classpathFile.getText('UTF-8')
-        int explicitLibraryCount = classpathText.count('kind="lib"')
-        int buildshipContainerCount = classpathText.count(
-                'org.eclipse.buildship.core.gradleclasspathcontainer')
-        if (buildshipContainerCount > 1) {
-            throw new GradleException('Eclipse classpath contains duplicate Buildship containers')
-        }
-        if (explicitLibraryCount == 0 && buildshipContainerCount != 1) {
-            throw new GradleException('Eclipse classpath contains neither the Gradle model nor its Buildship container')
-        }
-        if (explicitLibraryCount > 0 &&
-                !classpathText.contains("forge-${minecraft_version}-${forge_version}.jar")) {
-            throw new GradleException('ForgeGradle 7 Eclipse model is missing the mapped Forge dependency')
-        }
-        if (!classpathText.contains('path="build/resources/main"') ||
-                classpathText.contains('path="src/main/resources"') ||
-                classpathText.contains('path="src/generated/resources"')) {
-            throw new GradleException('Eclipse must consume only Gradle-processed production resources')
-        }
-
-        File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
-        Properties preferences = new Properties()
-        preferencesFile.withInputStream { preferences.load(it) }
-        String expectedGradleHome = gradle.gradleUserHomeDir.canonicalPath
-        if (preferences.getProperty('connection.gradle.user.home') != expectedGradleHome ||
-                preferences.getProperty('gradle.user.home') != expectedGradleHome ||
-                preferences.getProperty('override.workspace.settings') != 'true') {
-            throw new GradleException("Eclipse Buildship is not pinned to ${expectedGradleHome}")
-        }
-
-        String mainOutput = new File(projectDir, 'bin/main').absolutePath
-        String expectedProductionClasses = "${mod_id}%%${mainOutput}"
-        ['Client', 'Server', 'Data'].each { String runName ->
-            File launch = file("run${runName}.launch")
-            String text = launch.getText('UTF-8')
-            if (!text.contains("key=\"MOD_CLASSES\" value=\"${expectedProductionClasses}\"") ||
-                    !text.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE') ||
-                    !text.contains('value="net.minecraftforge.launcher.Main"') ||
-                    !text.contains('org.eclipse.jdt.launching.DEFAULT_CLASSPATH" value="false"') ||
-                    text.count('org.eclipse.buildship.core.gradleclasspathcontainer') != 1) {
-                throw new GradleException("Eclipse production launch is not isolated: ${launch}")
+        ['runClient.launch', 'runServer.launch', 'runTestClient.launch', 'runTestServer.launch'].each { name ->
+            File launch = file(name)
+            if (!launch.isFile()) throw new GradleException("ForgeGradle did not generate ${name}")
+            String contents = launch.getText('UTF-8')
+            boolean production = name in ['runClient.launch', 'runServer.launch']
+            if (production && !contents.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE')) {
+                contents = contents.replace('</launchConfiguration>',
+                        '  <booleanAttribute key="org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE" value="true"/>' +
+                                System.lineSeparator() + '</launchConfiguration>')
             }
-        }
-
-        String expectedGameTestClasses = expectedProductionClasses + File.pathSeparator +
-                "${mod_id}%%${new File(projectDir, 'bin/gameTest').absolutePath}"
-        File gameTestLaunch = file('runGameTestServer.launch')
-        if (!gameTestLaunch.getText('UTF-8').contains(
-                "key=\"MOD_CLASSES\" value=\"${expectedGameTestClasses}\"")) {
-            throw new GradleException("Eclipse GameTest launch is not isolated: ${gameTestLaunch}")
-        }
-
-        File modMetadata = file('bin/main/META-INF/mods.toml')
-        if (!modMetadata.isFile() || modMetadata.getText('UTF-8').contains('${mod_version}') ||
-                !modMetadata.getText('UTF-8').contains("version=\"${project.version}\"")) {
-            throw new GradleException('Eclipse output contains missing or unexpanded Forge metadata')
+            ['--cache', '--metadata', '--to-srg', '--to-obf'].each { option ->
+                String prefix = option + ' '
+                int start = contents.indexOf(prefix)
+                if (start < 0) throw new GradleException("${name} is missing ${option}")
+                start += prefix.length()
+                int end = contents.indexOf(' --', start)
+                if (end < 0) throw new GradleException("${name} has malformed ${option}")
+                String value = contents.substring(start, end)
+                if (value.find(/\s/) != null && !value.startsWith('&quot;')) {
+                    contents = contents.substring(0, start) + '&quot;' + value + '&quot;' + contents.substring(end)
+                }
+            }
+            launch.setText(contents, 'UTF-8')
         }
     }
 }
 
-tasks.named('eclipse').configure {
-    dependsOn isolateEclipseProductionRuns
-    finalizedBy verifyEclipseConfiguration
+tasks.named('genEclipseRuns') {
+    finalizedBy configureEclipseBuildship, 'isolateEclipseProductionRuns'
 }
 
-def prepareGameTestStructures = tasks.register('prepareGameTestStructures', Copy) {
-    from 'src/gameTest/resources/gameteststructures'
-    into "${gameTestRunDirectory}/gameteststructures"
+tasks.register('verifyEclipseProductionClasspath') {
+    group = 'verification'
+    dependsOn tasks.named('genEclipseRuns'), tasks.named('eclipse')
+    doLast {
+        File prefsFile = file('.settings/org.eclipse.buildship.core.prefs')
+        if (!prefsFile.isFile()) throw new GradleException('Missing Buildship preferences')
+        Properties prefs = new Properties()
+        prefsFile.withInputStream { prefs.load(it) }
+        if (file(prefs.getProperty('connection.gradle.user.home', '')).canonicalFile != gradle.gradleUserHomeDir.canonicalFile) {
+            throw new GradleException('Eclipse Buildship uses the wrong Gradle home')
+        }
+        File metadata = file('bin/main/mcmod.info')
+        def parsed = new JsonSlurper().parseText(metadata.getText('UTF-8'))
+        if (parsed[0].version != project.mod_version || parsed[0].mcversion != project.minecraft_version) {
+            throw new GradleException('Eclipse output contains incorrect mcmod.info')
+        }
+        ['runClient.launch', 'runServer.launch'].each { name ->
+            String contents = file(name).getText('UTF-8').replace('\\', '/')
+            if (!contents.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE') ||
+                    contents.contains('src/test') || contents.contains('bin/test') || contents.contains('junit-')) {
+                throw new GradleException("${name} exposes test code or dependencies")
+            }
+        }
+    }
 }
 
-tasks.matching { it.name == 'prepareRunGameTestServer' || it.name == 'runGameTestServer' }.configureEach {
-    dependsOn prepareGameTestStructures
-}
-
-tasks.withType(AbstractArchiveTask).configureEach {
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
+tasks.named('check') {
+    dependsOn tasks.named('verifyReleaseMetadata')
 }

@@ -1,40 +1,70 @@
 package zone.moddev.mc.skysgrassslabs;
 
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.ModLoadingContext;
-import zone.moddev.mc.skysgrassslabs.config.BetaConfig;
+import net.minecraftforge.fml.common.SidedProxy;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLMissingMappingsEvent;
+import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import org.apache.logging.log4j.Logger;
+import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
+import zone.moddev.mc.skysgrassslabs.compat.LegacyMigrationHandler;
+import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
+import zone.moddev.mc.skysgrassslabs.event.CommonEvents;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
-import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
-import zone.moddev.mc.skysgrassslabs.world.WorldgenBootstrap;
+import zone.moddev.mc.skysgrassslabs.proxy.CommonProxy;
+import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingHandler;
 
-/** Forge entry point for the standalone Sky's Grass Slabs mod. */
-@Mod(SkysGrassSlabs.MOD_ID)
+@Mod(modid = SkysGrassSlabs.MOD_ID, name = SkysGrassSlabs.NAME,
+        version = SkysGrassSlabs.VERSION, dependencies = "before:buildingbricks")
 public final class SkysGrassSlabs {
-    /** Stable Forge mod identifier and resource namespace. */
     public static final String MOD_ID = "skysgrassslabs";
+    public static final String NAME = "Sky's Grass Slabs";
+    public static final String VERSION = "0.3.0.110021";
 
-    /** Registers content, configuration, world generation, and persistent state. */
-    public SkysGrassSlabs() {
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+    @SidedProxy(
+            clientSide = "zone.moddev.mc.skysgrassslabs.proxy.ClientProxy",
+            serverSide = "zone.moddev.mc.skysgrassslabs.proxy.CommonProxy")
+    public static CommonProxy proxy;
 
-        ModBlocks.register(modBus);
-        ModRecipes.register(modBus);
-        WorldgenBootstrap.register(modBus);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, BetaConfig.SPEC);
+    public static Logger logger;
 
-        MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST,
-                WorldgenBootstrap::onBiomeLoading);
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStarted);
+    @Mod.EventHandler
+    public void preInit(FMLPreInitializationEvent event) {
+        logger = event.getModLog();
+        SkysGrassSlabsConfig.load(event.getSuggestedConfigurationFile());
+        ModBlocks.register();
+        BuildingBricksCompat.preInit(event.getModConfigurationDirectory());
+
+        MinecraftForge.EVENT_BUS.register(new CommonEvents());
+        LegacyMigrationHandler migration = new LegacyMigrationHandler();
+        MinecraftForge.EVENT_BUS.register(migration);
+        FMLCommonHandler.instance().bus().register(migration);
+        if (SkysGrassSlabsConfig.isSmoothingActive()) {
+            MinecraftForge.EVENT_BUS.register(new GrassSlabSmoothingHandler());
+        }
+        proxy.preInit();
     }
 
-    private void onServerStarted(ServerStartedEvent event) {
-        ModWorldState.get(event.getServer().overworld());
+    @Mod.EventHandler
+    public void init(FMLInitializationEvent event) {
+        ModRecipes.register();
+        proxy.init();
+    }
+
+    @Mod.EventHandler
+    public void postInit(FMLPostInitializationEvent event) {
+        BuildingBricksCompat.resolveBlocks();
+    }
+
+    @Mod.EventHandler
+    public void missingMappings(FMLMissingMappingsEvent event) {
+        LegacyMigrationHandler.remapMissingMappings(event);
+    }
+
+    public SkysGrassSlabs() {
     }
 }

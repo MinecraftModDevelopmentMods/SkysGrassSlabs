@@ -1,0 +1,11 @@
+[
+  {
+    "modid": "skysgrassslabsintegrationtest",
+    "name": "Sky's Grass Slabs Integration Test",
+    "description": "Build-only runtime verification fixture.",
+    "version": "1",
+    "mcversion": "1.10.2",
+    "authorList": ["SkyBlade1978"],
+    "dependencies": ["required-after:skysgrassslabs"]
+  }
+]

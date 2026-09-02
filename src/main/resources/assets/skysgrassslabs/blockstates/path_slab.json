@@ -1,7 +1,6 @@
 {
   "variants": {
-    "type=bottom": { "model": "skysgrassslabs:block/path_slab" },
-    "type=double": { "model": "minecraft:block/dirt_path" },
-    "type=top": { "model": "skysgrassslabs:block/path_slab_top" }
+    "half=bottom": { "model": "skysgrassslabs:path_slab" },
+    "half=top": { "model": "skysgrassslabs:path_slab_top" }
   }
 }
