@@ -24,7 +24,7 @@ $env:GRADLE_USER_HOME='<dedicated Gradle cache>'
   writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon --stacktrace
 ```
 
-`check` includes 36 focused Java tests plus a Forge runtime mod used only during
+`check` includes 39 focused Java tests plus a Forge runtime mod used only during
 the build. The runtime creates a fresh world, executes 74 gameplay and 8 world
 generation assertions,
 stops, reloads the same world, and verifies schema state. Probe classes and
@@ -34,6 +34,8 @@ resources are excluded from distributable jars.
 
 - permanent registry IDs, both independent configuration settings and version metadata, recipe sorter identity,
   resources, legacy model parents, and repository hygiene;
+- all 18 locale files, exact key parity, reviewed regional wording, UTF-8
+  validity, LF endings, and duplicate or blank value rejection;
 - slab metadata conversions, top and bottom geometry, combination normalization,
   drops, Silk Touch, plants, bonemeal, grass lifecycle, and turf support;
 - grass and dirt snow states that are not saved, untinted snow tops, matching snow edged
@@ -103,6 +105,11 @@ Completed local evidence includes:
 - accepted manual new terrain testing in a disposable Sylvester copy: 1,694
   new chunks contained 46,692 correctly oriented Sky grass slabs, no newly
   generated BuildingBricks slabs, and active OreSpawn and Mineralogy terrain.
+- all 29 production class entries in the translated candidate match the
+  previously qualified jar byte for byte, so its Sylvester evidence remains
+  applicable without another launch of the large fixture.
+- the exact translated candidate reloaded successfully in the packaged solo,
+  BuildingBricks, and OreSpawn plus Mineralogy environments.
 
 The default Sylvester coexistence check retained the same supported legacy
 block and item totals without creating migration markers or changing counters.
@@ -137,10 +144,10 @@ matrix.
 Independent Linux builds on the fork and MMD produced byte for byte identical
 publication artifacts:
 
-- main jar: `78,900` bytes,
-  `F609A9727DD510F3D384A86839FB98FCCE94E2E87C2540B1EE2E6C6E36D532C1`
-- sources jar: `48,120` bytes,
-  `D1FBFF86C7750C96A5829CB623EDB4A2ACF69E0158980D4089DA46865527974D`
+- main jar: `83,251` bytes,
+  `A2BCE3B32E64377B4C9FBF82048F132D3F1B2A7A91D3C7D1C62EA4BCC6659745`
+- sources jar: `52,199` bytes,
+  `61D5A2DE95C1B5699C2E0ED486C19A76029CDA26F330349A9F28CE8DE80C14A1`
 - Javadocs jar: `141,691` bytes,
   `E6C99AB73B9896B9EC634968E6415F80FD5E818A1DBE9D8C2183871A70BF6A59`
 

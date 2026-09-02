@@ -15,6 +15,8 @@ This is the first stable Sky's Grass Slabs release for Minecraft 1.10.2.
   terrain.
 - Compatible grass and dirt slabs from older worlds can be migrated when the
   optional replacement setting is enabled.
+- Added German, Spanish, French, Japanese, Korean, Portuguese, Russian and
+  Simplified Chinese block names.
 
 Existing compatible slabs are left unchanged by default. World smoothing only
 affects newly generated chunks, and both settings can be changed independently.
@@ -32,9 +34,9 @@ migration, reload, Eclipse and packaged server checks. It also passed manual
 testing in a large existing world and in newly generated terrain. Completed
 legacy conversions remained stable across repeated reloads.
 
-Two clean builds produced the same jars and checksums. The main jar is 78,900
+Two clean builds produced the same jars and checksums. The main jar is 83,251
 bytes with SHA-256
-`F609A9727DD510F3D384A86839FB98FCCE94E2E87C2540B1EE2E6C6E36D532C1`.
+`A2BCE3B32E64377B4C9FBF82048F132D3F1B2A7A91D3C7D1C62EA4BCC6659745`.
 All production classes use Java 8 bytecode.
 
 Publication remains a separate manual step. No tag or release has been created.

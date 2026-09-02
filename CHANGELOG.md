@@ -15,6 +15,7 @@
   worlds. Replacement is disabled by default and other shapes are left alone.
 - Kept completed legacy conversions marked across repeated world reloads.
 - Added complete visual snow caps for grass and dirt slabs.
+- Added translations for the supported block names.
 
 Snow on slabs is visual only in Minecraft 1.10.2. It adds no height, does not
 melt by itself and drops no snowballs.

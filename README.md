@@ -22,6 +22,8 @@ release candidate is `1.0.0.110021`.
 - Place turf on a dirt slab to turn it into a grass slab.
 - Grass slabs in new terrain smooth suitable one block height changes.
 - Migration support for compatible grass and dirt slabs from older worlds.
+- Block names translated into German, Spanish, French, Japanese, Korean,
+  Portuguese, Russian and Simplified Chinese.
 
 World smoothing is enabled by default. It can be disabled in the common Forge
 configuration with `worldgen.generateGrassSlabs=false`; the setting affects
