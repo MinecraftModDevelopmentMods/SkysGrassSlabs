@@ -26,17 +26,3 @@ melt by themselves and do not drop snowballs.
 
 Requires Minecraft 1.10.2, Forge 12.18.3.2511 or a compatible 1.10.2 Forge
 build, and Java 8.
-
-## Acceptance
-
-The release candidate passed its automated gameplay, world generation,
-migration, reload, Eclipse and packaged server checks. It also passed manual
-testing in a large existing world and in newly generated terrain. Completed
-legacy conversions remained stable across repeated reloads.
-
-Two clean builds produced the same jars and checksums. The main jar is 83,251
-bytes with SHA-256
-`2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861`.
-All production classes use Java 8 bytecode.
-
-Publication remains a separate manual step. No tag or release has been created.
