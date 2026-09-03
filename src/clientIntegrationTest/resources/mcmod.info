@@ -1,1 +1,0 @@
-[{"modid":"skysgrassslabsclienttest","name":"Sky's Grass Slabs Client Probe","description":"Build-only rendered client fixture.","version":"1","mcversion":"1.12.2","authorList":["MMD"],"dependencies":["required-after:skysgrassslabs@[1.0.1.112021]"]}]

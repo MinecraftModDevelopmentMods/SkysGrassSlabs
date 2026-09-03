@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:recipes/root",
+  "rewards": { "recipes": ["skysgrassslabs:grass_slab_from_seeds"] },
+  "criteria": {
+    "has_dirt_slab": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "item": "skysgrassslabs:dirt_slab" }] }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": { "recipe": "skysgrassslabs:grass_slab_from_seeds" }
+    }
+  },
+  "requirements": [["has_dirt_slab", "has_the_recipe"]]
+}

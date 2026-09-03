@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:recipes/root",
+  "rewards": { "recipes": ["skysgrassslabs:grass_block_from_seeds"] },
+  "criteria": {
+    "has_dirt": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "item": "minecraft:dirt" }] }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": { "recipe": "skysgrassslabs:grass_block_from_seeds" }
+    }
+  },
+  "requirements": [["has_dirt", "has_the_recipe"]]
+}

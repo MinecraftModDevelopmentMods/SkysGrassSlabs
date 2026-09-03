@@ -1,9 +1,13 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.block.Block;
-import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.block.BlockDirtSnowy;
+import net.minecraft.block.BlockSlab;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.state.properties.SlabType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.registries.IForgeRegistry;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
@@ -26,20 +30,45 @@ public final class ModBlocks {
 
     public static void registerItems(IForgeRegistry<Item> registry) {
         registry.registerAll(
-                item(new NormalizingSlabItem(DIRT_SLAB, net.minecraft.init.Blocks.DIRT), DIRT_SLAB),
-                item(new NormalizingSlabItem(GRASS_SLAB, net.minecraft.init.Blocks.GRASS), GRASS_SLAB),
-                item(new NormalizingSlabItem(PATH_SLAB, net.minecraft.init.Blocks.GRASS_PATH), PATH_SLAB),
-                item(new TurfBlockItem(TURF), TURF));
+                item(new NormalizingSlabItem(DIRT_SLAB, Blocks.DIRT,
+                        new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), DIRT_SLAB),
+                item(new NormalizingSlabItem(GRASS_SLAB, Blocks.GRASS_BLOCK,
+                        new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), GRASS_SLAB),
+                item(new NormalizingSlabItem(PATH_SLAB, Blocks.GRASS_PATH,
+                        new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), PATH_SLAB),
+                item(new TurfBlockItem(TURF,
+                        new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), TURF));
+    }
+
+    public static IBlockState dirtStateLike(IBlockState source) {
+        IBlockState state = DIRT_SLAB.getDefaultState()
+                .with(BlockSlab.TYPE, source.get(BlockSlab.TYPE))
+                .with(BlockSlab.WATERLOGGED, source.get(BlockSlab.WATERLOGGED));
+        return state.with(BlockDirtSnowy.SNOWY,
+                source.has(BlockDirtSnowy.SNOWY) && source.get(BlockDirtSnowy.SNOWY));
+    }
+
+    public static IBlockState grassStateLike(IBlockState source) {
+        IBlockState state = GRASS_SLAB.getDefaultState()
+                .with(BlockSlab.TYPE, source.get(BlockSlab.TYPE))
+                .with(BlockSlab.WATERLOGGED, source.get(BlockSlab.WATERLOGGED));
+        return state.with(BlockDirtSnowy.SNOWY,
+                source.has(BlockDirtSnowy.SNOWY) && source.get(BlockDirtSnowy.SNOWY));
+    }
+
+    public static IBlockState legacySlabState(boolean grass, int metadata) {
+        return (grass ? GRASS_SLAB : DIRT_SLAB).getDefaultState()
+                .with(BlockSlab.TYPE, (metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM)
+                .with(BlockSlab.WATERLOGGED, Boolean.FALSE)
+                .with(BlockDirtSnowy.SNOWY, Boolean.FALSE);
     }
 
     private static <T extends Block> T configure(T block, String name) {
-        ResourceLocation id = new ResourceLocation(SkysGrassSlabs.MOD_ID, name);
-        block.setRegistryName(id).setTranslationKey(SkysGrassSlabs.MOD_ID + "." + name)
-                .setCreativeTab(CreativeTabs.BUILDING_BLOCKS);
+        block.setRegistryName(new ResourceLocation(SkysGrassSlabs.MOD_ID, name));
         return block;
     }
 
-    private static Item item(ItemBlock item, Block block) {
+    private static Item item(Item item, Block block) {
         return item.setRegistryName(block.getRegistryName());
     }
 

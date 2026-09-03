@@ -19,29 +19,37 @@ import java.util.zip.ZipFile;
 import org.junit.jupiter.api.Test;
 
 class ForwardUpgradeFixtureContractTest {
-    private static final File FIXTURE = new File(
-            "src/test/resources/fixtures/skysgrassslabs-1.10.2-forward-world.zip");
-    private static final File MANIFEST = new File(
-            "src/test/resources/fixtures/skysgrassslabs-1.10.2-forward-world.manifest");
+    private static final String FIXTURE_DIRECTORY = "src/test/resources/fixtures/";
+    private static final Fixture[] FIXTURES = {
+            new Fixture("1.10.2", "1.0.0.110021",
+                    "D6923BFFE062C1F0C454190AB11F031825949DF8080D8000133A723DEC2770BF",
+                    "2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861"),
+            new Fixture("1.11.2", "1.0.1.111021",
+                    "E6ABAECBC818C4EB28D3324ACC27DCCCD30247B4268879D7A789F0E1F55028F5",
+                    "56D8B8C1FA7F2289C9F9A3BCF2BEB2D15F0F880373D0647BB9BDBFA7E1D5FE54"),
+            new Fixture("1.12.2", "1.0.1.112021",
+                    "A903E0AE94DE7AFEA92BBF773859A31119BDBEA6976C5135D0AD56E845DDB028",
+                    "C6E83E66AFB35AE47661FB560F81A458B95FB50D87E940CE682B7C91DB034543")
+    };
 
     @Test
-    void fixtureIsTheLockedGenuineOneTenWorld() throws Exception {
-        Properties manifest = new Properties();
-        try (InputStream input = Files.newInputStream(MANIFEST.toPath())) {
-            manifest.load(input);
+    void fixturesAreLockedGenuineLegacyWorlds() throws Exception {
+        for (Fixture fixture : FIXTURES) {
+            Properties manifest = loadManifest(fixture);
+            assertEquals(fixture.fixtureSha256, sha256(fixture.archive));
+            assertEquals(fixture.fixtureSha256, manifest.getProperty("fixture_sha256"));
+            assertEquals(fixture.minecraftVersion, manifest.getProperty("source_minecraft"));
+            assertEquals(fixture.modVersion, manifest.getProperty("source_mod_version"));
+            assertEquals(fixture.jarSha256, manifest.getProperty("source_jar_sha256"));
+            assertEquals(Long.toString(fixture.archive.length()),
+                    manifest.getProperty("fixture_bytes"));
+            assertTrue(fixture.archive.length() < 125_000L,
+                    fixture.minecraftVersion + " fixture is no longer compact");
         }
-        assertEquals("D6923BFFE062C1F0C454190AB11F031825949DF8080D8000133A723DEC2770BF",
-                sha256(FIXTURE));
-        assertEquals(sha256(FIXTURE), manifest.getProperty("fixture_sha256"));
-        assertEquals("1.10.2", manifest.getProperty("source_minecraft"));
-        assertEquals("1.0.0.110021", manifest.getProperty("source_mod_version"));
-        assertEquals("2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861",
-                manifest.getProperty("source_jar_sha256"));
-        assertTrue(FIXTURE.length() < 100_000L, "Forward fixture is no longer compact");
     }
 
     @Test
-    void fixtureContainsOnlyTheRequiredWorldFiles() throws Exception {
+    void fixturesContainOnlyTheRequiredWorldFiles() throws Exception {
         Set<String> expected = new TreeSet<String>(Arrays.asList(
                 "data/capabilities.dat",
                 "data/skysgrassslabs_world_state.dat",
@@ -49,25 +57,36 @@ class ForwardUpgradeFixtureContractTest {
                 "level.dat_old",
                 "region/r.0.0.mca",
                 "skysgrassslabs-forward-fixture.properties"));
-        try (ZipFile zip = new ZipFile(FIXTURE)) {
-            Set<String> actual = new TreeSet<String>();
-            zip.stream().filter(entry -> !entry.isDirectory())
-                    .forEach(entry -> actual.add(entry.getName().replace('\\', '/')));
-            assertEquals(expected, actual);
-            assertFalse(actual.stream().anyMatch(name -> {
-                String lower = name.toLowerCase(Locale.ROOT);
-                return lower.contains("playerdata") || lower.contains("agent") ||
-                        lower.contains(".codex") || lower.contains(".claude");
-            }));
+        for (Fixture fixture : FIXTURES) {
+            try (ZipFile zip = new ZipFile(fixture.archive)) {
+                Set<String> actual = new TreeSet<String>();
+                zip.stream().filter(entry -> !entry.isDirectory())
+                        .forEach(entry -> actual.add(entry.getName().replace('\\', '/')));
+                assertEquals(expected, actual);
+                assertFalse(actual.stream().anyMatch(name -> {
+                    String lower = name.toLowerCase(Locale.ROOT);
+                    return lower.contains("playerdata") || lower.contains("agent") ||
+                            lower.contains(".codex") || lower.contains(".claude");
+                }));
 
-            ZipEntry marker = zip.getEntry("skysgrassslabs-forward-fixture.properties");
-            String contents = new String(readAll(zip.getInputStream(marker)), StandardCharsets.UTF_8);
-            assertTrue(contents.contains("source_minecraft=1.10.2"));
-            assertTrue(contents.contains("source_mod_version=1.0.0.110021"));
-            assertTrue(contents.contains("expected_blocks=7"));
-            assertFalse(contents.toLowerCase(Locale.ROOT).contains(":\\users\\"));
-            assertFalse(contents.toLowerCase(Locale.ROOT).contains(":\\skysgrassslabs"));
+                ZipEntry marker = zip.getEntry("skysgrassslabs-forward-fixture.properties");
+                String contents = new String(readAll(zip.getInputStream(marker)),
+                        StandardCharsets.UTF_8);
+                assertTrue(contents.contains("source_minecraft=" + fixture.minecraftVersion));
+                assertTrue(contents.contains("source_mod_version=" + fixture.modVersion));
+                assertTrue(contents.contains("expected_blocks=7"));
+                assertFalse(contents.toLowerCase(Locale.ROOT).contains(":\\users\\"));
+                assertFalse(contents.toLowerCase(Locale.ROOT).contains(":\\skysgrassslabs"));
+            }
         }
+    }
+
+    private static Properties loadManifest(Fixture fixture) throws Exception {
+        Properties manifest = new Properties();
+        try (InputStream input = Files.newInputStream(fixture.manifest.toPath())) {
+            manifest.load(input);
+        }
+        return manifest;
     }
 
     private static String sha256(File file) throws Exception {
@@ -93,6 +112,26 @@ class ForwardUpgradeFixtureContractTest {
                 if (read > 0) output.write(buffer, 0, read);
             }
             return output.toByteArray();
+        }
+    }
+
+    private static final class Fixture {
+        private final String minecraftVersion;
+        private final String modVersion;
+        private final String fixtureSha256;
+        private final String jarSha256;
+        private final File archive;
+        private final File manifest;
+
+        private Fixture(String minecraftVersion, String modVersion, String fixtureSha256,
+                String jarSha256) {
+            this.minecraftVersion = minecraftVersion;
+            this.modVersion = modVersion;
+            this.fixtureSha256 = fixtureSha256;
+            this.jarSha256 = jarSha256;
+            String baseName = "skysgrassslabs-" + minecraftVersion + "-forward-world";
+            this.archive = new File(FIXTURE_DIRECTORY + baseName + ".zip");
+            this.manifest = new File(FIXTURE_DIRECTORY + baseName + ".manifest");
         }
     }
 }

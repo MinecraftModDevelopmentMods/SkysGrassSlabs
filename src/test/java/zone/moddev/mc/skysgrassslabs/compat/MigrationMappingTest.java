@@ -1,10 +1,14 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import net.minecraft.block.BlockDirtSnowy;
 import net.minecraft.block.BlockSlab;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.state.properties.SlabType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import zone.moddev.mc.skysgrassslabs.MinecraftTestBootstrap;
@@ -17,24 +21,34 @@ class MigrationMappingTest {
     }
 
     @Test
-    void buildingBricksMetadataIsPreservedForBothSupportedBlocks() {
+    void everyLegacyMetadataValueUsesOnlyItsOrientationBit() {
         for (boolean grass : new boolean[] {false, true}) {
-            for (int metadata = 0; metadata <= 1; ++metadata) {
-                IBlockState migrated = LegacyMigrationHandler.skyStateFor(grass, metadata);
+            for (int metadata = 0; metadata < 16; ++metadata) {
+                IBlockState migrated = ModBlocks.legacySlabState(grass, metadata);
                 assertSame(grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB,
                         migrated.getBlock());
-                assertEquals(metadata == 0 ? BlockSlab.EnumBlockHalf.TOP
-                        : BlockSlab.EnumBlockHalf.BOTTOM,
-                        migrated.getValue(BlockSlab.HALF));
+                assertEquals((metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM,
+                        migrated.get(BlockSlab.TYPE));
+                assertFalse(migrated.get(BlockSlab.WATERLOGGED));
+                assertFalse(migrated.get(BlockDirtSnowy.SNOWY));
             }
         }
     }
 
     @Test
-    void onlyTheOrientationBitIsAcceptedFromHistoricalMetadata() {
-        assertEquals(BlockSlab.EnumBlockHalf.TOP,
-                LegacyMigrationHandler.skyStateFor(true, 2).getValue(BlockSlab.HALF));
-        assertEquals(BlockSlab.EnumBlockHalf.BOTTOM,
-                LegacyMigrationHandler.skyStateFor(false, 3).getValue(BlockSlab.HALF));
+    void supportedBuildingBricksAliasesMapToTheMatchingSkyState() {
+        assertSame(ModBlocks.GRASS_SLAB, LegacyWorldDataHook.legacyState(
+                BuildingBricksCompat.GRASS_SLAB_ID, 1).getBlock());
+        assertSame(ModBlocks.GRASS_SLAB, LegacyWorldDataHook.legacyState(
+                BuildingBricksCompat.HISTORICAL_GRASS_SLAB_ID, 0).getBlock());
+        assertSame(ModBlocks.DIRT_SLAB, LegacyWorldDataHook.legacyState(
+                BuildingBricksCompat.DIRT_SLAB_ID, 1).getBlock());
+        assertTrue(LegacyMigrationHandler.legacySlabKind(BuildingBricksCompat.DIRT_SLAB_ID)
+                == LegacyMigrationHandler.LegacySlabKind.DIRT);
+    }
+
+    @Test
+    void flatteningTableCanHoldLegacyForgeNumericIdsAboveVanillasRange() {
+        assertTrue(LegacyWorldDataHook.expandFlatteningTable(8192).length >= 8192);
     }
 }

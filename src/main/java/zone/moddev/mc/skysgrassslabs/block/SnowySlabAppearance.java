@@ -4,14 +4,14 @@ import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.IBlockReader;
 
 final class SnowySlabAppearance {
-    static boolean hasNearbySnow(IBlockAccess world, BlockPos pos) {
+    static boolean hasNearbySnow(IBlockReader world, BlockPos pos) {
         if (isSnow(world.getBlockState(pos.up()).getBlock())) {
             return true;
         }
-        for (EnumFacing facing : EnumFacing.HORIZONTALS) {
+        for (EnumFacing facing : EnumFacing.Plane.HORIZONTAL) {
             if (isSnow(world.getBlockState(pos.offset(facing)).getBlock())) {
                 return true;
             }
@@ -20,7 +20,7 @@ final class SnowySlabAppearance {
     }
 
     private static boolean isSnow(Block block) {
-        return block == Blocks.SNOW || block == Blocks.SNOW_LAYER;
+        return block == Blocks.SNOW || block == Blocks.SNOW_BLOCK;
     }
 
     private SnowySlabAppearance() {

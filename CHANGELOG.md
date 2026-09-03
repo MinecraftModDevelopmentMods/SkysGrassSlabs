@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.1.113021 - Minecraft 1.13.2
+
+- Ported dirt, grass and path slabs, turf and terrain smoothing to Minecraft
+  1.13.2.
+- Updated blocks, recipes, translations and configuration for Minecraft
+  1.13's flattened data format.
+- Added native waterlogging while preserving top and bottom slab placement.
+- Preserved saved Sky blocks, items and world state when upgrading worlds
+  from Minecraft 1.10.2, 1.11.2 and 1.12.2.
+- Kept recovery for the supported historical grass and dirt slabs while
+  leaving unrelated old shapes outside the migration.
+- Retained snowy slab caps, path alignment, turf recipes, sheep interaction
+  and the established 18 translations.
+
 ## 1.0.1.112021 - Minecraft 1.12.2
 
 - Ported the complete dirt, grass, path slab and turf feature set to Minecraft

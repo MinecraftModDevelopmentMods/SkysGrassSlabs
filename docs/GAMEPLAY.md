@@ -15,6 +15,10 @@ blocks and dirt slabs, and vanilla grass can spread back to dirt slabs. A grass
 slab turns into a dirt slab when it is covered or cannot receive enough light.
 Only a top grass slab supports plants and bonemeal growth.
 
+Dirt, grass and path slabs can be waterlogged. Waterlogged grass and path slabs
+turn into waterlogged dirt slabs. A waterlogged slab cannot be flattened or
+changed by placing turf on it.
+
 Use a compatible shovel on a dirt or grass slab to make a lowered path slab.
 The slab stays in the same half of the block and the shovel takes the normal
 durability damage. Path slabs do not spread grass or support plants.
@@ -47,9 +51,8 @@ enabled is removed without dropping an item.
   remains in the crafting grid.
 
 The turf recipe works in the player's 2 by 2 crafting grid as well as a
-crafting table. In Minecraft 1.12.2 it appears in the recipe book after the
-player obtains a grass block or grass slab. Path slabs have no survival
-crafting recipe.
+crafting table. It appears in the recipe book after the player obtains a grass
+block or grass slab. Path slabs have no survival crafting recipe.
 
 Grass slabs normally drop dirt slabs and drop themselves with Silk Touch. Path
 slabs always drop dirt slabs, including when Silk Touch is used.

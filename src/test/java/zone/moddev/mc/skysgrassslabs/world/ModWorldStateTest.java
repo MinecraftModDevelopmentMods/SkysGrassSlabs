@@ -17,12 +17,12 @@ class ModWorldStateTest {
         original.recordDirtItems(5);
         original.recordUnsupported("block:buildingbricks:oak_step", 7);
 
-        NBTTagCompound nbt = original.writeToNBT(new NBTTagCompound());
+        NBTTagCompound nbt = original.write(new NBTTagCompound());
         ModWorldState restored = new ModWorldState(ModWorldState.DATA_NAME);
-        restored.readFromNBT(nbt);
+        restored.read(nbt);
 
-        assertEquals(1, nbt.getInteger("schema_version"));
-        assertEquals(1, nbt.getInteger("buildingbricks_migration_version"));
+        assertEquals(1, nbt.getInt("schema_version"));
+        assertEquals(1, nbt.getInt("buildingbricks_migration_version"));
         assertEquals(1, restored.migratedChunks());
         assertEquals(4, restored.migratedGrassBlocks());
         assertEquals(3, restored.migratedGrassBlocksTop());

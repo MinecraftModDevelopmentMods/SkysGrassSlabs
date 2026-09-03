@@ -1,36 +1,47 @@
 package zone.moddev.mc.skysgrassslabs.recipe;
 
+import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nullable;
 import net.minecraft.init.Blocks;
-import net.minecraft.inventory.InventoryCrafting;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.item.crafting.IRecipeSerializer;
 import net.minecraft.item.crafting.Ingredient;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.NonNullList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.common.registry.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistryEntry;
+import net.minecraftforge.common.ToolType;
+import net.minecraftforge.registries.ForgeRegistries;
+import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
-        implements IRecipe {
-    private final NonNullList<Ingredient> ingredients = createIngredients();
+public final class TurfCuttingRecipe implements IRecipe {
+    public static final ResourceLocation SERIALIZER_ID =
+            new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf_cutting");
+    public static final IRecipeSerializer<TurfCuttingRecipe> SERIALIZER = new Serializer();
+
+    private final ResourceLocation id;
+    private final NonNullList<Ingredient> ingredients;
+
+    public TurfCuttingRecipe(ResourceLocation id) {
+        this.id = id;
+        ingredients = createIngredients();
+    }
 
     @Override
-    public boolean matches(InventoryCrafting inventory, World world) {
+    public boolean matches(IInventory inventory, World world) {
         int grassInputs = 0;
         int shovels = 0;
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
             ItemStack stack = inventory.getStackInSlot(slot);
-            if (stack.isEmpty()) {
-                continue;
-            }
-            if (soilRemainder(stack) != null) {
+            if (stack.isEmpty()) continue;
+            if (!soilRemainder(stack).isEmpty()) {
                 ++grassInputs;
             } else if (isShovel(stack)) {
                 ++shovels;
@@ -42,7 +53,7 @@ public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
     }
 
     @Override
-    public ItemStack getCraftingResult(InventoryCrafting inventory) {
+    public ItemStack getCraftingResult(IInventory inventory) {
         return matches(inventory, null) ? new ItemStack(ModBlocks.TURF) : ItemStack.EMPTY;
     }
 
@@ -62,21 +73,14 @@ public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
     }
 
     @Override
-    public boolean isDynamic() {
-        return false;
-    }
-
-    @Override
-    public NonNullList<ItemStack> getRemainingItems(InventoryCrafting inventory) {
+    public NonNullList<ItemStack> getRemainingItems(IInventory inventory) {
         NonNullList<ItemStack> remaining = NonNullList.withSize(
                 inventory.getSizeInventory(), ItemStack.EMPTY);
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
             ItemStack stack = inventory.getStackInSlot(slot);
-            if (stack.isEmpty()) {
-                continue;
-            }
+            if (stack.isEmpty()) continue;
             ItemStack soil = soilRemainder(stack);
-            if (soil != null) {
+            if (!soil.isEmpty()) {
                 remaining.set(slot, soil);
             } else if (isShovel(stack)) {
                 ItemStack shovel = stack.copy();
@@ -87,45 +91,69 @@ public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
         return remaining;
     }
 
+    @Override
+    public boolean isDynamic() {
+        return false;
+    }
+
+    @Override
+    public ResourceLocation getId() {
+        return id;
+    }
+
+    @Override
+    public IRecipeSerializer<?> getSerializer() {
+        return SERIALIZER;
+    }
+
     private static boolean isShovel(ItemStack stack) {
-        Set<String> toolClasses = stack.getItem().getToolClasses(stack);
-        return toolClasses != null && toolClasses.contains("shovel");
+        Set<ToolType> types = stack.getItem().getToolTypes(stack);
+        return types != null && types.contains(ToolType.SHOVEL);
     }
 
     private static NonNullList<Ingredient> createIngredients() {
         NonNullList<Ingredient> result = NonNullList.create();
-        result.add(Ingredient.fromStacks(new ItemStack(Blocks.GRASS),
-                new ItemStack(ModBlocks.GRASS_SLAB)));
-
+        result.add(Ingredient.fromItems(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB));
         List<ItemStack> shovels = new ArrayList<ItemStack>();
-        for (Item item : ForgeRegistries.ITEMS.getValuesCollection()) {
+        for (Item item : ForgeRegistries.ITEMS.getValues()) {
             ItemStack candidate = new ItemStack(item);
             if (isShovel(candidate)) shovels.add(candidate);
         }
-        result.add(new ShovelIngredient(shovels.toArray(new ItemStack[shovels.size()])));
+        result.add(Ingredient.fromStacks(shovels.toArray(new ItemStack[shovels.size()])));
         return result;
     }
 
     private static ItemStack soilRemainder(ItemStack stack) {
         Item item = stack.getItem();
-        if (item == Item.getItemFromBlock(Blocks.GRASS)) {
+        if (item == Blocks.GRASS_BLOCK.asItem()) {
             return new ItemStack(Blocks.DIRT);
         }
-        if (item == Item.getItemFromBlock(ModBlocks.GRASS_SLAB) ||
+        if (item == ModBlocks.GRASS_SLAB.asItem() ||
                 BuildingBricksCompat.isGrassSlabItem(stack)) {
             return new ItemStack(ModBlocks.DIRT_SLAB);
         }
-        return null;
+        return ItemStack.EMPTY;
     }
 
-    private static final class ShovelIngredient extends Ingredient {
-        private ShovelIngredient(ItemStack... displayStacks) {
-            super(displayStacks);
+    private static final class Serializer implements IRecipeSerializer<TurfCuttingRecipe> {
+        @Override
+        public TurfCuttingRecipe read(ResourceLocation recipeId, JsonObject json) {
+            return new TurfCuttingRecipe(recipeId);
         }
 
         @Override
-        public boolean apply(@Nullable ItemStack stack) {
-            return stack != null && !stack.isEmpty() && isShovel(stack);
+        public TurfCuttingRecipe read(ResourceLocation recipeId, PacketBuffer buffer) {
+            return new TurfCuttingRecipe(recipeId);
+        }
+
+        @Override
+        public void write(PacketBuffer buffer, TurfCuttingRecipe recipe) {
+            // The JSON and network form contain no variable recipe data.
+        }
+
+        @Override
+        public ResourceLocation getName() {
+            return SERIALIZER_ID;
         }
     }
 }

@@ -4,6 +4,7 @@ import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.event.ForgeEventFactory;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 public final class TurfEatingAI extends EntityAIBase {
@@ -13,16 +14,14 @@ public final class TurfEatingAI extends EntityAIBase {
 
     public TurfEatingAI(EntitySheep sheep) {
         this.sheep = sheep;
-        this.world = sheep.world;
+        world = sheep.world;
         setMutexBits(7);
     }
 
     @Override
     public boolean shouldExecute() {
-        if (sheep.getRNG().nextInt(sheep.isChild() ? 50 : 1000) != 0) {
-            return false;
-        }
-        return world.getBlockState(position()).getBlock() == ModBlocks.TURF;
+        return sheep.getRNG().nextInt(sheep.isChild() ? 50 : 1000) == 0 &&
+                world.getBlockState(position()).getBlock() == ModBlocks.TURF;
     }
 
     @Override
@@ -47,17 +46,12 @@ public final class TurfEatingAI extends EntityAIBase {
     }
 
     @Override
-    public void updateTask() {
+    public void tick() {
         eatingTimer = Math.max(0, eatingTimer - 1);
-        if (eatingTimer != 4) {
-            return;
-        }
-
+        if (eatingTimer != 4) return;
         BlockPos pos = position();
-        if (world.getBlockState(pos).getBlock() != ModBlocks.TURF) {
-            return;
-        }
-        if (world.getGameRules().getBoolean("mobGriefing")) {
+        if (world.getBlockState(pos).getBlock() != ModBlocks.TURF) return;
+        if (ForgeEventFactory.getMobGriefingEvent(world, sheep)) {
             world.destroyBlock(pos, false);
         }
         sheep.eatGrassBonus();

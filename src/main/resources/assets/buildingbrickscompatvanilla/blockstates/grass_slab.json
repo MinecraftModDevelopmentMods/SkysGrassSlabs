@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "type=bottom,waterlogged=false": { "model": "skysgrassslabs:block/grass_slab" },
+    "type=bottom,waterlogged=true": { "model": "skysgrassslabs:block/grass_slab" },
+    "type=top,waterlogged=false": { "model": "skysgrassslabs:block/grass_slab_top" },
+    "type=top,waterlogged=true": { "model": "skysgrassslabs:block/grass_slab_top" },
+    "type=double,waterlogged=false": { "model": "minecraft:block/grass_block" },
+    "type=double,waterlogged=true": { "model": "minecraft:block/grass_block" }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "crafting_shaped",
+  "pattern": ["DDD"],
+  "key": {
+    "D": { "item": "minecraft:dirt" }
+  },
+  "result": {
+    "item": "skysgrassslabs:dirt_slab",
+    "count": 6
+  }
+}

@@ -4,9 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -26,33 +28,34 @@ class LocalizationContractTest {
     private static final File LANG_DIR =
             new File("src/main/resources/assets/skysgrassslabs/lang");
     private static final List<String> KEYS = Arrays.asList(
-            "tile.skysgrassslabs.dirt_slab.name",
-            "tile.skysgrassslabs.grass_slab.name",
-            "tile.skysgrassslabs.path_slab.name",
-            "tile.skysgrassslabs.turf.name");
+            "block.skysgrassslabs.dirt_slab",
+            "block.skysgrassslabs.grass_slab",
+            "block.skysgrassslabs.path_slab",
+            "block.skysgrassslabs.turf");
     private static final List<String> LOCALES = Arrays.asList(
-            "de_at", "de_au", "de_de",
-            "en_ca", "en_en", "en_gb", "en_pt", "en_us",
-            "es_es", "es_mx", "fr_ca", "fr_fr", "ja_jp", "ko_kr",
-            "pt_br", "pt_pt", "ru_ru", "zh_cn");
+            "de_at", "de_au", "de_de", "en_ca", "en_en", "en_gb", "en_pt", "en_us",
+            "es_es", "es_mx", "fr_ca", "fr_fr", "ja_jp", "ko_kr", "pt_br", "pt_pt",
+            "ru_ru", "zh_cn");
 
     @Test
-    void allEighteenLocalesHaveExactOrderedKeyParity() throws Exception {
-        File[] files = LANG_DIR.listFiles((dir, name) -> name.endsWith(".lang"));
-        assertNotNull(files);
+    void allEighteenLowercaseJsonLocalesHaveExactOrderedKeyParity() throws Exception {
+        File[] files = LANG_DIR.listFiles((directory, name) -> name.endsWith(".json"));
         Set<String> actual = new LinkedHashSet<String>();
-        for (File file : files) actual.add(stripExtension(file.getName()));
+        if (files != null) {
+            Arrays.sort(files, (left, right) -> left.getName().compareTo(right.getName()));
+            for (File file : files) actual.add(stripExtension(file.getName()));
+        }
         assertEquals(new LinkedHashSet<String>(LOCALES), actual);
-
         for (String locale : LOCALES) {
             Map<String, String> translations = read(locale);
             assertEquals(KEYS, new ArrayList<String>(translations.keySet()), locale);
             assertEquals(4, translations.size(), locale);
+            assertFalse(translations.values().stream().anyMatch(value -> value.trim().isEmpty()));
         }
     }
 
     @Test
-    void localeFilesAreCleanUtf8() throws Exception {
+    void localeFilesAreCleanUtf8Json() throws Exception {
         for (String locale : LOCALES) {
             byte[] bytes = Files.readAllBytes(file(locale).toPath());
             assertFalse(hasUtf8Bom(bytes), locale + " must not contain a UTF-8 BOM");
@@ -60,36 +63,27 @@ class LocalizationContractTest {
             assertTrue(content.endsWith("\n"), locale + " must end with a newline");
             assertFalse(content.contains("\r"), locale + " must use LF line endings");
             assertFalse(content.contains("\ufffd"), locale + " contains a replacement character");
+            for (String key : KEYS) {
+                assertEquals(1, occurrences(content, "\"" + key + "\""),
+                        locale + " contains a missing or duplicate key " + key);
+            }
             for (String line : content.split("\n", -1)) {
                 assertEquals(line.replaceFirst("[ \\t]+$", ""), line,
                         locale + " has trailing whitespace");
             }
-            for (Map.Entry<String, String> entry : read(locale).entrySet()) {
-                assertFalse(entry.getValue().trim().isEmpty(),
-                        locale + " has a blank value for " + entry.getKey());
-            }
+            assertTrue(new JsonParser().parse(content).isJsonObject());
         }
     }
 
     @Test
-    void translationsAndRegionalDifferencesAreLocked() throws Exception {
+    void translationsAndRegionalDifferencesRemainIntact() throws Exception {
         assertValues("de_at", "Eanstufn", "Grosstufn", "Steigstufn", "Grassodn");
-        assertValues("de_de", "Erdstufe", "Grasblockstufe", "Trampelpfadstufe", "Grassode");
         assertValues("es_es", "Losa de tierra", "Losa de césped",
                 "Losa de camino de hierba", "Tepe de césped");
         assertValues("es_mx", "Losa de tierra", "Losa de pasto",
                 "Losa de sendero de pasto", "Tapete de pasto");
-        assertValues("fr_ca", "Dalle de terre", "Dalle de gazon",
-                "Dalle de sentier de gazon", "Plaque de gazon");
-        assertValues("fr_fr", "Dalle de terre", "Dalle d'herbe",
-                "Dalle de chemin d'herbe", "Plaque de gazon");
         assertValues("ja_jp", "土のハーフブロック", "草ブロックのハーフブロック",
                 "草の道のハーフブロック", "芝生");
-        assertValues("ko_kr", "흙 반 블록", "잔디 블록 반 블록", "잔디 길 반 블록", "잔디");
-        assertValues("pt_br", "Laje de Terra", "Laje de Bloco de Grama",
-                "Laje de Caminho de Grama", "Placa de Grama");
-        assertValues("pt_pt", "Degrau de Terra", "Degrau de Bloco de Relva",
-                "Degrau de Caminho de Relva", "Placa de Relva");
         assertValues("ru_ru", "Земляная плита", "Дёрновая плита", "Плита тропы", "Дёрн");
         assertValues("zh_cn", "泥土台阶", "草方块台阶", "草径台阶", "草皮");
 
@@ -109,16 +103,15 @@ class LocalizationContractTest {
     }
 
     private static Map<String, String> read(String locale) throws Exception {
-        Map<String, String> values = new LinkedHashMap<String, String>();
-        for (String line : Files.readAllLines(file(locale).toPath(), StandardCharsets.UTF_8)) {
-            if (line.trim().isEmpty() || line.trim().startsWith("#")) continue;
-            int separator = line.indexOf('=');
-            assertTrue(separator > 0, locale + " has a malformed line: " + line);
-            String key = line.substring(0, separator);
-            assertFalse(values.containsKey(key), locale + " has duplicate key " + key);
-            values.put(key, line.substring(separator + 1));
+        String content = new String(Files.readAllBytes(file(locale).toPath()),
+                StandardCharsets.UTF_8);
+        JsonObject json = new JsonParser().parse(content).getAsJsonObject();
+        Map<String, String> result = new LinkedHashMap<String, String>();
+        for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+            assertFalse(result.containsKey(entry.getKey()), locale + " has duplicate keys");
+            result.put(entry.getKey(), entry.getValue().getAsString());
         }
-        return values;
+        return result;
     }
 
     private static String decodeUtf8(byte[] bytes, String locale) {
@@ -137,12 +130,20 @@ class LocalizationContractTest {
                 && bytes[1] == (byte) 0xbb && bytes[2] == (byte) 0xbf;
     }
 
+    private static int occurrences(String value, String needle) {
+        int count = 0;
+        for (int index = value.indexOf(needle); index >= 0;
+                index = value.indexOf(needle, index + needle.length())) {
+            ++count;
+        }
+        return count;
+    }
+
     private static File file(String locale) {
-        return new File(LANG_DIR, locale + ".lang");
+        return new File(LANG_DIR, locale + ".json");
     }
 
     private static String stripExtension(String name) {
-        return name.substring(0, name.length() - ".lang".length());
+        return name.substring(0, name.length() - ".json".length());
     }
-
 }

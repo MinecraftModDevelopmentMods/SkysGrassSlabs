@@ -1,14 +1,13 @@
 package zone.moddev.mc.skysgrassslabs.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import net.minecraftforge.common.config.Configuration;
-import net.minecraftforge.fml.relauncher.FMLInjectionData;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -16,69 +15,49 @@ class SkysGrassSlabsConfigTest {
     @TempDir
     Path temporaryDirectory;
 
-    @BeforeEach
-    void provideForgeMinecraftHome() throws Exception {
-        java.lang.reflect.Field field = FMLInjectionData.class.getDeclaredField("minecraftHome");
-        field.setAccessible(true);
-        field.set(null, temporaryDirectory.toFile());
+    @Test
+    void legacyConfigurationMigratesBothIndependentSettings() throws Exception {
+        Files.write(temporaryDirectory.resolve("skysgrassslabs.cfg"), Arrays.asList(
+                "# retained legacy file", "B:generateGrassSlabs=false",
+                "B:forceReplaceBuildingBricksSlabs=true"), StandardCharsets.UTF_8);
+
+        assertTrue(SkysGrassSlabsConfig.migrateLegacyConfig(temporaryDirectory));
+
+        String toml = new String(Files.readAllBytes(
+                temporaryDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME)),
+                StandardCharsets.UTF_8);
+        assertTrue(toml.contains("[worldgen]"));
+        assertTrue(toml.contains("generateGrassSlabs = false"));
+        assertTrue(toml.contains("[compat]"));
+        assertTrue(toml.contains("forceReplaceBuildingBricksSlabs = true"));
+        assertTrue(Files.isRegularFile(temporaryDirectory.resolve("skysgrassslabs.cfg")));
     }
 
     @Test
-    void defaultsToSmoothingEnabledAndReplacementDisabled() {
-        File file = temporaryDirectory.resolve("default.cfg").toFile();
+    void existingTomlAlwaysWinsAndIsLeftUntouched() throws Exception {
+        Path oldFile = temporaryDirectory.resolve("skysgrassslabs.cfg");
+        Path newFile = temporaryDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME);
+        Files.write(oldFile, Arrays.asList("B:generateGrassSlabs=false"),
+                StandardCharsets.UTF_8);
+        byte[] original = "[worldgen]\ngenerateGrassSlabs = true\n".getBytes(StandardCharsets.UTF_8);
+        Files.write(newFile, original);
 
-        SkysGrassSlabsConfig.load(file);
-
-        assertTrue(SkysGrassSlabsConfig.generateGrassSlabs());
-        assertTrue(SkysGrassSlabsConfig.isSmoothingActive());
-        assertFalse(SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs());
-        Configuration written = new Configuration(file);
-        written.load();
-        assertFalse(written.get(SkysGrassSlabsConfig.COMPAT_CATEGORY,
-                SkysGrassSlabsConfig.FORCE_REPLACE_BUILDINGBRICKS_SLABS, false).getBoolean());
+        assertFalse(SkysGrassSlabsConfig.migrateLegacyConfig(temporaryDirectory));
+        assertArrayEquals(original, Files.readAllBytes(newFile));
     }
 
     @Test
-    void worldgenAndReplacementSettingsAreIndependent() {
-        boolean[] values = new boolean[] {false, true};
-        int index = 0;
-        for (boolean worldgen : values) {
-            for (boolean replacement : values) {
-                File file = temporaryDirectory.resolve("matrix-" + index++ + ".cfg").toFile();
-                write(file, worldgen, replacement);
+    void malformedLegacyValuesFallBackSafely() throws Exception {
+        Files.write(temporaryDirectory.resolve("skysgrassslabs.cfg"), Arrays.asList(
+                "B:generateGrassSlabs=perhaps",
+                "B:forceReplaceBuildingBricksSlabs=not-a-boolean"),
+                StandardCharsets.UTF_8);
 
-                SkysGrassSlabsConfig.load(file);
-
-                assertEquals(worldgen, SkysGrassSlabsConfig.generateGrassSlabs());
-                assertEquals(worldgen, SkysGrassSlabsConfig.isSmoothingActive());
-                assertEquals(replacement,
-                        SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs());
-            }
-        }
-    }
-
-    @Test
-    void loadingConfigurationClearsOnlyTheRunSpecificSmoothingSuppression() {
-        File file = temporaryDirectory.resolve("reload.cfg").toFile();
-        write(file, true, true);
-        SkysGrassSlabsConfig.load(file);
-        SkysGrassSlabsConfig.suppressSmoothingForThisRun();
-        assertFalse(SkysGrassSlabsConfig.isSmoothingActive());
-
-        SkysGrassSlabsConfig.load(file);
-
-        assertTrue(SkysGrassSlabsConfig.isSmoothingActive());
-        assertTrue(SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs());
-    }
-
-    private static void write(File file, boolean worldgen, boolean replacement) {
-        Configuration configuration = new Configuration(file);
-        configuration.load();
-        configuration.get(SkysGrassSlabsConfig.WORLDGEN_CATEGORY,
-                SkysGrassSlabsConfig.GENERATE_GRASS_SLABS, true).set(worldgen);
-        configuration.get(SkysGrassSlabsConfig.COMPAT_CATEGORY,
-                SkysGrassSlabsConfig.FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)
-                .set(replacement);
-        configuration.save();
+        assertTrue(SkysGrassSlabsConfig.migrateLegacyConfig(temporaryDirectory));
+        String toml = new String(Files.readAllBytes(
+                temporaryDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME)),
+                StandardCharsets.UTF_8);
+        assertTrue(toml.contains("generateGrassSlabs = true"));
+        assertTrue(toml.contains("forceReplaceBuildingBricksSlabs = false"));
     }
 }

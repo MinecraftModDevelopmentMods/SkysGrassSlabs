@@ -1,5 +1,5 @@
 {
   "variants": {
-    "normal": { "model": "skysgrassslabs:turf" }
+    "": { "model": "skysgrassslabs:block/turf" }
   }
 }

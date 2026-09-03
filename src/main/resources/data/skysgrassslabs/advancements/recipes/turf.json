@@ -1,0 +1,19 @@
+{
+  "parent": "minecraft:recipes/root",
+  "rewards": { "recipes": ["skysgrassslabs:turf"] },
+  "criteria": {
+    "has_grass_block": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "item": "minecraft:grass_block" }] }
+    },
+    "has_grass_slab": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "item": "skysgrassslabs:grass_slab" }] }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": { "recipe": "skysgrassslabs:turf" }
+    }
+  },
+  "requirements": [["has_grass_block", "has_grass_slab", "has_the_recipe"]]
+}

@@ -1,6 +1,10 @@
 {
   "variants": {
-    "half=bottom": { "model": "skysgrassslabs:path_slab" },
-    "half=top": { "model": "skysgrassslabs:path_slab_top" }
+    "type=bottom,waterlogged=false": { "model": "skysgrassslabs:block/path_slab" },
+    "type=bottom,waterlogged=true": { "model": "skysgrassslabs:block/path_slab" },
+    "type=top,waterlogged=false": { "model": "skysgrassslabs:block/path_slab_top" },
+    "type=top,waterlogged=true": { "model": "skysgrassslabs:block/path_slab_top" },
+    "type=double,waterlogged=false": { "model": "minecraft:block/grass_path" },
+    "type=double,waterlogged=true": { "model": "minecraft:block/grass_path" }
   }
 }

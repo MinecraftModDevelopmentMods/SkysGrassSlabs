@@ -6,16 +6,22 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.0.1.112021.jar` before opening a world that used the
-Minecraft 1.10.2 or 1.11.2 release. The permanent dirt slab, grass slab, path
-slab and turf IDs are unchanged.
+Install `SkysGrassSlabs-1.0.1.113021.jar` before opening a world that used the
+Minecraft 1.10.2, 1.11.2 or 1.12.2 release. The permanent dirt slab, grass
+slab, path slab and turf IDs are unchanged.
 
 Upgrade checks cover top and bottom slabs, turf, paths, container and dropped
 item stacks, custom item data and the saved world migration state. Saving and
 loading the upgraded world a second time must not change that content again.
 
-World smoothing still affects only newly generated chunks. Opening an existing
-chunk on 1.12.2 does not add smoothing slabs to it.
+Minecraft 1.13 changes the saved block format. Sky's Grass Slabs converts its
+older slab data before Minecraft applies that change, including block IDs above
+the vanilla numeric range. Old top and bottom orientations are retained and
+begin dry. Keep the mod installed during the first upgraded start so unopened
+chunks can be converted when they are later visited.
+
+World smoothing still affects only newly generated chunks. Indexed chunks from
+the older world are never treated as new terrain by the smoothing feature.
 
 ## Older mod content
 
@@ -35,15 +41,15 @@ missing and may remove it after offering its normal backup and confirmation
 screen. Do not continue unless losing those unsupported blocks is acceptable
 for that copy of the world.
 
-If an important world uses other content without a Minecraft 1.12.2 version,
+If an important world uses other content without a Minecraft 1.13.2 version,
 keep playing it on its existing Minecraft version until a suitable migration
 is available.
 
 ## Modpack checklist
 
 1. Back up the complete instance and world.
-2. Update Forge and every required mod to a matching Minecraft 1.12.2 build.
-3. Install the 1.12.2 Sky's Grass Slabs jar before the first upgraded start.
+2. Update Forge and every required mod to a matching Minecraft 1.13.2 build.
+3. Install the 1.13.2 Sky's Grass Slabs jar before the first upgraded start.
 4. Read the complete Forge missing content list before confirming it.
 5. Check representative slabs, turf, paths, inventories and previously
    generated terrain.

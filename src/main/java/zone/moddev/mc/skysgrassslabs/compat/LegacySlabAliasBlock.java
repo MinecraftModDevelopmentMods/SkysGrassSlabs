@@ -1,14 +1,13 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
+import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import zone.moddev.mc.skysgrassslabs.block.LegacySlabBlock;
 
-/**
- * Temporary registry holder for a supported slab from a world whose original mod is absent.
- * Loaded aliases are replaced with the corresponding Sky slab before the chunk is used.
- */
+/** Hidden deserialization holder for a supported historical slab ID. */
 final class LegacySlabAliasBlock extends LegacySlabBlock {
     LegacySlabAliasBlock(boolean grass) {
-        super(grass ? Material.GRASS : Material.GROUND);
+        super(grass ? Material.GRASS : Material.GROUND,
+                grass ? SoundType.PLANT : SoundType.GROUND, 0.6F, false);
     }
 }

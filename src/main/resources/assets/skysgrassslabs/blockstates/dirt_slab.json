@@ -1,8 +1,16 @@
 {
   "variants": {
-    "half=bottom,snowy=false": { "model": "skysgrassslabs:dirt_slab" },
-    "half=bottom,snowy=true": { "model": "skysgrassslabs:dirt_slab_snow" },
-    "half=top,snowy=false": { "model": "skysgrassslabs:dirt_slab_top" },
-    "half=top,snowy=true": { "model": "skysgrassslabs:dirt_slab_top_snow" }
+    "snowy=false,type=bottom,waterlogged=false": { "model": "skysgrassslabs:block/dirt_slab" },
+    "snowy=false,type=bottom,waterlogged=true": { "model": "skysgrassslabs:block/dirt_slab" },
+    "snowy=true,type=bottom,waterlogged=false": { "model": "skysgrassslabs:block/dirt_slab_snow" },
+    "snowy=true,type=bottom,waterlogged=true": { "model": "skysgrassslabs:block/dirt_slab_snow" },
+    "snowy=false,type=top,waterlogged=false": { "model": "skysgrassslabs:block/dirt_slab_top" },
+    "snowy=false,type=top,waterlogged=true": { "model": "skysgrassslabs:block/dirt_slab_top" },
+    "snowy=true,type=top,waterlogged=false": { "model": "skysgrassslabs:block/dirt_slab_top_snow" },
+    "snowy=true,type=top,waterlogged=true": { "model": "skysgrassslabs:block/dirt_slab_top_snow" },
+    "snowy=false,type=double,waterlogged=false": { "model": "minecraft:block/dirt" },
+    "snowy=false,type=double,waterlogged=true": { "model": "minecraft:block/dirt" },
+    "snowy=true,type=double,waterlogged=false": { "model": "minecraft:block/grass_block_snow" },
+    "snowy=true,type=double,waterlogged=true": { "model": "minecraft:block/grass_block_snow" }
   }
 }

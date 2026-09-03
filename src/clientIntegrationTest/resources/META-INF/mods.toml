@@ -1,0 +1,30 @@
+modLoader="javafml"
+loaderVersion="[25,)"
+license="LGPL-2.1-only"
+
+[[mods]]
+modId="skysgrassslabsclienttest"
+version="1"
+displayName="Sky's Grass Slabs Client Probe"
+description='''Build-only rendered client and world reload fixture.'''
+
+[[dependencies.skysgrassslabsclienttest]]
+modId="forge"
+mandatory=true
+versionRange="[25,)"
+ordering="NONE"
+side="CLIENT"
+
+[[dependencies.skysgrassslabsclienttest]]
+modId="skysgrassslabs"
+mandatory=true
+versionRange="[1.0.1.113021]"
+ordering="AFTER"
+side="CLIENT"
+
+[[dependencies.skysgrassslabsclienttest]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.13.2]"
+ordering="NONE"
+side="CLIENT"

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "type=bottom,waterlogged=false": { "model": "skysgrassslabs:block/dirt_slab" },
+    "type=bottom,waterlogged=true": { "model": "skysgrassslabs:block/dirt_slab" },
+    "type=top,waterlogged=false": { "model": "skysgrassslabs:block/dirt_slab_top" },
+    "type=top,waterlogged=true": { "model": "skysgrassslabs:block/dirt_slab_top" },
+    "type=double,waterlogged=false": { "model": "minecraft:block/dirt" },
+    "type=double,waterlogged=true": { "model": "minecraft:block/dirt" }
+  }
+}

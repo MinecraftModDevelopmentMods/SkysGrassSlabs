@@ -1,1 +1,8 @@
-{"pack":{"description":"Sky's Grass Slabs client fixture","pack_format":3}}
+{
+  "pack": {
+    "description": "Sky's Grass Slabs client fixture",
+    "forge:resource_pack_format": 4,
+    "forge:data_pack_format": 4,
+    "pack_format": 4
+  }
+}

@@ -5,9 +5,20 @@ public final class SmoothingDecision {
             boolean lowerIsNaturalGrass, boolean neighbourIsNaturalGrass,
             boolean targetClear, boolean targetDry, boolean supported,
             boolean targetHasBlockEntity) {
-        return neighbourSurfaceY == lowerSurfaceY + 1 && lowerIsNaturalGrass &&
-                neighbourIsNaturalGrass && targetClear && targetDry && supported &&
+        return isOneBlockGrassTransition(lowerSurfaceY, neighbourSurfaceY,
+                neighbourIsNaturalGrass) && isEligibleTarget(lowerIsNaturalGrass,
+                targetClear, targetDry, supported, targetHasBlockEntity);
+    }
+
+    static boolean isEligibleTarget(boolean lowerIsNaturalGrass, boolean targetClear,
+            boolean targetDry, boolean supported, boolean targetHasBlockEntity) {
+        return lowerIsNaturalGrass && targetClear && targetDry && supported &&
                 !targetHasBlockEntity;
+    }
+
+    static boolean isOneBlockGrassTransition(int lowerSurfaceY, int neighbourSurfaceY,
+            boolean neighbourIsNaturalGrass) {
+        return neighbourSurfaceY == lowerSurfaceY + 1 && neighbourIsNaturalGrass;
     }
 
     private SmoothingDecision() {

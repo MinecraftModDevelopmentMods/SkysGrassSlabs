@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="LGPL-2.1-only"
+issueTrackerURL="https://github.com/MinecraftModDevelopmentMods/SkysGrassSlabs/issues"
+
+[[mods]]
+modId="skysgrassslabs"
+version="${version}"
+displayName="Sky's Grass Slabs"
+displayURL="https://www.curseforge.com/minecraft/mc-mods/skys-grass-slabs"
+authors="SkyBlade1978"
+description='''Adds dirt, grass and path slabs, turf, natural grass spreading and smoother Overworld terrain.'''
+
+[[dependencies.skysgrassslabs]]
+modId="forge"
+mandatory=true
+versionRange="${forge_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.skysgrassslabs]]
+modId="minecraft"
+mandatory=true
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
