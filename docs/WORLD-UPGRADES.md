@@ -6,7 +6,7 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.0.0.111021.jar` before opening a world that used the
+Install `SkysGrassSlabs-1.0.1.111021.jar` before opening a world that used the
 Minecraft 1.10.2 release. The permanent dirt slab, grass slab, path slab and
 turf IDs are unchanged.
 

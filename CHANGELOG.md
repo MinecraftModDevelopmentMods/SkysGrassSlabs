@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1.111021 - Minecraft 1.11.2
+
+- Corrected the side texture alignment on top and bottom path slabs so it
+  follows the lowered surface in the same way as a vanilla path block.
+
 ## 1.0.0.111021 - Minecraft 1.11.2
 
 - Ported the complete dirt, grass, path slab and turf feature set to Minecraft
