@@ -20,7 +20,7 @@ class ProjectContractTest {
         assertTrue(properties.contains("minecraft_version=1.10.2"));
         assertTrue(properties.contains("forge_version=12.18.3.2511"));
         assertTrue(properties.contains("mapping_version=29-1.10.2"));
-        assertTrue(properties.contains("mod_version=1.0.0.110021"));
+        assertTrue(properties.contains("mod_version=1.0.1.110021"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
@@ -69,7 +69,7 @@ class ProjectContractTest {
         assertFalse(workflow.contains("release_ref:"));
         assertFalse(workflow.contains("curseforge_channel:"));
         assertFalse(workflow.contains("confirm_version:"));
-        assertTrue(new File("docs/RELEASE-1.0.0.110021.md").isFile());
+        assertTrue(new File("docs/RELEASE-1.0.1.110021.md").isFile());
     }
 
     @Test
@@ -140,6 +140,18 @@ class ProjectContractTest {
             assertTrue(model.contains("\"top\": \"blocks/snow\""));
             assertTrue(model.contains("\"side\": \"blocks/grass_side_snowed\""));
             assertFalse(upFace(model).contains("tintindex"));
+        }
+    }
+
+    @Test
+    void pathSlabSidesKeepTheVanillaPathSurfaceLip() throws Exception {
+        String bottom = read(
+                "src/main/resources/assets/skysgrassslabs/models/block/path_slab.json");
+        String top = read(
+                "src/main/resources/assets/skysgrassslabs/models/block/path_slab_top.json");
+        for (String face : new String[] {"north", "south", "west", "east"}) {
+            assertTrue(bottom.contains("\"" + face + "\": { \"uv\": [0, 1, 16, 8]"));
+            assertTrue(top.contains("\"" + face + "\": { \"uv\": [0, 1, 16, 8]"));
         }
     }
 
