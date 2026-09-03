@@ -16,6 +16,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.advancements.Advancement;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockDirt;
 import net.minecraft.block.BlockFence;
@@ -41,6 +42,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -1673,9 +1675,20 @@ public final class IntegrationTestMod {
         }
         IRecipe registeredTurf = CraftingManager.REGISTRY.getObject(
                 new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf"));
-        require(registeredTurf instanceof TurfCuttingRecipe && registeredTurf.isDynamic() &&
+        require(registeredTurf instanceof TurfCuttingRecipe && !registeredTurf.isDynamic() &&
                 registeredTurf.canFit(2, 1) && !registeredTurf.canFit(1, 1),
-                "Registered turf recipe does not retain its 1.12 special-recipe contract");
+                "Registered turf recipe is not available to the 1.12 recipe book");
+        NonNullList<Ingredient> ingredients = registeredTurf.getIngredients();
+        require(ingredients.size() == 2 &&
+                ingredients.get(0).apply(new ItemStack(Blocks.GRASS)) &&
+                ingredients.get(0).apply(new ItemStack(ModBlocks.GRASS_SLAB)) &&
+                ingredients.get(1).apply(new ItemStack(Items.WOODEN_SHOVEL)),
+                "Turf recipe book ingredients are incomplete");
+        Advancement turfAdvancement = world.getMinecraftServer().getAdvancementManager()
+                .getAdvancement(new ResourceLocation(
+                        SkysGrassSlabs.MOD_ID, "recipes/turf"));
+        require(turfAdvancement != null,
+                "Turf recipe discovery advancement was not loaded");
 
         IRecipe recipe = new TurfCuttingRecipe();
         InventoryCrafting grid = craftingGrid(2, 2);

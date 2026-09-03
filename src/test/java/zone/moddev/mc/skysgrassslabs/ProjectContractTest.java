@@ -54,6 +54,22 @@ class ProjectContractTest {
     }
 
     @Test
+    void turfRecipeIsDiscoverableThroughTheRecipeBook() throws Exception {
+        String recipe = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java");
+        String advancement = read(
+                "src/main/resources/assets/skysgrassslabs/advancements/recipes/turf.json");
+        assertTrue(recipe.contains("public boolean isDynamic()"));
+        assertTrue(recipe.contains("return false;"));
+        assertTrue(recipe.contains("public NonNullList<Ingredient> getIngredients()"));
+        assertTrue(advancement.contains("\"skysgrassslabs:turf\""));
+        assertTrue(advancement.contains("\"minecraft:grass\""));
+        assertTrue(advancement.contains("\"skysgrassslabs:grass_slab\""));
+        assertTrue(advancement.contains("\"minecraft:recipe_unlocked\""));
+        assertTrue(advancement.contains("\"minecraft:inventory_changed\""));
+    }
+
+    @Test
     void oneTwelveResourcesAndLegacyRecoveryUseTheTargetNativeContracts() throws Exception {
         String pack = read("src/main/resources/pack.mcmeta");
         String compatibility = read(

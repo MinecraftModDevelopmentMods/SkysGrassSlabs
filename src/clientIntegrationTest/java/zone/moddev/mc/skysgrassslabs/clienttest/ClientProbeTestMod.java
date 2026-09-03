@@ -9,7 +9,11 @@ import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.recipebook.RecipeList;
 import net.minecraft.client.renderer.block.model.IBakedModel;
+import net.minecraft.client.util.RecipeBookClient;
+import net.minecraft.item.crafting.CraftingManager;
+import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.GameType;
 import net.minecraft.world.WorldSettings;
@@ -34,6 +38,7 @@ public final class ClientProbeTestMod {
     private int firstWorldFrames;
     private int reloadWorldFrames;
     private boolean modelsVerified;
+    private boolean recipeBookVerified;
 
     @Mod.EventHandler
     public void initialize(FMLInitializationEvent event) {
@@ -69,6 +74,7 @@ public final class ClientProbeTestMod {
                     if (minecraft.world != null && minecraft.player != null &&
                             firstWorldFrames >= 8 && stateTicks >= 100) {
                         verifyModels(minecraft);
+                        verifyRecipeBook();
                         stopIntegratedServer(minecraft);
                         nextState(2);
                     }
@@ -86,6 +92,7 @@ public final class ClientProbeTestMod {
                     if (minecraft.world != null && minecraft.player != null &&
                             reloadWorldFrames >= 8 && stateTicks >= 100) {
                         verifyModels(minecraft);
+                        verifyRecipeBook();
                         stopIntegratedServer(minecraft);
                         nextState(4);
                     }
@@ -139,6 +146,22 @@ public final class ClientProbeTestMod {
         modelsVerified = true;
     }
 
+    private void verifyRecipeBook() {
+        IRecipe turfRecipe = CraftingManager.REGISTRY.getObject(
+                new ResourceLocation("skysgrassslabs", "turf"));
+        if (turfRecipe == null || turfRecipe.isDynamic() ||
+                turfRecipe.getIngredients().size() != 2) {
+            throw new IllegalStateException("Turf recipe is not recipe-book compatible");
+        }
+        for (RecipeList recipeList : RecipeBookClient.ALL_RECIPES) {
+            if (recipeList.getRecipes().contains(turfRecipe)) {
+                recipeBookVerified = true;
+                return;
+            }
+        }
+        throw new IllegalStateException("Turf recipe is absent from the client recipe book");
+    }
+
     private static void stopIntegratedServer(Minecraft minecraft) {
         if (minecraft.world != null) minecraft.world.sendQuittingDisconnectingPacket();
         minecraft.loadWorld(null);
@@ -148,6 +171,7 @@ public final class ClientProbeTestMod {
     private void writeMarker() throws IOException {
         Properties values = new Properties();
         values.setProperty("models_verified", Boolean.toString(modelsVerified));
+        values.setProperty("recipe_book_verified", Boolean.toString(recipeBookVerified));
         values.setProperty("first_world_rendered", Boolean.toString(firstWorldFrames >= 8));
         values.setProperty("reload_rendered", Boolean.toString(reloadWorldFrames >= 8));
         values.setProperty("world_directory", WORLD_DIRECTORY);

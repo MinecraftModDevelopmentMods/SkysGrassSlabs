@@ -386,7 +386,8 @@ def clientIntegrationProcess = tasks.register('clientIntegrationProcess', JavaEx
         }
         Properties values = new Properties()
         marker.withInputStream { values.load(it) }
-        ['models_verified', 'first_world_rendered', 'reload_rendered'].each { key ->
+        ['models_verified', 'recipe_book_verified', 'first_world_rendered',
+                'reload_rendered'].each { key ->
             if (values.getProperty(key) != 'true') {
                 throw new GradleException("Development client failed ${key}: ${values}")
             }
@@ -951,7 +952,8 @@ tasks.register('packagedClientIntegrationTest') {
         }
         Properties values = new Properties()
         marker.withInputStream { values.load(it) }
-        ['models_verified', 'first_world_rendered', 'reload_rendered'].each { key ->
+        ['models_verified', 'recipe_book_verified', 'first_world_rendered',
+                'reload_rendered'].each { key ->
             if (values.getProperty(key) != 'true') {
                 throw new GradleException("Packaged client failed ${key}: ${values}")
             }
@@ -996,6 +998,7 @@ tasks.register('verifyReleaseArtifacts') {
         try {
             Set<String> names = zip.entries().collect { it.name } as Set<String>
             ['mcmod.info', 'META-INF/LICENSE', 'META-INF/LICENSE.spdx', 'META-INF/NOTICE',
+             'assets/skysgrassslabs/advancements/recipes/turf.json',
              'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class'].each { required ->
                 if (!names.contains(required)) throw new GradleException("Release jar is missing ${required}")
             }

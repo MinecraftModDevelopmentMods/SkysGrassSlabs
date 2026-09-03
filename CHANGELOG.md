@@ -13,6 +13,8 @@
   sheep interaction and terrain smoothing.
 - Made turf expose the same connection faces as vanilla carpet so fences and
   similar blocks do not join to it.
+- Made the turf cutting recipe discoverable and usable through the recipe
+  book.
 
 ## 1.0.1.111021 - Minecraft 1.11.2
 

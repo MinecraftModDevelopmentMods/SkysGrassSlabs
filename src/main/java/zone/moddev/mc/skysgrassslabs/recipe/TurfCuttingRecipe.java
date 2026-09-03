@@ -1,5 +1,7 @@
 package zone.moddev.mc.skysgrassslabs.recipe;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.init.Blocks;
@@ -7,14 +9,18 @@ import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
         implements IRecipe {
+    private final NonNullList<Ingredient> ingredients = createIngredients();
+
     @Override
     public boolean matches(InventoryCrafting inventory, World world) {
         int grassInputs = 0;
@@ -51,8 +57,13 @@ public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
     }
 
     @Override
+    public NonNullList<Ingredient> getIngredients() {
+        return ingredients;
+    }
+
+    @Override
     public boolean isDynamic() {
-        return true;
+        return false;
     }
 
     @Override
@@ -81,6 +92,20 @@ public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
         return toolClasses != null && toolClasses.contains("shovel");
     }
 
+    private static NonNullList<Ingredient> createIngredients() {
+        NonNullList<Ingredient> result = NonNullList.create();
+        result.add(Ingredient.fromStacks(new ItemStack(Blocks.GRASS),
+                new ItemStack(ModBlocks.GRASS_SLAB)));
+
+        List<ItemStack> shovels = new ArrayList<ItemStack>();
+        for (Item item : ForgeRegistries.ITEMS.getValuesCollection()) {
+            ItemStack candidate = new ItemStack(item);
+            if (isShovel(candidate)) shovels.add(candidate);
+        }
+        result.add(new ShovelIngredient(shovels.toArray(new ItemStack[shovels.size()])));
+        return result;
+    }
+
     private static ItemStack soilRemainder(ItemStack stack) {
         Item item = stack.getItem();
         if (item == Item.getItemFromBlock(Blocks.GRASS)) {
@@ -91,5 +116,16 @@ public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
             return new ItemStack(ModBlocks.DIRT_SLAB);
         }
         return null;
+    }
+
+    private static final class ShovelIngredient extends Ingredient {
+        private ShovelIngredient(ItemStack... displayStacks) {
+            super(displayStacks);
+        }
+
+        @Override
+        public boolean apply(@Nullable ItemStack stack) {
+            return stack != null && !stack.isEmpty() && isShovel(stack);
+        }
     }
 }

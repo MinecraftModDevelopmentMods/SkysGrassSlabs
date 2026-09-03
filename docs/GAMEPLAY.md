@@ -47,7 +47,9 @@ enabled is removed without dropping an item.
   remains in the crafting grid.
 
 The turf recipe works in the player's 2 by 2 crafting grid as well as a
-crafting table. Path slabs have no survival crafting recipe.
+crafting table. In Minecraft 1.12.2 it appears in the recipe book after the
+player obtains a grass block or grass slab. Path slabs have no survival
+crafting recipe.
 
 Grass slabs normally drop dirt slabs and drop themselves with Silk Touch. Path
 slabs always drop dirt slabs, including when Silk Touch is used.
