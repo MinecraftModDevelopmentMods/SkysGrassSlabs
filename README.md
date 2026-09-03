@@ -4,7 +4,7 @@ Sky's Grass Slabs adds dirt, grass and lowered path slabs, along with a thin
 layer of turf. Grass spreads naturally between full blocks and slabs, while
 new Overworld terrain uses grass slabs to soften suitable one block steps.
 
-This branch is for Minecraft 1.10.2. Version `1.0.0.110021` requires Forge
+This branch is for Minecraft 1.10.2. Version `1.0.1.110021` requires Forge
 12.18.3.2511 or a compatible Forge 12.18.3 build and Java 8.
 
 ## Installation
@@ -30,7 +30,7 @@ or updating world changing mods.
 - [Gameplay and recipes](docs/GAMEPLAY.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Existing worlds and legacy slabs](docs/WORLD-UPGRADES.md)
-- [Release notes](docs/RELEASE-1.0.0.110021.md)
+- [Release notes](docs/RELEASE-1.0.1.110021.md)
 
 ## License
 

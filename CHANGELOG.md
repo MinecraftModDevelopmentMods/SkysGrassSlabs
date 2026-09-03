@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1.110021 - Minecraft 1.10.2
+
+- Corrected the side texture alignment on top and bottom path slabs so it
+  follows the lowered surface in the same way as a vanilla path block.
+
 ## 1.0.0.110021 - Minecraft 1.10.2
 
 - First stable release for Minecraft 1.10.2.

@@ -23,7 +23,7 @@ import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingHandler;
 public final class SkysGrassSlabs {
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.0.0.110021";
+    public static final String VERSION = "1.0.1.110021";
 
     @SidedProxy(
             clientSide = "zone.moddev.mc.skysgrassslabs.proxy.ClientProxy",
