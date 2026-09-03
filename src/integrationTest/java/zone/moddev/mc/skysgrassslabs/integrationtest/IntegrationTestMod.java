@@ -18,9 +18,11 @@ import java.util.Set;
 import java.util.UUID;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockDirt;
+import net.minecraft.block.BlockFence;
 import net.minecraft.block.BlockGrass;
 import net.minecraft.block.BlockSlab;
 import net.minecraft.block.IGrowable;
+import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.EntityAIBase;
@@ -1224,6 +1226,9 @@ public final class IntegrationTestMod {
         BlockPos origin = new BlockPos((world.getSpawnPoint().getX() & ~15) + 6, 160,
                 (world.getSpawnPoint().getZ() & ~15) + 6);
         world.getChunk(origin);
+        verifyTurfDoesNotConnectFences(world, origin.add(0, 0, -4));
+        checks += 2;
+
         EntityPlayerMP player = player(server, world);
         Item dirtItem = Item.getItemFromBlock(ModBlocks.DIRT_SLAB);
         ItemStack dirtStack = new ItemStack(ModBlocks.DIRT_SLAB);
@@ -1335,6 +1340,22 @@ public final class IntegrationTestMod {
                 "Grass or path slab ordinary drops changed");
         checks += 3;
         return checks;
+    }
+
+    private static void verifyTurfDoesNotConnectFences(World world, BlockPos fencePos) {
+        clearBox(world, fencePos.add(-1, -1, -1), fencePos.add(2, 2, 1));
+        BlockPos turfPos = fencePos.east();
+        world.setBlockState(fencePos.down(), Blocks.STONE.getDefaultState(), 3);
+        world.setBlockState(turfPos.down(), Blocks.DIRT.getDefaultState(), 3);
+        world.setBlockState(fencePos, Blocks.OAK_FENCE.getDefaultState(), 3);
+        world.setBlockState(turfPos, defaultState(ModBlocks.TURF), 3);
+
+        IBlockState turf = world.getBlockState(turfPos);
+        require(turf.getBlockFaceShape(world, turfPos, EnumFacing.WEST)
+                == BlockFaceShape.UNDEFINED, "Turf exposes a solid horizontal face");
+        IBlockState fence = Blocks.OAK_FENCE.getActualState(
+                world.getBlockState(fencePos), world, fencePos);
+        require(!fence.getValue(BlockFence.EAST), "Fence connected to adjacent turf");
     }
 
     private static void verifySpreading(World world, BlockPos origin) {

@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import net.minecraft.block.BlockDirt;
 import net.minecraft.block.BlockGrass;
 import net.minecraft.block.BlockSlab;
+import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -64,11 +66,19 @@ class SlabContractTest {
 
     @Test
     void turfIsOnePixelHighAndNotAFullCube() {
+        IBlockState turf = ModBlocks.TURF.getDefaultState();
         assertEquals(1.0D / 16.0D,
-                ModBlocks.TURF.getBoundingBox(ModBlocks.TURF.getDefaultState(), null,
-                        BlockPos.ORIGIN).maxY);
-        assertFalse(ModBlocks.TURF.isFullCube(ModBlocks.TURF.getDefaultState()));
-        assertFalse(ModBlocks.TURF.isOpaqueCube(ModBlocks.TURF.getDefaultState()));
+                ModBlocks.TURF.getBoundingBox(turf, null, BlockPos.ORIGIN).maxY);
+        assertFalse(ModBlocks.TURF.isFullCube(turf));
+        assertFalse(ModBlocks.TURF.isOpaqueCube(turf));
+        assertEquals(BlockFaceShape.SOLID, ModBlocks.TURF.getBlockFaceShape(
+                null, turf, BlockPos.ORIGIN, EnumFacing.DOWN));
+        for (EnumFacing face : EnumFacing.values()) {
+            if (face != EnumFacing.DOWN) {
+                assertEquals(BlockFaceShape.UNDEFINED, ModBlocks.TURF.getBlockFaceShape(
+                        null, turf, BlockPos.ORIGIN, face));
+            }
+        }
     }
 
     @Test

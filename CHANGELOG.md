@@ -11,6 +11,8 @@
   worlds.
 - Retained all 18 translations, natural grass behaviour, snowy slab edges,
   sheep interaction and terrain smoothing.
+- Made turf expose the same connection faces as vanilla carpet so fences and
+  similar blocks do not join to it.
 
 ## 1.0.1.111021 - Minecraft 1.11.2
 
