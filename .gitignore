@@ -52,8 +52,8 @@ replay_pid*
 !.env.example
 secret.json
 
-# Local developer-only context at any depth. Durable project knowledge belongs
-# in README.md and docs/ so it remains available after cloning.
+# Local development context at any depth. Player and modpack documentation
+# belongs in README.md and docs/ so it remains available after cloning.
 AGENT.md
 AGENTS.md
 CLAUDE.md
