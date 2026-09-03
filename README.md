@@ -1,53 +1,36 @@
 # Sky's Grass Slabs
 
 Sky's Grass Slabs adds dirt, grass and lowered path slabs, along with a thin
-layer of cuttable turf. Grass spreads naturally between full blocks and slabs,
-and newly generated Overworld terrain uses grass slabs to soften small steps.
+layer of turf. Grass spreads naturally between full blocks and slabs, while
+new Overworld terrain uses grass slabs to soften suitable one block steps.
 
-This branch targets Minecraft 1.11.2 with Forge 13.20.1.2588. The current
-release candidate is `1.0.0.111021`.
+This branch is for Minecraft 1.11.2. Version `1.0.0.111021` requires Forge
+13.20.1.2588 or a compatible Forge 13.20.1 build and Java 8.
 
-## Features
+## Installation
 
-- Dirt, grass and path slabs that can be placed in the top or bottom half of a
-  block. Combining two matching slabs produces the vanilla full block.
-- Grass that matches the biome, spreads naturally and turns back to dirt when
-  covered. Snowy areas give grass and dirt slabs a complete snow cap.
-- Plant and bonemeal support on top grass slabs.
-- Use a compatible shovel on a dirt or grass slab to make a lowered path slab.
-- Carpet height turf that matches the biome, spreads grass when placed on dirt
-  and can be eaten by sheep.
-- Craft turf from grass with any compatible shovel. The shovel is returned
-  unchanged and the matching dirt block or slab remains in the crafting grid.
-- Place turf on a dirt slab to turn it into a grass slab.
-- Grass slabs in new terrain smooth suitable one block height changes.
-- Migration support for compatible grass and dirt slabs from older worlds.
-- Block names translated into German, Spanish, French, Japanese, Korean,
-  Portuguese, Russian and Simplified Chinese.
+Place the mod jar in the `mods` folder. It must be installed on both the client
+and server for multiplayer. Back up an existing world before adding, removing
+or updating world changing mods.
 
-World smoothing is enabled by default. It can be disabled in the common Forge
-configuration with `worldgen.generateGrassSlabs=false`; the setting affects
-only chunks generated afterwards.
+## Highlights
 
-The 1.11.2 release can open worlds saved with the 1.10.2 release. Compatible
-older grass and dirt slab identities are recovered when their original mod is
-not available. The optional `compat.forceReplaceBuildingBricksSlabs` setting is
-retained for established worlds, although there is no supported 1.11.2 release
-of that mod.
+- Place dirt, grass and path slabs in either half of a block.
+- Combine two matching slabs into the corresponding vanilla block.
+- Let grass spread between full blocks, slabs and turf.
+- Use a shovel on dirt or grass slabs to create lowered path slabs.
+- Cut turf from grass without consuming the shovel.
+- Let sheep eat turf and regrow their wool.
+- Add grass slabs to suitable slopes in newly generated Overworld chunks.
+- Display biome colours and snowy edges that match the surrounding terrain.
+- Use translated names in 18 supported language variants.
 
-## Development
+## Guides
 
-Run Gradle with Java 17. Production code, tests, and Minecraft launches use the
-Java 8 toolchain pinned in `gradle.properties`.
-
-```powershell
-./gradlew.bat clean check build javadoc verifyReleaseArtifacts `
-  writeReleaseChecksums verifyEclipseProductionClasspath --no-daemon
-```
-
-For Eclipse, use the checkout's parent directory as the workspace, import this
-directory as an existing Gradle project, then run `genEclipseRuns` and refresh
-the Gradle project.
+- [Gameplay and recipes](docs/GAMEPLAY.md)
+- [Configuration](docs/CONFIGURATION.md)
+- [Upgrading a Minecraft 1.10.2 world](docs/WORLD-UPGRADES.md)
+- [Release notes](docs/RELEASE-1.0.0.111021.md)
 
 ## License
 
