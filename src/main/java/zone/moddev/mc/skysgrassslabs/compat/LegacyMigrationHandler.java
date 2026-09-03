@@ -32,10 +32,9 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.ChunkDataEvent;
 import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.event.FMLMissingMappingsEvent;
+import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
-import net.minecraftforge.fml.common.registry.GameRegistry;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
@@ -135,17 +134,23 @@ public final class LegacyMigrationHandler {
         writeReport(world, ModWorldState.get(world));
     }
 
-    public static void remapMissingMappings(FMLMissingMappingsEvent event) {
+    public static void remapMissingBlocks(RegistryEvent.MissingMappings<Block> event) {
         if (BuildingBricksCompat.hasLegacyAliases()) return;
-        for (FMLMissingMappingsEvent.MissingMapping mapping : event.getAll()) {
-            LegacySlabKind kind = legacySlabKind(mapping.resourceLocation);
+        for (RegistryEvent.MissingMappings.Mapping<Block> mapping : event.getAllMappings()) {
+            LegacySlabKind kind = legacySlabKind(mapping.key);
             if (kind == null) continue;
-            boolean grass = kind == LegacySlabKind.GRASS;
-            if (mapping.type == GameRegistry.Type.BLOCK) {
-                mapping.remap(grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB);
-            } else if (mapping.type == GameRegistry.Type.ITEM) {
-                mapping.remap(Item.getItemFromBlock(grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB));
-            }
+            mapping.remap(kind == LegacySlabKind.GRASS
+                    ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB);
+        }
+    }
+
+    public static void remapMissingItems(RegistryEvent.MissingMappings<Item> event) {
+        if (BuildingBricksCompat.hasLegacyAliases()) return;
+        for (RegistryEvent.MissingMappings.Mapping<Item> mapping : event.getAllMappings()) {
+            LegacySlabKind kind = legacySlabKind(mapping.key);
+            if (kind == null) continue;
+            mapping.remap(Item.getItemFromBlock(kind == LegacySlabKind.GRASS
+                    ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB));
         }
     }
 

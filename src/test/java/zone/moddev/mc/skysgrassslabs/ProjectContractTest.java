@@ -17,10 +17,10 @@ class ProjectContractTest {
     @Test
     void releaseIdentityAndToolchainArePinned() throws Exception {
         String properties = read("gradle.properties");
-        assertTrue(properties.contains("minecraft_version=1.11.2"));
-        assertTrue(properties.contains("forge_version=13.20.1.2588"));
-        assertTrue(properties.contains("mapping_version=32-1.11"));
-        assertTrue(properties.contains("mod_version=1.0.1.111021"));
+        assertTrue(properties.contains("minecraft_version=1.12.2"));
+        assertTrue(properties.contains("forge_version=14.23.5.2859"));
+        assertTrue(properties.contains("mapping_version=39-1.12"));
+        assertTrue(properties.contains("mod_version=1.0.1.112021"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
@@ -33,19 +33,28 @@ class ProjectContractTest {
         String config = read("src/main/java/zone/moddev/mc/skysgrassslabs/config/SkysGrassSlabsConfig.java");
         String worldState = read("src/main/java/zone/moddev/mc/skysgrassslabs/world/ModWorldState.java");
         String recipes = read("src/main/java/zone/moddev/mc/skysgrassslabs/init/ModRecipes.java");
+        String registryEvents = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/init/ModRegistryEvents.java");
         for (String id : new String[] {"dirt_slab", "grass_slab", "path_slab", "turf"}) {
             assertTrue(blocks.contains("\"" + id + "\""));
         }
         assertTrue(worldState.contains("skysgrassslabs_world_state"));
         assertTrue(worldState.contains("SCHEMA_VERSION = 1"));
         assertTrue(recipes.contains("skysgrassslabs:turf_cutting"));
+        for (String id : new String[] {"dirt_slab", "grass_slab",
+                "grass_block_from_seeds", "grass_slab_from_seeds", "turf"}) {
+            assertTrue(recipes.contains("\"" + id + "\""));
+        }
+        assertTrue(registryEvents.contains("RegistryEvent.Register<Block>"));
+        assertTrue(registryEvents.contains("RegistryEvent.Register<Item>"));
+        assertTrue(registryEvents.contains("RegistryEvent.Register<IRecipe>"));
         assertTrue(config.contains("forceReplaceBuildingBricksSlabs"));
         assertTrue(config.contains("COMPAT_CATEGORY, false"));
         assertTrue(compatibilityRecipe.contains("BuildingBricksCompat.isDirtSlabItem"));
     }
 
     @Test
-    void oneElevenResourcesAndLegacyRecoveryUseTheTargetNativeContracts() throws Exception {
+    void oneTwelveResourcesAndLegacyRecoveryUseTheTargetNativeContracts() throws Exception {
         String pack = read("src/main/resources/pack.mcmeta");
         String compatibility = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/compat/BuildingBricksCompat.java");
@@ -53,14 +62,21 @@ class ProjectContractTest {
                 "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyMigrationHandler.java");
         String client = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/proxy/ClientProxy.java");
+        String clientRegistry = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/init/ClientRegistryEvents.java");
         assertTrue(pack.contains("\"pack_format\": 3"));
-        assertTrue(compatibility.contains("registerLegacyAlias(GRASS_SLAB_ID, true)"));
-        assertTrue(compatibility.contains("registerLegacyAlias(DIRT_SLAB_ID, false)"));
+        assertTrue(compatibility.contains("legacyAlias(GRASS_SLAB_ID, true)"));
+        assertTrue(compatibility.contains("legacyAlias(DIRT_SLAB_ID, false)"));
         assertTrue(compatibility.contains(
-                "registerLegacyAlias(HISTORICAL_GRASS_SLAB_ID, true)"));
+                "legacyAlias(HISTORICAL_GRASS_SLAB_ID, true)"));
+        assertTrue(migration.contains("RegistryEvent.MissingMappings<Block>"));
+        assertTrue(migration.contains("RegistryEvent.MissingMappings<Item>"));
+        assertTrue(migration.contains("event.getAllMappings()"));
         assertTrue(migration.contains("BuildingBricksCompat.hasLegacyAliases()"));
         assertTrue(migration.contains("migrateBlocks(chunk, event.getData(), null)"));
         assertTrue(client.contains("ModelLoader.setCustomStateMapper(block"));
+        assertTrue(clientRegistry.contains("ModelRegistryEvent"));
+        assertTrue(clientRegistry.contains("ClientProxy.registerModels()"));
         assertTrue(client.contains("BuildingBricksCompat.historicalGrassSlab()"));
     }
 
@@ -89,7 +105,7 @@ class ProjectContractTest {
         assertFalse(workflow.contains("release_ref:"));
         assertFalse(workflow.contains("curseforge_channel:"));
         assertFalse(workflow.contains("confirm_version:"));
-        assertTrue(new File("docs/RELEASE-1.0.1.111021.md").isFile());
+        assertTrue(new File("docs/RELEASE-1.0.1.112021.md").isFile());
     }
 
     @Test

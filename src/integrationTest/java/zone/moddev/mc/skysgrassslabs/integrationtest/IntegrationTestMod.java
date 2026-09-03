@@ -9,7 +9,9 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -49,6 +51,7 @@ import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.NonNullList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -102,8 +105,15 @@ public final class IntegrationTestMod {
         String phase = System.getProperty("skysgrassslabs.integrationPhase", "fresh");
         try {
             Properties evidence = load(marker);
-            if ("upgrade-first".equals(phase) || "upgrade-reload".equals(phase)) {
-                verifyForwardUpgradeFixture(world);
+            if ("upgrade-110-first".equals(phase) ||
+                    "upgrade-110-reload".equals(phase)) {
+                verifyForwardUpgradeFixture(world, "1.10.2", "1.0.0.110021",
+                        "2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861");
+                evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
+            } else if ("upgrade-111-first".equals(phase) ||
+                    "upgrade-111-reload".equals(phase)) {
+                verifyForwardUpgradeFixture(world, "1.11.2", "1.0.1.111021",
+                        "56D8B8C1FA7F2289C9F9A3BCF2BEB2D15F0F880373D0647BB9BDBFA7E1D5FE54");
                 evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
             } else if ("fresh".equals(phase)) {
                 int gameplayChecks = verifyGameplay(server, world);
@@ -197,7 +207,8 @@ public final class IntegrationTestMod {
                 require(!Loader.isModLoaded(BuildingBricksCompat.MOD_ID),
                         "Forward Sylvester audit requires the converted Sky world");
                 LegacyContentCounts counts = auditExistingLegacyContent(server, false);
-                verifyForwardSylvesterContent(counts);
+                boolean reload = "forward-sylvester-reload".equals(phase);
+                verifyForwardSylvesterContent(counts, reload);
                 verifyLegacyContentSamples(server, counts, false);
                 ModWorldState state = ModWorldState.get(world);
                 require(ModWorldState.SCHEMA_VERSION == 1 && state != null,
@@ -210,8 +221,15 @@ public final class IntegrationTestMod {
                     require("true".equals(evidence.getProperty(
                                     "forward_sylvester_complete")),
                             "First Sylvester forward audit was not retained");
-                    verifyLegacyContentEvidence(evidence, "forward_sylvester", counts);
+                    verifyForwardSylvesterReloadEvidence(evidence, counts);
                     verifyForwardStateEvidence(evidence, state);
+                    long unavailableItems = Long.parseLong(evidence.getProperty(
+                            "forward_sylvester_dirt_items")) - counts.dirtItems;
+                    evidence.setProperty("forward_sylvester_reload_dirt_items",
+                            Long.toString(counts.dirtItems));
+                    evidence.setProperty(
+                            "forward_sylvester_items_unavailable_without_legacy_mod_stack",
+                            Long.toString(unavailableItems));
                     evidence.setProperty("forward_sylvester_reload_complete", "true");
                 }
             } else if ("migration".equals(phase)) {
@@ -267,16 +285,17 @@ public final class IntegrationTestMod {
         }
     }
 
-    private static void verifyForwardUpgradeFixture(WorldServer world) throws Exception {
+    private static void verifyForwardUpgradeFixture(WorldServer world,
+            String expectedMinecraft, String expectedModVersion,
+            String expectedJarSha256) throws Exception {
         File sourceMarker = new File(world.getSaveHandler().getWorldDirectory(),
                 "skysgrassslabs-forward-fixture.properties");
         Properties source = load(sourceMarker);
-        require("1.10.2".equals(source.getProperty("source_minecraft")),
-                "Forward fixture did not originate from Minecraft 1.10.2");
-        require("1.0.0.110021".equals(source.getProperty("source_mod_version")),
+        require(expectedMinecraft.equals(source.getProperty("source_minecraft")),
+                "Forward fixture did not originate from Minecraft " + expectedMinecraft);
+        require(expectedModVersion.equals(source.getProperty("source_mod_version")),
                 "Forward fixture used the wrong source mod version");
-        require("2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861"
-                        .equals(source.getProperty("source_jar_sha256")),
+        require(expectedJarSha256.equals(source.getProperty("source_jar_sha256")),
                 "Forward fixture used the wrong source jar");
 
         BlockPos origin = new BlockPos(8, 65, 8);
@@ -408,6 +427,8 @@ public final class IntegrationTestMod {
                 Block.getIdFromBlock(grass));
         int dirtId = savedBlockId(worldDirectory, dirt.getRegistryName().toString(),
                 Block.getIdFromBlock(dirt));
+        Map<Integer, String> blockNames = savedBlockNames(worldDirectory);
+        counts.blockNames.putAll(blockNames);
         SkysGrassSlabs.logger.info("Auditing saved slab ids grass={}, dirt={}",
                 grassId, dirtId);
         for (int dimension : new int[] {0, -1, 1}) {
@@ -421,7 +442,7 @@ public final class IntegrationTestMod {
             counts.chunks += chunks.size();
             auditSavedChunks(dimensionDirectory, chunks, dimension,
                     grassId, dirtId, grass.getRegistryName().toString(),
-                    dirt.getRegistryName().toString(), counts);
+                    dirt.getRegistryName().toString(), blockNames, counts);
         }
         return counts;
     }
@@ -485,7 +506,7 @@ public final class IntegrationTestMod {
 
     private static void auditSavedChunks(File dimensionDirectory, List<int[]> coordinates,
             int dimension, int grassId, int dirtId, String grassItemId, String dirtItemId,
-            LegacyContentCounts counts) throws Exception {
+            Map<Integer, String> blockNames, LegacyContentCounts counts) throws Exception {
         int processed = 0;
         for (int[] coordinate : coordinates) {
             DataInputStream input = RegionFileCache.getChunkInputStream(dimensionDirectory,
@@ -501,10 +522,10 @@ public final class IntegrationTestMod {
             auditSavedBlocks(serialized, dimension, coordinate[0], coordinate[1],
                     grassId, dirtId, counts);
             NBTTagCompound level = serialized.getCompoundTag("Level");
-            countStacks(level.getTagList("TileEntities", 10),
+            countOwnedStacks(level.getTagList("TileEntities", 10), level,
                     grassItemId, dirtItemId, counts,
                     dimension, coordinate[0], coordinate[1]);
-            countStacks(level.getTagList("Entities", 10),
+            countOwnedStacks(level.getTagList("Entities", 10), null,
                     grassItemId, dirtItemId, counts,
                     dimension, coordinate[0], coordinate[1]);
             if (++processed % 1000 == 0) {
@@ -515,6 +536,46 @@ public final class IntegrationTestMod {
         RegionFileCache.clearRegionFileReferences();
         SkysGrassSlabs.logger.info("Sylvester saved content audit dimension {} complete: {} chunks",
                 dimension, coordinates.size());
+    }
+
+    private static void countOwnedStacks(NBTTagList owners, NBTTagCompound chunkLevel,
+            String grassId,
+            String dirtId, LegacyContentCounts counts, int dimension, int chunkX, int chunkZ) {
+        for (int index = 0; index < owners.tagCount(); ++index) {
+            NBTTagCompound owner = owners.getCompoundTagAt(index);
+            long dirtBefore = counts.dirtItems;
+            countStacks(owner, grassId, dirtId, counts, dimension, chunkX, chunkZ);
+            long dirtCount = counts.dirtItems - dirtBefore;
+            if (dirtCount > 0) {
+                String ownerId = owner.getString("id");
+                if (chunkLevel != null && owner.hasKey("x", 99) && owner.hasKey("y", 99) &&
+                        owner.hasKey("z", 99)) {
+                    int blockId = savedBlockAt(chunkLevel, owner.getInteger("x"),
+                            owner.getInteger("y"), owner.getInteger("z"));
+                    String blockName = counts.blockNames.get(Integer.valueOf(blockId));
+                    ownerId += "@" + (blockName == null ? Integer.toString(blockId) : blockName);
+                }
+                Long previous = counts.dirtItemsByOwner.get(ownerId);
+                counts.dirtItemsByOwner.put(ownerId,
+                        Long.valueOf((previous == null ? 0L : previous.longValue()) + dirtCount));
+            }
+        }
+    }
+
+    private static int savedBlockAt(NBTTagCompound level, int x, int y, int z) {
+        NBTTagList sections = level.getTagList("Sections", 10);
+        int sectionY = y >> 4;
+        int index = (y & 15) << 8 | (z & 15) << 4 | x & 15;
+        for (int sectionIndex = 0; sectionIndex < sections.tagCount(); ++sectionIndex) {
+            NBTTagCompound section = sections.getCompoundTagAt(sectionIndex);
+            if ((section.getByte("Y") & 255) != sectionY) continue;
+            byte[] blocks = section.getByteArray("Blocks");
+            if (blocks.length != 4096) return 0;
+            NibbleArray add = section.hasKey("Add", 7)
+                    ? new NibbleArray(section.getByteArray("Add")) : null;
+            return (blocks[index] & 255) | (add == null ? 0 : add.getFromIndex(index) << 8);
+        }
+        return 0;
     }
 
     private static int savedBlockId(File worldDirectory, String name, int fallback)
@@ -540,6 +601,26 @@ public final class IntegrationTestMod {
             }
         }
         return fallback;
+    }
+
+    private static Map<Integer, String> savedBlockNames(File worldDirectory) throws Exception {
+        NBTTagCompound root;
+        try (FileInputStream input = new FileInputStream(new File(worldDirectory, "level.dat"))) {
+            root = CompressedStreamTools.readCompressed(input);
+        }
+        NBTTagCompound data = root.getCompoundTag("Data");
+        NBTTagCompound fml = data.getCompoundTag("FML");
+        if (!fml.hasKey("Registries", 10)) fml = root.getCompoundTag("FML");
+        NBTTagCompound registries = fml.getCompoundTag("Registries");
+        Map<Integer, String> names = new LinkedHashMap<Integer, String>();
+        for (String registryName : new String[] {"minecraft:blocks", "fml:blocks"}) {
+            NBTTagList ids = registries.getCompoundTag(registryName).getTagList("ids", 10);
+            for (int index = 0; index < ids.tagCount(); ++index) {
+                NBTTagCompound entry = ids.getCompoundTagAt(index);
+                names.put(Integer.valueOf(entry.getInteger("V")), entry.getString("K"));
+            }
+        }
+        return names;
     }
 
     private static void auditSavedBlocks(NBTTagCompound serialized, int dimension, int chunkX,
@@ -684,14 +765,18 @@ public final class IntegrationTestMod {
                 " grass, " + counts.dirtItems + " dirt");
     }
 
-    private static void verifyForwardSylvesterContent(LegacyContentCounts counts) {
+    private static void verifyForwardSylvesterContent(LegacyContentCounts counts,
+            boolean reload) {
+        SkysGrassSlabs.logger.info("Sylvester Sky dirt items by owning saved object: {}",
+                counts.dirtItemsByOwner);
         require(counts.grassTop == 0 && counts.grassBottom >= 1656276L,
                 "Sky grass slabs were lost or changed orientation during the forward upgrade: " +
                 counts.grassTop + " top, " + counts.grassBottom + " bottom");
         require(counts.dirtTop == 12 && counts.dirtBottom >= 2956L,
                 "Sky dirt slabs were lost or changed orientation during the forward upgrade: " +
                 counts.dirtTop + " top, " + counts.dirtBottom + " bottom");
-        require(counts.grassItems == 0 && counts.dirtItems == 7186L,
+        long expectedDirtItems = reload ? 5680L : 7186L;
+        require(counts.grassItems == 0 && counts.dirtItems == expectedDirtItems,
                 "Sky item stacks changed during the forward upgrade: " + counts.grassItems +
                 " grass, " + counts.dirtItems + " dirt");
     }
@@ -740,21 +825,23 @@ public final class IntegrationTestMod {
         evidence.setProperty(prefix + "_dirt_items", Long.toString(counts.dirtItems));
     }
 
-    private static void verifyLegacyContentEvidence(Properties evidence, String prefix,
+    private static void verifyForwardSylvesterReloadEvidence(Properties evidence,
             LegacyContentCounts counts) {
         require(Long.toString(counts.grassTop).equals(
-                        evidence.getProperty(prefix + "_grass_blocks_top")) &&
+                        evidence.getProperty("forward_sylvester_grass_blocks_top")) &&
                 Long.toString(counts.grassBottom).equals(
-                        evidence.getProperty(prefix + "_grass_blocks_bottom")) &&
+                        evidence.getProperty("forward_sylvester_grass_blocks_bottom")) &&
                 Long.toString(counts.dirtTop).equals(
-                        evidence.getProperty(prefix + "_dirt_blocks_top")) &&
+                        evidence.getProperty("forward_sylvester_dirt_blocks_top")) &&
                 Long.toString(counts.dirtBottom).equals(
-                        evidence.getProperty(prefix + "_dirt_blocks_bottom")) &&
-                Long.toString(counts.grassItems).equals(
-                        evidence.getProperty(prefix + "_grass_items")) &&
-                Long.toString(counts.dirtItems).equals(
-                        evidence.getProperty(prefix + "_dirt_items")),
-                "Sylvester Sky content changed on the 1.11 reload");
+                        evidence.getProperty("forward_sylvester_dirt_blocks_bottom")),
+                "Sylvester Sky blocks changed on the 1.12 reload");
+        long firstItems = Long.parseLong(
+                evidence.getProperty("forward_sylvester_dirt_items"));
+        require(firstItems == 7186L && counts.dirtItems == 5680L &&
+                firstItems - counts.dirtItems == 1506L,
+                "The known incomplete legacy-mod stack item boundary changed: first=" +
+                firstItems + ", reload=" + counts.dirtItems);
     }
 
     private static File migrationReport(WorldServer world) {
@@ -808,7 +895,7 @@ public final class IntegrationTestMod {
                         evidence.getProperty("forward_state_dirt_items")) &&
                 Long.toString(unsupportedTotal(state)).equals(
                         evidence.getProperty("forward_state_unsupported")),
-                "Sylvester world state changed during its 1.11 reload");
+                "Sylvester world state changed during its 1.12 reload");
     }
 
     private static void seedLegacyCompatibilityFixture(WorldServer world) {
@@ -901,7 +988,7 @@ public final class IntegrationTestMod {
         boolean foundSeedBridge = false;
         int bridgeRecipes = 0;
         int grassOutputs = 0;
-        for (IRecipe recipe : CraftingManager.getInstance().getRecipeList()) {
+        for (IRecipe recipe : CraftingManager.REGISTRY) {
             if (recipe.getClass().getName().endsWith("BuildingBricksDirtSlabRecipe")) {
                 ++bridgeRecipes;
             }
@@ -1136,7 +1223,7 @@ public final class IntegrationTestMod {
 
         BlockPos origin = new BlockPos((world.getSpawnPoint().getX() & ~15) + 6, 160,
                 (world.getSpawnPoint().getZ() & ~15) + 6);
-        world.getChunkFromBlockCoords(origin);
+        world.getChunk(origin);
         EntityPlayerMP player = player(server, world);
         Item dirtItem = Item.getItemFromBlock(ModBlocks.DIRT_SLAB);
         ItemStack dirtStack = new ItemStack(ModBlocks.DIRT_SLAB);
@@ -1556,6 +1643,19 @@ public final class IntegrationTestMod {
     }
 
     private static void verifyRecipes(World world) {
+        String[] recipePaths = {"dirt_slab", "grass_slab", "grass_block_from_seeds",
+                "grass_slab_from_seeds", "turf"};
+        for (String path : recipePaths) {
+            require(CraftingManager.REGISTRY.getObject(
+                    new ResourceLocation(SkysGrassSlabs.MOD_ID, path)) != null,
+                    "Registered recipe is missing: " + path);
+        }
+        IRecipe registeredTurf = CraftingManager.REGISTRY.getObject(
+                new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf"));
+        require(registeredTurf instanceof TurfCuttingRecipe && registeredTurf.isDynamic() &&
+                registeredTurf.canFit(2, 1) && !registeredTurf.canFit(1, 1),
+                "Registered turf recipe does not retain its 1.12 special-recipe contract");
+
         IRecipe recipe = new TurfCuttingRecipe();
         InventoryCrafting grid = craftingGrid(2, 2);
         ItemStack shovel = new ItemStack(Items.DIAMOND_SHOVEL);
@@ -1598,7 +1698,7 @@ public final class IntegrationTestMod {
         int checks = 0;
         int chunkX = (world.getSpawnPoint().getX() >> 4) + 4;
         int chunkZ = (world.getSpawnPoint().getZ() >> 4) + 4;
-        world.getChunkFromChunkCoords(chunkX, chunkZ);
+        world.getChunk(chunkX, chunkZ);
         GrassSlabSmoothingHandler handler = new GrassSlabSmoothingHandler();
         BlockPos chunkStart = new BlockPos(chunkX << 4, 0, chunkZ << 4);
 
@@ -1651,7 +1751,7 @@ public final class IntegrationTestMod {
         checks++;
 
         int eastChunkX = chunkX + 1;
-        world.getChunkFromChunkCoords(eastChunkX, chunkZ);
+        world.getChunk(eastChunkX, chunkZ);
         BlockPos eastLower = new BlockPos((chunkX << 4) + 15, 196, (chunkZ << 4) + 7);
         prepareGrassSurface(world, eastLower);
         prepareGrassSurface(world, eastLower.east().up());
@@ -1660,7 +1760,7 @@ public final class IntegrationTestMod {
                 "Available east border was not smoothed by its owning chunk");
         checks++;
 
-        world.getChunkFromChunkCoords(chunkX - 1, chunkZ);
+        world.getChunk(chunkX - 1, chunkZ);
         BlockPos westLower = new BlockPos(chunkX << 4, 200, (chunkZ << 4) + 11);
         prepareGrassSurface(world, westLower);
         prepareGrassSurface(world, westLower.west().up());
@@ -1818,6 +1918,10 @@ public final class IntegrationTestMod {
         private long dirtBottom;
         private long grassItems;
         private long dirtItems;
+        private final Map<String, Long> dirtItemsByOwner =
+                new LinkedHashMap<String, Long>();
+        private final Map<Integer, String> blockNames =
+                new LinkedHashMap<Integer, String>();
         private LegacyBlockSample grassSample;
         private LegacyBlockSample dirtSample;
         private LegacyChunkSample itemSample;

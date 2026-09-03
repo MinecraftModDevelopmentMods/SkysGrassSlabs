@@ -7,11 +7,13 @@ import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.oredict.OreDictionary;
+import net.minecraftforge.registries.IForgeRegistryEntry;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 
 /** Matches BuildingBricks material items after its late material registry is available. */
-final class BuildingBricksDirtSlabRecipe implements IRecipe {
+public final class BuildingBricksDirtSlabRecipe extends IForgeRegistryEntry.Impl<IRecipe>
+        implements IRecipe {
     @Override
     public boolean matches(InventoryCrafting inventory, World world) {
         boolean dirtSlab = false;
@@ -37,8 +39,8 @@ final class BuildingBricksDirtSlabRecipe implements IRecipe {
     }
 
     @Override
-    public int getRecipeSize() {
-        return 2;
+    public boolean canFit(int width, int height) {
+        return width * height >= 2;
     }
 
     @Override

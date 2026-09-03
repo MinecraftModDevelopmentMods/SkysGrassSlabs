@@ -23,8 +23,7 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 @SideOnly(Side.CLIENT)
 public final class ClientProxy extends CommonProxy {
-    @Override
-    public void preInit() {
+    public static void registerModels() {
         registerModel(ModBlocks.DIRT_SLAB, "dirt_slab");
         registerModel(ModBlocks.GRASS_SLAB, "grass_slab");
         registerModel(ModBlocks.PATH_SLAB, "path_slab");

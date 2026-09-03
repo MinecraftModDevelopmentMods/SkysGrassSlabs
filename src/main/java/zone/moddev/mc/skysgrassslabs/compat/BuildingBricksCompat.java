@@ -10,9 +10,11 @@ import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import net.minecraftforge.registries.IForgeRegistry;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 
@@ -29,16 +31,12 @@ public final class BuildingBricksCompat {
     private static Block dirtSlab;
     private static Block historicalGrassSlab;
     private static boolean legacyAliasesRegistered;
-    private static boolean bridgeRecipesRegistered;
     private static final Map<Block, String> buildingBricksBlocks =
             Collections.synchronizedMap(new IdentityHashMap<Block, String>());
 
     public static void preInit(File configDirectory) {
         boolean installed = Loader.isModLoaded(MOD_ID);
-        if (!installed) {
-            registerLegacyAliases();
-            return;
-        }
+        if (!installed) return;
         SkysGrassSlabs.logger.info("BuildingBricks slab replacement is {}",
                 SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs()
                         ? "enabled" : "disabled");
@@ -62,16 +60,13 @@ public final class BuildingBricksCompat {
     }
 
     public static void resolveBlocks() {
-        grassSlab = Block.REGISTRY.containsKey(GRASS_SLAB_ID)
-                ? Block.REGISTRY.getObject(GRASS_SLAB_ID) : null;
-        dirtSlab = Block.REGISTRY.containsKey(DIRT_SLAB_ID)
-                ? Block.REGISTRY.getObject(DIRT_SLAB_ID) : null;
-        historicalGrassSlab = Block.REGISTRY.containsKey(HISTORICAL_GRASS_SLAB_ID)
-                ? Block.REGISTRY.getObject(HISTORICAL_GRASS_SLAB_ID) : null;
+        grassSlab = ForgeRegistries.BLOCKS.getValue(GRASS_SLAB_ID);
+        dirtSlab = ForgeRegistries.BLOCKS.getValue(DIRT_SLAB_ID);
+        historicalGrassSlab = ForgeRegistries.BLOCKS.getValue(HISTORICAL_GRASS_SLAB_ID);
         buildingBricksBlocks.clear();
-        for (ResourceLocation id : Block.REGISTRY.getKeys()) {
-            if (MOD_ID.equals(id.getResourceDomain())) {
-                buildingBricksBlocks.put(Block.REGISTRY.getObject(id), id.toString());
+        for (ResourceLocation id : ForgeRegistries.BLOCKS.getKeys()) {
+            if (MOD_ID.equals(id.getNamespace())) {
+                buildingBricksBlocks.put(ForgeRegistries.BLOCKS.getValue(id), id.toString());
             }
         }
     }
@@ -130,34 +125,40 @@ public final class BuildingBricksCompat {
                 stack.getItem() == Item.getItemFromBlock(dirtSlab());
     }
 
-    public static void registerBridgeRecipes() {
-        if (!isInstalled() || bridgeRecipesRegistered) {
-            return;
-        }
-        GameRegistry.addRecipe(new BuildingBricksDirtSlabRecipe());
-        bridgeRecipesRegistered = true;
+    public static IRecipe bridgeRecipe() {
+        return new BuildingBricksDirtSlabRecipe();
     }
 
-    private static void registerLegacyAliases() {
-        registerLegacyAlias(GRASS_SLAB_ID, true);
-        registerLegacyAlias(DIRT_SLAB_ID, false);
-        registerLegacyAlias(HISTORICAL_GRASS_SLAB_ID, true);
+    public static void registerLegacyAliasBlocks(IForgeRegistry<Block> registry) {
+        if (isInstalled()) return;
+        grassSlab = legacyAlias(GRASS_SLAB_ID, true);
+        dirtSlab = legacyAlias(DIRT_SLAB_ID, false);
+        historicalGrassSlab = legacyAlias(HISTORICAL_GRASS_SLAB_ID, true);
+        registry.registerAll(grassSlab, dirtSlab, historicalGrassSlab);
         legacyAliasesRegistered = true;
     }
 
-    private static void registerLegacyAlias(ResourceLocation id, boolean grass) {
+    public static void registerLegacyAliasItems(IForgeRegistry<Item> registry) {
+        if (!legacyAliasesRegistered) return;
+        registry.registerAll(aliasItem(grassSlab), aliasItem(dirtSlab),
+                aliasItem(historicalGrassSlab));
+    }
+
+    private static Block legacyAlias(ResourceLocation id, boolean grass) {
         LegacySlabAliasBlock block = new LegacySlabAliasBlock(grass);
-        block.setRegistryName(id).setUnlocalizedName(
-                SkysGrassSlabs.MOD_ID + ".legacy_" + id.getResourcePath());
+        block.setRegistryName(id).setTranslationKey(
+                SkysGrassSlabs.MOD_ID + ".legacy_" + id.getPath());
+        return block;
+    }
+
+    private static Item aliasItem(Block block) {
         ItemBlock item = new ItemBlock(block) {
             @Override
             public int getMetadata(int damage) {
                 return damage & 1;
             }
         };
-        item.setRegistryName(id);
-        GameRegistry.register(block);
-        GameRegistry.register(item);
+        return item.setRegistryName(block.getRegistryName());
     }
 
     private BuildingBricksCompat() {

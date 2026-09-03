@@ -9,10 +9,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
+import net.minecraftforge.registries.IForgeRegistryEntry;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-public final class TurfCuttingRecipe implements IRecipe {
+public final class TurfCuttingRecipe extends IForgeRegistryEntry.Impl<IRecipe>
+        implements IRecipe {
     @Override
     public boolean matches(InventoryCrafting inventory, World world) {
         int grassInputs = 0;
@@ -39,13 +41,18 @@ public final class TurfCuttingRecipe implements IRecipe {
     }
 
     @Override
-    public int getRecipeSize() {
-        return 2;
+    public boolean canFit(int width, int height) {
+        return width * height >= 2;
     }
 
     @Override
     public ItemStack getRecipeOutput() {
         return new ItemStack(ModBlocks.TURF);
+    }
+
+    @Override
+    public boolean isDynamic() {
+        return true;
     }
 
     @Override

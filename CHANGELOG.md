@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.1.112021 - Minecraft 1.12.2
+
+- Ported the complete dirt, grass, path slab and turf feature set to Minecraft
+  1.12.2.
+- Preserved the permanent block and item names, slab orientation, recipes and
+  saved world state used by the earlier releases.
+- Kept the corrected path slab side texture alignment.
+- Added direct upgrade and reload checks for Minecraft 1.10.2 and 1.11.2
+  worlds.
+- Retained all 18 translations, natural grass behaviour, snowy slab edges,
+  sheep interaction and terrain smoothing.
+
 ## 1.0.1.111021 - Minecraft 1.11.2
 
 - Corrected the side texture alignment on top and bottom path slabs so it

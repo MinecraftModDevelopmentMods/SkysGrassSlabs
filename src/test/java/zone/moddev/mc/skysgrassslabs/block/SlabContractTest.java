@@ -73,8 +73,8 @@ class SlabContractTest {
 
     @Test
     void grassAndTurfUseTheCutoutMippedLayer() {
-        assertEquals(BlockRenderLayer.CUTOUT_MIPPED, ModBlocks.GRASS_SLAB.getBlockLayer());
-        assertEquals(BlockRenderLayer.CUTOUT_MIPPED, ModBlocks.TURF.getBlockLayer());
+        assertEquals(BlockRenderLayer.CUTOUT_MIPPED, ModBlocks.GRASS_SLAB.getRenderLayer());
+        assertEquals(BlockRenderLayer.CUTOUT_MIPPED, ModBlocks.TURF.getRenderLayer());
     }
 
     private static void assertMetadata(LegacySlabBlock slab) {

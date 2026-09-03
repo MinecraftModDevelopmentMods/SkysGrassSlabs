@@ -19,12 +19,12 @@ The setting never adds or removes slabs in chunks that already exist.
 
 This key is retained so configurations and saved migration state remain
 consistent with the Minecraft 1.10.2 release. There is no supported
-BuildingBricks release for Minecraft 1.11.2, so ordinary 1.11.2 installations
+BuildingBricks release for Minecraft 1.12.2, so ordinary 1.12.2 installations
 should leave it set to `false`.
 
 Recovery of supported legacy grass and dirt slab IDs from an upgraded 1.10.2
 world is automatic and does not require this option. See
-[Upgrading a Minecraft 1.10.2 world](WORLD-UPGRADES.md) before opening an old
+[Upgrading an older world](WORLD-UPGRADES.md) before opening an old
 modded world.
 
 ## Related game rules

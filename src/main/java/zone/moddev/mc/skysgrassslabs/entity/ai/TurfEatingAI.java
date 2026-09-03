@@ -29,7 +29,7 @@ public final class TurfEatingAI extends EntityAIBase {
     public void startExecuting() {
         eatingTimer = 40;
         world.setEntityState(sheep, (byte) 10);
-        sheep.getNavigator().clearPathEntity();
+        sheep.getNavigator().clearPath();
     }
 
     @Override

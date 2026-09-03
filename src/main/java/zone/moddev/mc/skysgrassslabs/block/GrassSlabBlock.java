@@ -161,7 +161,7 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
 
     @Override
     @SideOnly(Side.CLIENT)
-    public BlockRenderLayer getBlockLayer() {
+    public BlockRenderLayer getRenderLayer() {
         return BlockRenderLayer.CUTOUT_MIPPED;
     }
 

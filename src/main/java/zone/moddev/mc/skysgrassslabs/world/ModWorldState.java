@@ -6,8 +6,8 @@ import java.util.TreeMap;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldSavedData;
 import net.minecraft.world.storage.MapStorage;
+import net.minecraft.world.storage.WorldSavedData;
 
 public final class ModWorldState extends WorldSavedData {
     public static final String DATA_NAME = "skysgrassslabs_world_state";

@@ -2,9 +2,10 @@ package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.registries.IForgeRegistry;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
@@ -14,29 +15,32 @@ import zone.moddev.mc.skysgrassslabs.item.NormalizingSlabItem;
 import zone.moddev.mc.skysgrassslabs.item.TurfBlockItem;
 
 public final class ModBlocks {
-    public static final DirtSlabBlock DIRT_SLAB = new DirtSlabBlock();
-    public static final GrassSlabBlock GRASS_SLAB = new GrassSlabBlock();
-    public static final PathSlabBlock PATH_SLAB = new PathSlabBlock();
-    public static final TurfBlock TURF = new TurfBlock();
+    public static final DirtSlabBlock DIRT_SLAB = configure(new DirtSlabBlock(), "dirt_slab");
+    public static final GrassSlabBlock GRASS_SLAB = configure(new GrassSlabBlock(), "grass_slab");
+    public static final PathSlabBlock PATH_SLAB = configure(new PathSlabBlock(), "path_slab");
+    public static final TurfBlock TURF = configure(new TurfBlock(), "turf");
 
-    public static void register() {
-        registerSlab(DIRT_SLAB, "dirt_slab", net.minecraft.init.Blocks.DIRT);
-        registerSlab(GRASS_SLAB, "grass_slab", net.minecraft.init.Blocks.GRASS);
-        registerSlab(PATH_SLAB, "path_slab", net.minecraft.init.Blocks.GRASS_PATH);
-        registerBlock(TURF, "turf", new TurfBlockItem(TURF));
+    public static void registerBlocks(IForgeRegistry<Block> registry) {
+        registry.registerAll(DIRT_SLAB, GRASS_SLAB, PATH_SLAB, TURF);
     }
 
-    private static void registerSlab(Block block, String name, Block combinedBlock) {
-        registerBlock(block, name, new NormalizingSlabItem(block, combinedBlock));
+    public static void registerItems(IForgeRegistry<Item> registry) {
+        registry.registerAll(
+                item(new NormalizingSlabItem(DIRT_SLAB, net.minecraft.init.Blocks.DIRT), DIRT_SLAB),
+                item(new NormalizingSlabItem(GRASS_SLAB, net.minecraft.init.Blocks.GRASS), GRASS_SLAB),
+                item(new NormalizingSlabItem(PATH_SLAB, net.minecraft.init.Blocks.GRASS_PATH), PATH_SLAB),
+                item(new TurfBlockItem(TURF), TURF));
     }
 
-    private static void registerBlock(Block block, String name, ItemBlock item) {
+    private static <T extends Block> T configure(T block, String name) {
         ResourceLocation id = new ResourceLocation(SkysGrassSlabs.MOD_ID, name);
-        block.setRegistryName(id).setUnlocalizedName(SkysGrassSlabs.MOD_ID + "." + name)
+        block.setRegistryName(id).setTranslationKey(SkysGrassSlabs.MOD_ID + "." + name)
                 .setCreativeTab(CreativeTabs.BUILDING_BLOCKS);
-        item.setRegistryName(id);
-        GameRegistry.register(block);
-        GameRegistry.register(item);
+        return block;
+    }
+
+    private static Item item(ItemBlock item, Block block) {
+        return item.setRegistryName(block.getRegistryName());
     }
 
     private ModBlocks() {

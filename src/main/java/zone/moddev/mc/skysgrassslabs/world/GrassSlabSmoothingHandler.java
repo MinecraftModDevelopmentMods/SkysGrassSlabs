@@ -90,7 +90,7 @@ public final class GrassSlabSmoothingHandler {
             changed = true;
         }
         if (changed) {
-            // Chunk#setBlockState performs cross-chunk lighting work in 1.11.
+            // Chunk#setBlockState performs cross-chunk lighting work in 1.12.
             // Rebuild the owning chunk once after the two-pass write instead.
             owner.generateSkylightMap();
             owner.markDirty();
