@@ -13,6 +13,8 @@
 - Preserved Sky blocks, items, block states, custom item data and saved world
   state when upgrading worlds from Minecraft 1.10.2 through 1.13.2.
 - Retained all 18 translations and the existing configuration keys.
+- Fixed the turf recipe so it works safely in both the player crafting grid
+  and crafting tables.
 
 ## 1.0.1.113021 - Minecraft 1.13.2
 

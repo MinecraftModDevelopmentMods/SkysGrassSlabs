@@ -13,6 +13,7 @@ import net.minecraft.client.gui.screen.MainMenuScreen;
 import net.minecraft.client.gui.recipebook.RecipeList;
 import net.minecraft.client.renderer.model.IBakedModel;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.ICraftingRecipe;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.state.properties.SlabType;
 import net.minecraft.util.ResourceLocation;
@@ -186,7 +187,7 @@ public final class ClientProbeTestMod {
     private void verifyRecipeBook(Minecraft minecraft) {
         IRecipe turfRecipe = minecraft.world.getRecipeManager().getRecipe(
                 new ResourceLocation("skysgrassslabs", "turf")).orElse(null);
-        if (turfRecipe == null || turfRecipe.isDynamic()
+        if (!(turfRecipe instanceof ICraftingRecipe) || turfRecipe.isDynamic()
                 || turfRecipe.getIngredients().size() != 2) {
             throw new IllegalStateException("Turf recipe is not recipe book compatible");
         }

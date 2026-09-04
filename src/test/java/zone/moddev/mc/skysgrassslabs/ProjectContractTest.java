@@ -74,6 +74,7 @@ class ProjectContractTest {
                 .get("type").getAsString());
         String serializer = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java");
+        assertTrue(serializer.contains("implements ICraftingRecipe"));
         assertTrue(serializer.contains("IRecipeSerializer<TurfCuttingRecipe>"));
         assertTrue(serializer.contains("new ResourceLocation(SkysGrassSlabs.MOD_ID, \"turf_cutting\")"));
         assertTrue(serializer.contains("public boolean isDynamic()"));

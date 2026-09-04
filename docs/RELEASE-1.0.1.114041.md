@@ -8,6 +8,7 @@ grass slabs to soften one block steps.
 This release includes both slab orientations, waterlogging, snowy caps,
 shovel paths, turf recipes and sheep interaction. Matching slabs combine into
 their vanilla full blocks, and the turf recipe returns the shovel unchanged.
+The turf recipe works in both the player crafting grid and crafting tables.
 The block names are available in 18 supported language variants.
 
 Worlds saved with earlier Sky's Grass Slabs releases can be upgraded directly.

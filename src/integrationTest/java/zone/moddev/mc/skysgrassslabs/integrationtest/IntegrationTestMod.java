@@ -42,6 +42,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
+import net.minecraft.item.crafting.ICraftingRecipe;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.INBT;
@@ -409,10 +410,11 @@ public final class IntegrationTestMod {
             require(world.getRecipeManager().getRecipe(id(name)).isPresent(),
                     "Recipe did not load: " + name);
         }
-        @SuppressWarnings("unchecked")
-        IRecipe<CraftingInventory> recipe = (IRecipe<CraftingInventory>) world.getRecipeManager()
-                .getRecipe(id("turf")).orElseThrow(
-                        () -> new IllegalStateException("Turf recipe did not load"));
+        IRecipe<?> loadedRecipe = world.getRecipeManager().getRecipe(id("turf")).orElseThrow(
+                () -> new IllegalStateException("Turf recipe did not load"));
+        require(loadedRecipe instanceof ICraftingRecipe,
+                "Turf recipe cannot be used by a crafting container");
+        ICraftingRecipe recipe = (ICraftingRecipe) loadedRecipe;
         require(!recipe.isDynamic() && recipe.getSerializer() == TurfCuttingRecipe.SERIALIZER,
                 "Turf recipe is not visible or has the wrong serializer");
 

@@ -8,7 +8,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.item.crafting.ICraftingRecipe;
 import net.minecraft.item.crafting.IRecipeSerializer;
 import net.minecraft.item.crafting.IRecipeType;
 import net.minecraft.item.crafting.Ingredient;
@@ -23,7 +23,7 @@ import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-public final class TurfCuttingRecipe implements IRecipe<CraftingInventory> {
+public final class TurfCuttingRecipe implements ICraftingRecipe {
     public static final ResourceLocation SERIALIZER_ID =
             new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf_cutting");
     public static final IRecipeSerializer<TurfCuttingRecipe> SERIALIZER = createSerializer();
