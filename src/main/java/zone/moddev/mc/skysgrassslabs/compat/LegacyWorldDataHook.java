@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -34,7 +35,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
-import sun.misc.Unsafe;
 
 /** Bridges Forge 1.10-1.12 numeric registry snapshots into 1.13 block states. */
 public final class LegacyWorldDataHook implements WorldPersistenceHooks.WorldPersistenceHook {
@@ -284,16 +284,27 @@ public final class LegacyWorldDataHook implements WorldPersistenceHooks.WorldPer
             Dynamic<?>[] current = (Dynamic<?>[]) field.get(null);
             if (current.length >= requiredLength) return current;
             Dynamic<?>[] expanded = Arrays.copyOf(current, requiredLength);
-            Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-            unsafeField.setAccessible(true);
-            Unsafe unsafe = (Unsafe) unsafeField.get(null);
-            unsafe.putObjectVolatile(unsafe.staticFieldBase(field),
-                    unsafe.staticFieldOffset(field), expanded);
+            replaceStaticFinalField(field, expanded);
             return expanded;
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException(
                     "Could not expand Minecraft's legacy block-state flattening table", exception);
         }
+    }
+
+    private static void replaceStaticFinalField(Field field, Object value)
+            throws ReflectiveOperationException {
+        Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+        Field unsafeField = unsafeClass.getDeclaredField("theUnsafe");
+        unsafeField.setAccessible(true);
+        Object unsafe = unsafeField.get(null);
+        Method staticFieldBase = unsafeClass.getMethod("staticFieldBase", Field.class);
+        Method staticFieldOffset = unsafeClass.getMethod("staticFieldOffset", Field.class);
+        Method putObjectVolatile = unsafeClass.getMethod("putObjectVolatile",
+                Object.class, long.class, Object.class);
+        Object fieldBase = staticFieldBase.invoke(unsafe, field);
+        long fieldOffset = ((Long) staticFieldOffset.invoke(unsafe, field)).longValue();
+        putObjectVolatile.invoke(unsafe, fieldBase, fieldOffset, value);
     }
 
     private static long chunkKey(int chunkX, int chunkZ) {

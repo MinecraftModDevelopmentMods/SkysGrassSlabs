@@ -120,6 +120,8 @@ class ProjectContractTest {
         assertTrue(bridge.contains("BlockStateFlatteningMap"));
         assertTrue(bridge.contains("indexLegacyChunks"));
         assertTrue(bridge.contains("SUPPORTED_BUILDINGBRICKS_IDS"));
+        assertFalse(bridge.contains("import sun.misc"));
+        assertFalse(bridge.contains("Unsafe.class"));
     }
 
     @Test
