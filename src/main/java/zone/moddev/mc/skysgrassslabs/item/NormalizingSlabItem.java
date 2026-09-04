@@ -59,7 +59,7 @@ public final class NormalizingSlabItem extends BlockItem {
             return ActionResultType.FAIL;
         }
         BlockState combined = combinedBlock.getDefaultState();
-        if (!combined.func_215682_a(world, pos, player) ||
+        if (!combined.isTopSolid(world, pos, player) ||
                 !world.setBlockState(pos, combined, 11)) {
             return ActionResultType.FAIL;
         }

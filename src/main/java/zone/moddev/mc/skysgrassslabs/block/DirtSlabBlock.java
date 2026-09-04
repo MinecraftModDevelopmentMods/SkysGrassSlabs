@@ -11,7 +11,7 @@ import net.minecraft.state.StateContainer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 
 public final class DirtSlabBlock extends LegacySlabBlock {
     public DirtSlabBlock() {
@@ -42,14 +42,12 @@ public final class DirtSlabBlock extends LegacySlabBlock {
     }
 
     @Override
-    public void tick(BlockState state, World world, BlockPos pos, Random random) {
-        if (!world.isRemote) {
-            BlockState repaired = state.with(SnowyDirtBlock.SNOWY,
-                    SnowySlabAppearance.hasNearbySnow(world, pos));
-            if (repaired != state) {
-                world.setBlockState(pos, repaired, 2);
-            }
-            GrassSpread.tickDirtSlab(world, pos, repaired, random);
+    public void tick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        BlockState repaired = state.with(SnowyDirtBlock.SNOWY,
+                SnowySlabAppearance.hasNearbySnow(world, pos));
+        if (repaired != state) {
+            world.setBlockState(pos, repaired, 2);
         }
+        GrassSpread.tickDirtSlab(world, pos, repaired, random);
     }
 }

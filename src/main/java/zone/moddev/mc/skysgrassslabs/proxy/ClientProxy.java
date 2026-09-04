@@ -1,5 +1,7 @@
 package zone.moddev.mc.skysgrassslabs.proxy;
 
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.client.renderer.color.BlockColors;
 import net.minecraft.client.renderer.color.ItemColors;
 import net.minecraft.world.GrassColors;
@@ -13,6 +15,12 @@ public final class ClientProxy {
 
     public static void registerModels() {
         // Forge resolves item models from each registered item's name.
+    }
+
+    public static void registerRenderLayers() {
+        RenderType cutoutMipped = RenderType.getCutoutMipped();
+        RenderTypeLookup.setRenderLayer(ModBlocks.GRASS_SLAB, cutoutMipped);
+        RenderTypeLookup.setRenderLayer(ModBlocks.TURF, cutoutMipped);
     }
 
     public static void registerBlockColors(BlockColors colors) {

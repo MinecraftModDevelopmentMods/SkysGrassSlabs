@@ -161,7 +161,12 @@ public final class IntegrationTestMod {
             } else if (phase.startsWith("upgrade-113-")) {
                 verifyForwardFixture(world, "1.13.2", "1.0.1.113021",
                         "42772E921FE7EAF8A8D1EA7C12F48C04626FDD0B880B827FB3A82FB7A5ACFC7A");
-                verifyOneThirteenFixtureStates(world);
+                verifyFlattenedFixtureStates(world, "1.13");
+                evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
+            } else if (phase.startsWith("upgrade-114-")) {
+                verifyForwardFixture(world, "1.14.4", "1.0.1.114041",
+                        "213A09F31EE02CE1C01E4C504147C13D3BD63A6AA11EBE52CE41A38735D45D1B");
+                verifyFlattenedFixtureStates(world, "1.14");
                 evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
             } else if (phase.startsWith("forward-sylvester")) {
                 SylvesterCounts counts = auditSylvester(worldRoot(server));
@@ -462,7 +467,7 @@ public final class IntegrationTestMod {
 
     private static int verifyWorldGeneration(ServerWorld world) {
         int skySlabs = 0;
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        BlockPos.Mutable pos = new BlockPos.Mutable();
         for (int chunkZ = 24; chunkZ < 29; ++chunkZ) {
             for (int chunkX = 24; chunkX < 29; ++chunkX) {
                 IChunk chunk = world.getChunk(chunkX, chunkZ);
@@ -514,9 +519,9 @@ public final class IntegrationTestMod {
         }
         Path legacyRegistry = worldRoot(world.getServer()).resolve(
                 "data/skysgrassslabs_legacy_registry.dat");
-        if ("1.13.2".equals(minecraft)) {
+        if ("1.13.2".equals(minecraft) || "1.14.4".equals(minecraft)) {
             require(!Files.exists(legacyRegistry),
-                    "The numeric legacy bridge ran on an already flattened 1.13 world");
+                    "The numeric legacy bridge ran on an already flattened world");
         } else {
             require(Files.isRegularFile(legacyRegistry),
                     "The preserved legacy registry sidecar is missing");
@@ -540,9 +545,9 @@ public final class IntegrationTestMod {
         require(chest.getStackInSlot(1).hasTag()
                 && "retained".equals(chest.getStackInSlot(1).getTag().getString("fixture")),
                 "Forward fixture stack NBT was lost");
-        if ("1.13.2".equals(minecraft)) {
+        if ("1.13.2".equals(minecraft) || "1.14.4".equals(minecraft)) {
             require(chest.getStackInSlot(1).getTag().getInt("source_data_version") == 1631,
-                    "The 1.13 fixture's custom integer NBT was lost");
+                    "The flattened fixture's custom integer NBT was lost");
         }
         verifyFixtureStack(chest.getStackInSlot(2), ModBlocks.PATH_SLAB, 4);
         verifyFixtureStack(chest.getStackInSlot(3), ModBlocks.TURF, 5);
@@ -568,30 +573,30 @@ public final class IntegrationTestMod {
                 "Forward fixture world state changed");
     }
 
-    private static void verifyOneThirteenFixtureStates(ServerWorld world) {
+    private static void verifyFlattenedFixtureStates(ServerWorld world, String sourceVersion) {
         BlockPos origin = new BlockPos(8, 65, 8);
         BlockState snowyDirt = world.getBlockState(origin.south(4));
         require(snowyDirt.getBlock() == ModBlocks.DIRT_SLAB
                 && snowyDirt.get(SlabBlock.TYPE) == SlabType.TOP
                 && snowyDirt.get(SnowyDirtBlock.SNOWY)
                 && !snowyDirt.get(SlabBlock.WATERLOGGED),
-                "The 1.13 snowy dirt slab state changed: " + snowyDirt);
+                "The " + sourceVersion + " snowy dirt slab state changed: " + snowyDirt);
         BlockState wetDirt = world.getBlockState(origin.south(5));
         require(wetDirt.getBlock() == ModBlocks.DIRT_SLAB
                 && wetDirt.get(SlabBlock.TYPE) == SlabType.BOTTOM
                 && wetDirt.get(SlabBlock.WATERLOGGED),
-                "The 1.13 waterlogged dirt slab state changed: " + wetDirt);
+                "The " + sourceVersion + " waterlogged dirt slab state changed: " + wetDirt);
         BlockState snowyGrass = world.getBlockState(origin.south(6));
         require(snowyGrass.getBlock() == ModBlocks.GRASS_SLAB
                 && snowyGrass.get(SlabBlock.TYPE) == SlabType.TOP
                 && snowyGrass.get(SnowyDirtBlock.SNOWY)
                 && !snowyGrass.get(SlabBlock.WATERLOGGED),
-                "The 1.13 snowy grass slab state changed: " + snowyGrass);
+                "The " + sourceVersion + " snowy grass slab state changed: " + snowyGrass);
         BlockState wetGrass = world.getBlockState(origin.south(7));
         require(wetGrass.getBlock() == ModBlocks.GRASS_SLAB
                 && wetGrass.get(SlabBlock.TYPE) == SlabType.BOTTOM
                 && wetGrass.get(SlabBlock.WATERLOGGED),
-                "The 1.13 waterlogged grass slab state changed: " + wetGrass);
+                "The " + sourceVersion + " waterlogged grass slab state changed: " + wetGrass);
     }
 
     private static SylvesterCounts auditSylvester(Path worldDirectory) throws IOException {
@@ -901,7 +906,7 @@ public final class IntegrationTestMod {
 
     private static void write(Path marker, Properties values) throws IOException {
         try (OutputStream output = Files.newOutputStream(marker)) {
-            values.store(output, "Sky's Grass Slabs Forge 1.14.4 integration evidence");
+            values.store(output, "Sky's Grass Slabs Forge 1.15.2 integration evidence");
         }
     }
 

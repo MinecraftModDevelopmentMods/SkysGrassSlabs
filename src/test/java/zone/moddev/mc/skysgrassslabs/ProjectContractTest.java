@@ -22,11 +22,11 @@ class ProjectContractTest {
     @Test
     void releaseIdentityAndToolchainArePinned() throws Exception {
         String properties = read("gradle.properties");
-        assertTrue(properties.contains("minecraft_version=1.14.4"));
-        assertTrue(properties.contains("forge_version=28.2.26"));
+        assertTrue(properties.contains("minecraft_version=1.15.2"));
+        assertTrue(properties.contains("forge_version=31.2.57"));
         assertTrue(properties.contains("mapping_channel=snapshot"));
-        assertTrue(properties.contains("mapping_version=20190719-1.14.3"));
-        assertTrue(properties.contains("mod_version=1.0.1.114041"));
+        assertTrue(properties.contains("mapping_version=20200514-1.15.1"));
+        assertTrue(properties.contains("mod_version=1.0.1.115021"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
@@ -50,12 +50,12 @@ class ProjectContractTest {
     }
 
     @Test
-    void forgeTwentyEightMetadataAndPackFormatArePresent() throws Exception {
+    void forgeThirtyOneMetadataAndPackFormatArePresent() throws Exception {
         assertTrue(new File("src/main/resources/META-INF/mods.toml").isFile());
         assertFalse(new File("src/main/resources/mcmod.info").exists());
         assertTrue(read("src/main/resources/META-INF/mods.toml")
                 .contains("modId=\"skysgrassslabs\""));
-        assertTrue(read("src/main/resources/pack.mcmeta").contains("\"pack_format\": 4"));
+        assertTrue(read("src/main/resources/pack.mcmeta").contains("\"pack_format\": 5"));
     }
 
     @Test
@@ -136,13 +136,19 @@ class ProjectContractTest {
     }
 
     @Test
-    void clientColorHandlersUseForgeTwentyEightModBus() throws Exception {
+    void clientHandlersUseForgeThirtyOneModBusAndRenderLayers() throws Exception {
         String events = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ClientRegistryEvents.java");
         assertTrue(events.contains("bus = Mod.EventBusSubscriber.Bus.MOD"));
         assertFalse(events.contains("bus = Mod.EventBusSubscriber.Bus.FORGE"));
         assertTrue(events.contains("ColorHandlerEvent.Block"));
         assertTrue(events.contains("ColorHandlerEvent.Item"));
+        assertTrue(events.contains("FMLClientSetupEvent"));
+        String client = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/proxy/ClientProxy.java");
+        assertTrue(client.contains("RenderTypeLookup.setRenderLayer(ModBlocks.GRASS_SLAB"));
+        assertTrue(client.contains("RenderTypeLookup.setRenderLayer(ModBlocks.TURF"));
+        assertTrue(client.contains("RenderType.getCutoutMipped()"));
     }
 
     @Test
@@ -198,17 +204,17 @@ class ProjectContractTest {
     }
 
     @Test
-    void adjacentForwardFixtureIsLockedToTheAcceptedOneThirteenJar() throws Exception {
+    void adjacentForwardFixtureIsLockedToTheAcceptedOneFourteenJar() throws Exception {
         String manifest = read(
-                "src/test/resources/fixtures/skysgrassslabs-1.13.2-forward-world.manifest");
+                "src/test/resources/fixtures/skysgrassslabs-1.14.4-forward-world.manifest");
         assertTrue(manifest.contains(
-                "fixture_sha256=BB30D8108476F2E38EBA26D7B4FD9E0FB431413032A20071D2DE2139BEC7BA0C"));
+                "fixture_sha256=F74B9D82994631492ADFC8685BDB8C4DB485B45B4017605C1954A595826D7B8B"));
         assertTrue(manifest.contains(
-                "source_jar_sha256=42772E921FE7EAF8A8D1EA7C12F48C04626FDD0B880B827FB3A82FB7A5ACFC7A"));
+                "source_jar_sha256=213A09F31EE02CE1C01E4C504147C13D3BD63A6AA11EBE52CE41A38735D45D1B"));
         String build = read("build.gradle");
-        assertTrue(build.contains("oneThirteenForwardUpgradeTest"));
-        assertTrue(build.contains("upgrade-113-first"));
-        assertTrue(build.contains("upgrade-113-reload"));
+        assertTrue(build.contains("oneFourteenForwardUpgradeTest"));
+        assertTrue(build.contains("upgrade-114-first"));
+        assertTrue(build.contains("upgrade-114-reload"));
     }
 
     @Test
@@ -229,13 +235,13 @@ class ProjectContractTest {
         for (String name : Arrays.asList("ci.yml", "codeql-analysis.yml",
                 "validate-gradle-build.yml")) {
             String workflow = read(".github/workflows/" + name);
-            assertTrue(workflow.contains("master-1.14.4"), name);
-            assertFalse(workflow.contains("master-1.13.2"), name);
+            assertTrue(workflow.contains("master-1.15.2"), name);
+            assertFalse(workflow.contains("master-1.14.4"), name);
         }
         String ci = read(".github/workflows/ci.yml");
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.114041.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.114041-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.114041-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.115021.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.115021-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.115021-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
     }
 

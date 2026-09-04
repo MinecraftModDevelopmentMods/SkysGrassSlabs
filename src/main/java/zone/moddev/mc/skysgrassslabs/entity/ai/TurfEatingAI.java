@@ -59,6 +59,6 @@ public final class TurfEatingAI extends Goal {
     }
 
     private BlockPos position() {
-        return new BlockPos(sheep.posX, sheep.posY, sheep.posZ);
+        return new BlockPos(sheep.getPosX(), sheep.getPosY(), sheep.getPosZ());
     }
 }

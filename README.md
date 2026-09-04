@@ -4,8 +4,8 @@ Sky's Grass Slabs adds dirt, grass and lowered path slabs, along with a thin
 layer of turf. Grass spreads naturally between full blocks and slabs, while
 new Overworld terrain uses grass slabs to soften suitable one block steps.
 
-This branch is for Minecraft 1.14.4. Version `1.0.1.114041` requires Forge
-28.2.26 or a compatible Forge 28 build and Java 8.
+This branch is for Minecraft 1.15.2. Version `1.0.1.115021` requires Forge
+31.2.57 or a compatible Forge 31 build and Java 8.
 
 ## Installation
 
@@ -23,7 +23,7 @@ or updating world changing mods.
 - Let sheep eat turf and regrow their wool.
 - Add grass slabs to suitable slopes in newly generated Overworld chunks.
 - Display biome colours and snowy edges that match the surrounding terrain.
-- Use the standard Minecraft 1.14 waterlogging behaviour on slabs.
+- Use the standard Minecraft 1.15 waterlogging behaviour on slabs.
 - Use translated names in 18 supported language variants.
 
 ## Guides
@@ -31,7 +31,7 @@ or updating world changing mods.
 - [Gameplay and recipes](docs/GAMEPLAY.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Upgrading an older world](docs/WORLD-UPGRADES.md)
-- [Release notes](docs/RELEASE-1.0.1.114041.md)
+- [Release notes](docs/RELEASE-1.0.1.115021.md)
 
 ## License
 

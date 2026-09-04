@@ -7,7 +7,7 @@ import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraftforge.common.ToolType;
 
-/** Common native 1.14 slab behaviour shared by the three permanent slabs. */
+/** Common native 1.15 slab behaviour shared by the three permanent slabs. */
 public abstract class LegacySlabBlock extends SlabBlock {
     protected LegacySlabBlock(Material material, SoundType sound, float hardness,
             boolean randomTicks) {

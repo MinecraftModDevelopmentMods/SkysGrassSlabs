@@ -111,7 +111,7 @@ public final class SkysGrassSlabsConfig {
         Common(ForgeConfigSpec.Builder builder) {
             builder.comment("Legacy world compatibility settings.").push("compat");
             forceReplaceBuildingBricksSlabs = builder.comment(
-                    "Retained for compatibility with earlier versions. No supported 1.14 " +
+                    "Retained for compatibility with earlier versions. No supported 1.15 " +
                     "BuildingBricks release is modified by this setting.")
                     .worldRestart().define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false);
             builder.pop();

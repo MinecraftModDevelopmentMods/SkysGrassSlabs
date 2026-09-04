@@ -37,7 +37,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
     public static final GrassSlabSmoothingFeature FEATURE = configureFeature();
     private static final ThreadLocal<boolean[]> DECISIONS =
             ThreadLocal.withInitial(() -> new boolean[256]);
-    private static ConfiguredFeature<?> configuredFeature;
+    private static ConfiguredFeature<?, ?> configuredFeature;
     private static boolean installed;
 
     public GrassSlabSmoothingFeature() {
@@ -53,14 +53,14 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
 
     public static synchronized void install() {
         if (installed) return;
-        configuredFeature = Biome.createDecoratedFeature(FEATURE,
-                IFeatureConfig.NO_FEATURE_CONFIG, Placement.NOPE, new NoPlacementConfig());
+        configuredFeature = FEATURE.withConfiguration(IFeatureConfig.NO_FEATURE_CONFIG)
+                .withPlacement(Placement.NOPE.configure(new NoPlacementConfig()));
         for (Biome biome : ForgeRegistries.BIOMES.getValues()) {
             if (biome.getCategory() == Biome.Category.NETHER ||
                     biome.getCategory() == Biome.Category.THEEND) {
                 continue;
             }
-            List<ConfiguredFeature<?>> features = biome.getFeatures(
+            List<ConfiguredFeature<?, ?>> features = biome.getFeatures(
                     GenerationStage.Decoration.VEGETAL_DECORATION);
             if (!features.contains(configuredFeature)) features.add(0, configuredFeature);
         }
@@ -91,7 +91,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
         Arrays.fill(decisions, false);
         int startX = ownerX << 4;
         int startZ = ownerZ << 4;
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        BlockPos.Mutable cursor = new BlockPos.Mutable();
 
         for (int localZ = 0; localZ < 16; ++localZ) {
             for (int localX = 0; localX < 16; ++localX) {
@@ -104,7 +104,8 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
                 if (!SmoothingDecision.isEligibleTarget(
                         lower.getBlock() == Blocks.GRASS_BLOCK,
                         targetState.isAir(world, target), targetState.getFluidState().isEmpty(),
-                        lower.func_224756_o(world, surface), owner.getTileEntity(target) != null)) {
+                        lower.isCollisionShapeOpaque(world, surface),
+                        owner.getTileEntity(target) != null)) {
                     continue;
                 }
                 if (hasHigherGrassNeighbour(world, ownerX, ownerZ, localX, localZ,
@@ -135,7 +136,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
     }
 
     private static boolean hasHigherGrassNeighbour(IWorld world, int ownerX, int ownerZ,
-            int localX, int localZ, int lowerY, BlockPos.MutableBlockPos cursor) {
+            int localX, int localZ, int lowerY, BlockPos.Mutable cursor) {
         return isHigherGrass(world, ownerX, ownerZ, localX - 1, localZ, lowerY, cursor) ||
                 isHigherGrass(world, ownerX, ownerZ, localX + 1, localZ, lowerY, cursor) ||
                 isHigherGrass(world, ownerX, ownerZ, localX, localZ - 1, lowerY, cursor) ||
@@ -143,7 +144,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
     }
 
     private static boolean isHigherGrass(IWorld world, int ownerX, int ownerZ,
-            int localX, int localZ, int lowerY, BlockPos.MutableBlockPos cursor) {
+            int localX, int localZ, int lowerY, BlockPos.Mutable cursor) {
         int chunkX = ownerX + Math.floorDiv(localX, 16);
         int chunkZ = ownerZ + Math.floorDiv(localZ, 16);
         if (!chunkAvailable(world, chunkX, chunkZ)) return false;
@@ -157,7 +158,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
     }
 
     private static int surfaceY(IChunk chunk, int localX, int localZ,
-            BlockPos.MutableBlockPos cursor) {
+            BlockPos.Mutable cursor) {
         int y = chunk.getTopBlockY(Heightmap.Type.WORLD_SURFACE_WG, localX, localZ);
         int x = chunk.getPos().getXStart() + localX;
         int z = chunk.getPos().getZStart() + localZ;

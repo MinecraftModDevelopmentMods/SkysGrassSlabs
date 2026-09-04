@@ -8,9 +8,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.SnowyDirtBlock;
 import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.world.EmptyBlockReader;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import zone.moddev.mc.skysgrassslabs.MinecraftTestBootstrap;
@@ -51,13 +52,9 @@ class SlabContractTest {
         assertEquals(1.0D / 16.0D, shape.getBoundingBox().maxY);
         assertEquals(1.0D / 16.0D,
                 turf.getCollisionShape(null, BlockPos.ZERO).getBoundingBox().maxY);
-        assertFalse(turf.isSolid());
-    }
-
-    @Test
-    void grassAndTurfUseTheCutoutMippedLayer() {
-        assertEquals(BlockRenderLayer.CUTOUT_MIPPED, ModBlocks.GRASS_SLAB.getRenderLayer());
-        assertEquals(BlockRenderLayer.CUTOUT_MIPPED, ModBlocks.TURF.getRenderLayer());
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            assertFalse(turf.isSolidSide(EmptyBlockReader.INSTANCE, BlockPos.ZERO, direction));
+        }
     }
 
     private static void assertProfile(BlockState state, double minY, double maxY) {

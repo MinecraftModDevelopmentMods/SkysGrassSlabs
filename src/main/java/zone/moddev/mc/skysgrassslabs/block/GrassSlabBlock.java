@@ -13,9 +13,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.Direction;
-import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
@@ -23,6 +21,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
 import net.minecraft.world.gen.feature.DecoratedFeatureConfig;
 import net.minecraft.world.gen.feature.FlowersFeature;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.IPlantable;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
@@ -65,10 +64,7 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     }
 
     @Override
-    public void tick(BlockState state, World world, BlockPos pos, Random random) {
-        if (world.isRemote) {
-            return;
-        }
+    public void tick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
         dirtifyGrassSupport(world, pos);
         if (state.get(SlabBlock.WATERLOGGED) || !GrassSpread.canRemainGrass(world, pos)) {
             world.setBlockState(pos, ModBlocks.dirtStateLike(state), 3);
@@ -103,7 +99,7 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     }
 
     @Override
-    public void grow(World world, Random random, BlockPos pos, BlockState state) {
+    public void grow(ServerWorld world, Random random, BlockPos pos, BlockState state) {
         if (!canUseBonemeal(world, random, pos, state)) {
             return;
         }
@@ -124,13 +120,15 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
                     }
                     BlockState growth;
                     if (random.nextInt(8) == 0) {
-                        List<ConfiguredFeature<?>> flowers = world.getBiome(target).getFlowers();
+                        List<ConfiguredFeature<?, ?>> flowers =
+                                world.getBiome(target).getFlowers();
                         if (flowers.isEmpty()) {
                             break;
                         }
-                        ConfiguredFeature<?> flower = flowers.get(0);
-                        growth = ((FlowersFeature) ((DecoratedFeatureConfig) flower.config)
-                                .feature.feature).getRandomFlower(random, target);
+                        ConfiguredFeature<?, ?> flower =
+                                ((DecoratedFeatureConfig) flowers.get(0).config).feature;
+                        growth = ((FlowersFeature) flower.feature)
+                                .getFlowerToPlace(random, target, flower.config);
                     } else {
                         growth = grassPlant;
                     }
@@ -146,17 +144,13 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
                 boolean suitable = support.getBlock() == Blocks.GRASS_BLOCK ||
                         support.getBlock() == this &&
                                 support.get(SlabBlock.TYPE) == SlabType.TOP;
-                if (!suitable || world.getBlockState(target).func_224756_o(world, target)) {
+                if (!suitable || world.getBlockState(target)
+                        .isCollisionShapeOpaque(world, target)) {
                     break;
                 }
                 ++walk;
             }
         }
-    }
-
-    @Override
-    public BlockRenderLayer getRenderLayer() {
-        return BlockRenderLayer.CUTOUT_MIPPED;
     }
 
     private static void dirtifyGrassSupport(World world, BlockPos pos) {

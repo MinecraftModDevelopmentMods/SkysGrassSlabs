@@ -23,13 +23,19 @@ class ForwardUpgradeFixtureContractTest {
     private static final Fixture[] FIXTURES = {
             new Fixture("1.10.2", "1.0.0.110021",
                     "D6923BFFE062C1F0C454190AB11F031825949DF8080D8000133A723DEC2770BF",
-                    "2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861"),
+                    "2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861", 7),
             new Fixture("1.11.2", "1.0.1.111021",
                     "E6ABAECBC818C4EB28D3324ACC27DCCCD30247B4268879D7A789F0E1F55028F5",
-                    "56D8B8C1FA7F2289C9F9A3BCF2BEB2D15F0F880373D0647BB9BDBFA7E1D5FE54"),
+                    "56D8B8C1FA7F2289C9F9A3BCF2BEB2D15F0F880373D0647BB9BDBFA7E1D5FE54", 7),
             new Fixture("1.12.2", "1.0.1.112021",
                     "A903E0AE94DE7AFEA92BBF773859A31119BDBEA6976C5135D0AD56E845DDB028",
-                    "C6E83E66AFB35AE47661FB560F81A458B95FB50D87E940CE682B7C91DB034543")
+                    "C6E83E66AFB35AE47661FB560F81A458B95FB50D87E940CE682B7C91DB034543", 7),
+            new Fixture("1.13.2", "1.0.1.113021",
+                    "BB30D8108476F2E38EBA26D7B4FD9E0FB431413032A20071D2DE2139BEC7BA0C",
+                    "42772E921FE7EAF8A8D1EA7C12F48C04626FDD0B880B827FB3A82FB7A5ACFC7A", 11),
+            new Fixture("1.14.4", "1.0.1.114041",
+                    "F74B9D82994631492ADFC8685BDB8C4DB485B45B4017605C1954A595826D7B8B",
+                    "213A09F31EE02CE1C01E4C504147C13D3BD63A6AA11EBE52CE41A38735D45D1B", 11)
     };
 
     @Test
@@ -43,7 +49,7 @@ class ForwardUpgradeFixtureContractTest {
             assertEquals(fixture.jarSha256, manifest.getProperty("source_jar_sha256"));
             assertEquals(Long.toString(fixture.archive.length()),
                     manifest.getProperty("fixture_bytes"));
-            assertTrue(fixture.archive.length() < 125_000L,
+            assertTrue(fixture.archive.length() < 300_000L,
                     fixture.minecraftVersion + " fixture is no longer compact");
         }
     }
@@ -74,7 +80,7 @@ class ForwardUpgradeFixtureContractTest {
                         StandardCharsets.UTF_8);
                 assertTrue(contents.contains("source_minecraft=" + fixture.minecraftVersion));
                 assertTrue(contents.contains("source_mod_version=" + fixture.modVersion));
-                assertTrue(contents.contains("expected_blocks=7"));
+                assertTrue(contents.contains("expected_blocks=" + fixture.expectedBlocks));
                 assertFalse(contents.toLowerCase(Locale.ROOT).contains(":\\users\\"));
                 assertFalse(contents.toLowerCase(Locale.ROOT).contains(":\\skysgrassslabs"));
             }
@@ -120,15 +126,17 @@ class ForwardUpgradeFixtureContractTest {
         private final String modVersion;
         private final String fixtureSha256;
         private final String jarSha256;
+        private final int expectedBlocks;
         private final File archive;
         private final File manifest;
 
         private Fixture(String minecraftVersion, String modVersion, String fixtureSha256,
-                String jarSha256) {
+                String jarSha256, int expectedBlocks) {
             this.minecraftVersion = minecraftVersion;
             this.modVersion = modVersion;
             this.fixtureSha256 = fixtureSha256;
             this.jarSha256 = jarSha256;
+            this.expectedBlocks = expectedBlocks;
             String baseName = "skysgrassslabs-" + minecraftVersion + "-forward-world";
             this.archive = new File(FIXTURE_DIRECTORY + baseName + ".zip");
             this.manifest = new File(FIXTURE_DIRECTORY + baseName + ".manifest");

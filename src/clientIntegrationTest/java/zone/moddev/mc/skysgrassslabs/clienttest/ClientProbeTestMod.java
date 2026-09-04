@@ -202,7 +202,7 @@ public final class ClientProbeTestMod {
 
     private static void stopIntegratedServer(Minecraft minecraft) {
         if (minecraft.world != null) minecraft.world.sendQuittingDisconnectingPacket();
-        minecraft.func_213231_b(new MainMenuScreen());
+        minecraft.displayGuiScreen(new MainMenuScreen());
     }
 
     private void writeMarker() throws IOException {
@@ -215,7 +215,7 @@ public final class ClientProbeTestMod {
         values.setProperty("world_directory", WORLD_DIRECTORY);
         try (FileOutputStream output = new FileOutputStream(
                 new File("client-smoke-pass.properties"))) {
-            values.store(output, "Sky's Grass Slabs Forge 1.14.4 client gate");
+            values.store(output, "Sky's Grass Slabs Forge 1.15.2 client gate");
         }
     }
 
