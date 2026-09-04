@@ -18,14 +18,15 @@ public final class ClientProxy {
     }
 
     public static void registerRenderLayers() {
-        RenderType cutoutMipped = RenderType.getCutoutMipped();
+        RenderType cutoutMipped = RenderType.cutoutMipped();
         RenderTypeLookup.setRenderLayer(ModBlocks.GRASS_SLAB, cutoutMipped);
         RenderTypeLookup.setRenderLayer(ModBlocks.TURF, cutoutMipped);
     }
 
     public static void registerBlockColors(BlockColors colors) {
         colors.register((state, world, pos, tintIndex) -> world == null || pos == null
-                        ? GrassColors.get(0.5D, 1.0D) : BiomeColors.getGrassColor(world, pos),
+                        ? GrassColors.get(0.5D, 1.0D)
+                        : BiomeColors.getAverageGrassColor(world, pos),
                 ModBlocks.GRASS_SLAB, ModBlocks.TURF);
     }
 

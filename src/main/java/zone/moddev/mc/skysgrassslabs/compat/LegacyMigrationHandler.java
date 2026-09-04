@@ -32,12 +32,12 @@ public final class LegacyMigrationHandler {
     public static void loadChunk(ChunkDataEvent.Load event) {
         if (!(event.getWorld() instanceof World) || !(event.getChunk() instanceof Chunk)) return;
         World world = (World) event.getWorld();
-        if (world.isRemote || !BuildingBricksCompat.hasLegacyAliases()) return;
+        if (world.isClientSide || !BuildingBricksCompat.hasLegacyAliases()) return;
         ModWorldState state = ModWorldState.get(world);
         boolean changed = migrateStacksInNbt(event.getData(), state);
         Chunk chunk = (Chunk) event.getChunk();
         changed |= migrateChunkInventories(chunk, state);
-        if (changed) chunk.setModified(true);
+        if (changed) chunk.setUnsaved(true);
     }
 
     public static void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
@@ -45,9 +45,9 @@ public final class LegacyMigrationHandler {
             return;
         }
         PlayerEntity player = event.getPlayer();
-        ModWorldState state = ModWorldState.get(player.world);
+        ModWorldState state = ModWorldState.get(player.level);
         migrateInventory(player.inventory, state);
-        migrateInventory(player.getInventoryEnderChest(), state);
+        migrateInventory(player.getEnderChestInventory(), state);
     }
 
     public static void remapMissingBlocks(RegistryEvent.MissingMappings<Block> event) {
@@ -94,7 +94,7 @@ public final class LegacyMigrationHandler {
                     changed = true;
                 }
             }
-            for (String key : new ArrayList<String>(compound.keySet())) {
+            for (String key : new ArrayList<String>(compound.getAllKeys())) {
                 INBT child = compound.get(key);
                 if (child != null) changed |= migrateStacksInNbt(child, state);
             }
@@ -109,19 +109,19 @@ public final class LegacyMigrationHandler {
 
     private static boolean migrateChunkInventories(Chunk chunk, ModWorldState state) {
         boolean changed = false;
-        for (TileEntity tileEntity : chunk.getTileEntityMap().values()) {
-            CompoundNBT serialized = tileEntity.write(new CompoundNBT());
+        for (TileEntity tileEntity : chunk.getBlockEntities().values()) {
+            CompoundNBT serialized = tileEntity.save(new CompoundNBT());
             if (migrateStacksInNbt(serialized, state)) {
-                tileEntity.read(serialized);
-                tileEntity.markDirty();
+                tileEntity.load(tileEntity.getBlockState(), serialized);
+                tileEntity.setChanged();
                 changed = true;
             }
         }
-        for (ClassInheritanceMultiMap<Entity> list : chunk.getEntityLists()) {
+        for (ClassInheritanceMultiMap<Entity> list : chunk.getEntitySections()) {
             for (Entity entity : list) {
-                CompoundNBT serialized = entity.writeWithoutTypeId(new CompoundNBT());
+                CompoundNBT serialized = entity.saveWithoutId(new CompoundNBT());
                 if (migrateStacksInNbt(serialized, state)) {
-                    entity.read(serialized);
+                    entity.load(serialized);
                     changed = true;
                 }
             }
@@ -131,14 +131,14 @@ public final class LegacyMigrationHandler {
 
     private static void migrateInventory(IInventory inventory, ModWorldState state) {
         boolean changed = false;
-        for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
-            ItemStack migrated = migrateStack(inventory.getStackInSlot(slot), state);
+        for (int slot = 0; slot < inventory.getContainerSize(); ++slot) {
+            ItemStack migrated = migrateStack(inventory.getItem(slot), state);
             if (!migrated.isEmpty()) {
-                inventory.setInventorySlotContents(slot, migrated);
+                inventory.setItem(slot, migrated);
                 changed = true;
             }
         }
-        if (changed) inventory.markDirty();
+        if (changed) inventory.setChanged();
     }
 
     private static ItemStack migrateStack(ItemStack stack, ModWorldState state) {

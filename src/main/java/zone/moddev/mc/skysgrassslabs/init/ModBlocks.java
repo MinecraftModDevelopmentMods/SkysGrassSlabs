@@ -31,36 +31,38 @@ public final class ModBlocks {
     public static void registerItems(IForgeRegistry<Item> registry) {
         registry.registerAll(
                 item(new NormalizingSlabItem(DIRT_SLAB, Blocks.DIRT,
-                        new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), DIRT_SLAB),
+                        new Item.Properties().tab(ItemGroup.TAB_BUILDING_BLOCKS)), DIRT_SLAB),
                 item(new NormalizingSlabItem(GRASS_SLAB, Blocks.GRASS_BLOCK,
-                        new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), GRASS_SLAB),
+                        new Item.Properties().tab(ItemGroup.TAB_BUILDING_BLOCKS)), GRASS_SLAB),
                 item(new NormalizingSlabItem(PATH_SLAB, Blocks.GRASS_PATH,
-                        new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), PATH_SLAB),
+                        new Item.Properties().tab(ItemGroup.TAB_BUILDING_BLOCKS)), PATH_SLAB),
                 item(new TurfBlockItem(TURF,
-                        new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), TURF));
+                        new Item.Properties().tab(ItemGroup.TAB_BUILDING_BLOCKS)), TURF));
     }
 
     public static BlockState dirtStateLike(BlockState source) {
-        BlockState state = DIRT_SLAB.getDefaultState()
-                .with(SlabBlock.TYPE, source.get(SlabBlock.TYPE))
-                .with(SlabBlock.WATERLOGGED, source.get(SlabBlock.WATERLOGGED));
-        return state.with(SnowyDirtBlock.SNOWY,
-                source.has(SnowyDirtBlock.SNOWY) && source.get(SnowyDirtBlock.SNOWY));
+        BlockState state = DIRT_SLAB.defaultBlockState()
+                .setValue(SlabBlock.TYPE, source.getValue(SlabBlock.TYPE))
+                .setValue(SlabBlock.WATERLOGGED, source.getValue(SlabBlock.WATERLOGGED));
+        return state.setValue(SnowyDirtBlock.SNOWY,
+                source.hasProperty(SnowyDirtBlock.SNOWY) &&
+                        source.getValue(SnowyDirtBlock.SNOWY));
     }
 
     public static BlockState grassStateLike(BlockState source) {
-        BlockState state = GRASS_SLAB.getDefaultState()
-                .with(SlabBlock.TYPE, source.get(SlabBlock.TYPE))
-                .with(SlabBlock.WATERLOGGED, source.get(SlabBlock.WATERLOGGED));
-        return state.with(SnowyDirtBlock.SNOWY,
-                source.has(SnowyDirtBlock.SNOWY) && source.get(SnowyDirtBlock.SNOWY));
+        BlockState state = GRASS_SLAB.defaultBlockState()
+                .setValue(SlabBlock.TYPE, source.getValue(SlabBlock.TYPE))
+                .setValue(SlabBlock.WATERLOGGED, source.getValue(SlabBlock.WATERLOGGED));
+        return state.setValue(SnowyDirtBlock.SNOWY,
+                source.hasProperty(SnowyDirtBlock.SNOWY) &&
+                        source.getValue(SnowyDirtBlock.SNOWY));
     }
 
     public static BlockState legacySlabState(boolean grass, int metadata) {
-        return (grass ? GRASS_SLAB : DIRT_SLAB).getDefaultState()
-                .with(SlabBlock.TYPE, (metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM)
-                .with(SlabBlock.WATERLOGGED, Boolean.FALSE)
-                .with(SnowyDirtBlock.SNOWY, Boolean.FALSE);
+        return (grass ? GRASS_SLAB : DIRT_SLAB).defaultBlockState()
+                 .setValue(SlabBlock.TYPE, (metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM)
+                 .setValue(SlabBlock.WATERLOGGED, Boolean.FALSE)
+                 .setValue(SnowyDirtBlock.SNOWY, Boolean.FALSE);
     }
 
     private static <T extends Block> T configure(T block, String name) {

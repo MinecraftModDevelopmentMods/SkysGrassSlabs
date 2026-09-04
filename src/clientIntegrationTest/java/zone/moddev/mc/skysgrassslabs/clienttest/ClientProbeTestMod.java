@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.OptionalLong;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -19,10 +20,15 @@ import net.minecraft.state.properties.SlabType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GrassColors;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameType;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.WorldSettings;
-import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.BiomeColors;
+import net.minecraft.util.registry.DynamicRegistries;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.datafix.codec.DatapackCodec;
+import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -72,16 +78,13 @@ public final class ClientProbeTestMod {
         try {
             switch (state) {
                 case 0:
-                    if (minecraft.currentScreen instanceof MainMenuScreen) {
-                        minecraft.launchIntegratedServer(WORLD_DIRECTORY,
-                                "Sky's Grass Slabs Client Smoke",
-                                new WorldSettings(81726354L, GameType.CREATIVE, false,
-                                        false, WorldType.DEFAULT));
+                    if (minecraft.screen instanceof MainMenuScreen) {
+                        createWorld(minecraft);
                         nextState(1);
                     }
                     break;
                 case 1:
-                    if (minecraft.world != null && minecraft.player != null
+                    if (minecraft.level != null && minecraft.player != null
                             && firstWorldFrames >= 8 && stateTicks >= 100) {
                         verifyModels(minecraft);
                         verifyColors(minecraft);
@@ -91,17 +94,14 @@ public final class ClientProbeTestMod {
                     }
                     break;
                 case 2:
-                    if (minecraft.world == null && !minecraft.isIntegratedServerRunning()
+                    if (minecraft.level == null && !minecraft.hasSingleplayerServer()
                             && stateTicks >= 20) {
-                        minecraft.launchIntegratedServer(WORLD_DIRECTORY,
-                                "Sky's Grass Slabs Client Smoke",
-                                new WorldSettings(81726354L, GameType.CREATIVE, false,
-                                        false, WorldType.DEFAULT));
+                        createWorld(minecraft);
                         nextState(3);
                     }
                     break;
                 case 3:
-                    if (minecraft.world != null && minecraft.player != null
+                    if (minecraft.level != null && minecraft.player != null
                             && reloadWorldFrames >= 8 && stateTicks >= 100) {
                         verifyModels(minecraft);
                         verifyColors(minecraft);
@@ -111,10 +111,10 @@ public final class ClientProbeTestMod {
                     }
                     break;
                 case 4:
-                    if (minecraft.world == null && !minecraft.isIntegratedServerRunning()
+                    if (minecraft.level == null && !minecraft.hasSingleplayerServer()
                             && stateTicks >= 20) {
                         writeMarker();
-                        minecraft.shutdown();
+                        minecraft.stop();
                         nextState(5);
                     }
                     break;
@@ -134,15 +134,17 @@ public final class ClientProbeTestMod {
                 slabState(ModBlocks.GRASS_SLAB, SlabType.BOTTOM),
                 slabState(ModBlocks.PATH_SLAB, SlabType.TOP),
                 slabState(ModBlocks.PATH_SLAB, SlabType.BOTTOM),
-                ((Block) ModBlocks.TURF).getDefaultState()
+                ((Block) ModBlocks.TURF).defaultBlockState()
         };
-        IBakedModel missing = minecraft.getBlockRendererDispatcher().getBlockModelShapes()
+        IBakedModel missing = minecraft.getBlockRenderer().getBlockModelShaper()
                 .getModelManager().getMissingModel();
         for (BlockState stateToCheck : states) {
-            IBakedModel model = minecraft.getBlockRendererDispatcher().getModelForState(stateToCheck);
+            IBakedModel model = minecraft.getBlockRenderer().getBlockModel(stateToCheck);
             ResourceLocation registryName = stateToCheck.getBlock().getRegistryName();
-            if (model == null || model == missing || model.getParticleTexture() == null
-                    || "missingno".equals(model.getParticleTexture().getName().getPath())) {
+            if (model == null || model == missing ||
+                    model.getParticleIcon() == null ||
+                    "missingno".equals(model.getParticleIcon()
+                            .getName().getPath())) {
                 throw new IllegalStateException("Missing baked model for " + registryName
                         + " state " + stateToCheck);
             }
@@ -151,20 +153,20 @@ public final class ClientProbeTestMod {
     }
 
     private static BlockState slabState(Block block, SlabType type) {
-        return block.getDefaultState().with(SlabBlock.TYPE, type)
-                .with(SlabBlock.WATERLOGGED, Boolean.FALSE);
+        return block.defaultBlockState() .setValue(SlabBlock.TYPE, type)
+                 .setValue(SlabBlock.WATERLOGGED, Boolean.FALSE);
     }
 
     private void verifyColors(Minecraft minecraft) {
-        BlockPos pos = minecraft.player.getPosition();
-        int expectedBlockColor = BiomeColors.getGrassColor(minecraft.world, pos);
+        BlockPos pos = minecraft.player.blockPosition();
+        int expectedBlockColor = BiomeColors.getAverageGrassColor(minecraft.level, pos);
         for (BlockState stateToCheck : new BlockState[] {
                 slabState(ModBlocks.GRASS_SLAB, SlabType.TOP),
                 slabState(ModBlocks.GRASS_SLAB, SlabType.BOTTOM),
-                ((Block) ModBlocks.TURF).getDefaultState()
+                ((Block) ModBlocks.TURF).defaultBlockState()
         }) {
             int actual = minecraft.getBlockColors().getColor(
-                    stateToCheck, minecraft.world, pos, 0);
+                    stateToCheck, minecraft.level, pos, 0);
             if (actual != expectedBlockColor) {
                 throw new IllegalStateException("Missing biome grass tint for "
                         + stateToCheck.getBlock().getRegistryName() + ": expected "
@@ -185,13 +187,13 @@ public final class ClientProbeTestMod {
     }
 
     private void verifyRecipeBook(Minecraft minecraft) {
-        IRecipe turfRecipe = minecraft.world.getRecipeManager().getRecipe(
+        IRecipe turfRecipe = minecraft.level.getRecipeManager().byKey(
                 new ResourceLocation("skysgrassslabs", "turf")).orElse(null);
-        if (!(turfRecipe instanceof ICraftingRecipe) || turfRecipe.isDynamic()
+        if (!(turfRecipe instanceof ICraftingRecipe) || turfRecipe.isSpecial()
                 || turfRecipe.getIngredients().size() != 2) {
             throw new IllegalStateException("Turf recipe is not recipe book compatible");
         }
-        for (RecipeList recipeList : minecraft.player.getRecipeBook().getRecipes()) {
+        for (RecipeList recipeList : minecraft.player.getRecipeBook().getCollections()) {
             if (recipeList.getRecipes().contains(turfRecipe)) {
                 recipeBookVerified = true;
                 return;
@@ -201,8 +203,21 @@ public final class ClientProbeTestMod {
     }
 
     private static void stopIntegratedServer(Minecraft minecraft) {
-        if (minecraft.world != null) minecraft.world.sendQuittingDisconnectingPacket();
-        minecraft.displayGuiScreen(new MainMenuScreen());
+        if (minecraft.level != null) minecraft.level.disconnect();
+        minecraft.clearLevel(new MainMenuScreen());
+    }
+
+    private static void createWorld(Minecraft minecraft) {
+        DynamicRegistries.Impl registries = DynamicRegistries.builtin();
+        DimensionGeneratorSettings generator = DimensionGeneratorSettings.makeDefault(
+                registries.registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY),
+                registries.registryOrThrow(Registry.BIOME_REGISTRY),
+                registries.registryOrThrow(Registry.NOISE_GENERATOR_SETTINGS_REGISTRY))
+                .withSeed(false, OptionalLong.of(81726354L));
+        WorldSettings settings = new WorldSettings("Sky's Grass Slabs Client Smoke",
+                GameType.CREATIVE, false, Difficulty.NORMAL, true, new GameRules(),
+                DatapackCodec.DEFAULT);
+        minecraft.createLevel(WORLD_DIRECTORY, settings, registries, generator);
     }
 
     private void writeMarker() throws IOException {
@@ -215,7 +230,7 @@ public final class ClientProbeTestMod {
         values.setProperty("world_directory", WORLD_DIRECTORY);
         try (FileOutputStream output = new FileOutputStream(
                 new File("client-smoke-pass.properties"))) {
-            values.store(output, "Sky's Grass Slabs Forge 1.15.2 client gate");
+            values.store(output, "Sky's Grass Slabs Forge 1.16.5 client gate");
         }
     }
 
@@ -234,7 +249,7 @@ public final class ClientProbeTestMod {
             }
         } catch (IOException ignored) {
         }
-        minecraft.shutdown();
+        minecraft.stop();
         throw new IllegalStateException(message);
     }
 }

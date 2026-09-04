@@ -45,7 +45,7 @@ function initializeCoreMod() {
                     patched = true;
                 }
                 if (!patched) {
-                    throw new Error("Sky's Grass Slabs could not patch Forge 31 ChunkLoader");
+                    throw new Error("Sky's Grass Slabs could not patch Forge 36 ChunkLoader");
                 }
                 return classNode;
             }

@@ -22,11 +22,12 @@ class ProjectContractTest {
     @Test
     void releaseIdentityAndToolchainArePinned() throws Exception {
         String properties = read("gradle.properties");
-        assertTrue(properties.contains("minecraft_version=1.15.2"));
-        assertTrue(properties.contains("forge_version=31.2.57"));
-        assertTrue(properties.contains("mapping_channel=snapshot"));
-        assertTrue(properties.contains("mapping_version=20200514-1.15.1"));
-        assertTrue(properties.contains("mod_version=1.0.1.115021"));
+        assertTrue(properties.contains("minecraft_version=1.16.5"));
+        assertTrue(properties.contains("forge_version=36.2.34"));
+        assertTrue(properties.contains("mapping_channel=official"));
+        assertTrue(properties.contains("mapping_version=1.16.5"));
+        assertTrue(properties.contains("mcp_version=20210115.111550"));
+        assertTrue(properties.contains("mod_version=1.0.1.116051"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
@@ -50,12 +51,12 @@ class ProjectContractTest {
     }
 
     @Test
-    void forgeThirtyOneMetadataAndPackFormatArePresent() throws Exception {
+    void forgeThirtySixMetadataAndPackFormatArePresent() throws Exception {
         assertTrue(new File("src/main/resources/META-INF/mods.toml").isFile());
         assertFalse(new File("src/main/resources/mcmod.info").exists());
         assertTrue(read("src/main/resources/META-INF/mods.toml")
                 .contains("modId=\"skysgrassslabs\""));
-        assertTrue(read("src/main/resources/pack.mcmeta").contains("\"pack_format\": 5"));
+        assertTrue(read("src/main/resources/pack.mcmeta").contains("\"pack_format\": 6"));
     }
 
     @Test
@@ -77,7 +78,7 @@ class ProjectContractTest {
         assertTrue(serializer.contains("implements ICraftingRecipe"));
         assertTrue(serializer.contains("IRecipeSerializer<TurfCuttingRecipe>"));
         assertTrue(serializer.contains("new ResourceLocation(SkysGrassSlabs.MOD_ID, \"turf_cutting\")"));
-        assertTrue(serializer.contains("public boolean isDynamic()"));
+        assertTrue(serializer.contains("public boolean isSpecial()"));
         assertTrue(serializer.contains("return false;"));
         assertTrue(serializer.contains("IRecipeType.CRAFTING"));
         assertTrue(serializer.contains("public NonNullList<Ingredient> getIngredients()"));
@@ -123,6 +124,8 @@ class ProjectContractTest {
         assertTrue(bridge.contains("indexLegacyChunks"));
         assertTrue(bridge.contains("SUPPORTED_BUILDINGBRICKS_IDS"));
         assertTrue(bridge.contains("Field.class.getDeclaredField(\"modifiers\")"));
+        assertTrue(bridge.contains("WorldPersistenceHooks.addHook"));
+        assertTrue(bridge.contains("func_199194_a"));
         assertFalse(bridge.contains("import sun.misc"));
         assertFalse(bridge.contains("Unsafe.class"));
     }
@@ -136,7 +139,7 @@ class ProjectContractTest {
     }
 
     @Test
-    void clientHandlersUseForgeThirtyOneModBusAndRenderLayers() throws Exception {
+    void clientHandlersUseForgeThirtySixModBusAndRenderLayers() throws Exception {
         String events = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ClientRegistryEvents.java");
         assertTrue(events.contains("bus = Mod.EventBusSubscriber.Bus.MOD"));
@@ -148,7 +151,7 @@ class ProjectContractTest {
                 "src/main/java/zone/moddev/mc/skysgrassslabs/proxy/ClientProxy.java");
         assertTrue(client.contains("RenderTypeLookup.setRenderLayer(ModBlocks.GRASS_SLAB"));
         assertTrue(client.contains("RenderTypeLookup.setRenderLayer(ModBlocks.TURF"));
-        assertTrue(client.contains("RenderType.getCutoutMipped()"));
+        assertTrue(client.contains("RenderType.cutoutMipped()"));
     }
 
     @Test
@@ -160,8 +163,8 @@ class ProjectContractTest {
             }
         }
         String turf = read("src/main/java/zone/moddev/mc/skysgrassslabs/block/TurfBlock.java");
-        assertTrue(turf.contains("variableOpacity()"));
-        assertTrue(turf.contains("public void onBlockAdded"));
+        assertTrue(turf.contains("noOcclusion()"));
+        assertTrue(turf.contains("public void onPlace"));
         String spread = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/block/GrassSpread.java");
         assertTrue(spread.contains("cover.getBlock() == ModBlocks.TURF"));
@@ -177,9 +180,11 @@ class ProjectContractTest {
                 "src/main/java/zone/moddev/mc/skysgrassslabs/world/GrassSlabSmoothingFeature.java");
         assertTrue(feature.contains("extends Feature<NoFeatureConfig>"));
         assertTrue(feature.contains("\"grass_slab_smoothing\""));
-        assertTrue(feature.contains("region.getMainChunkX()"));
-        assertTrue(feature.contains("region.getMainChunkZ()"));
-        assertTrue(feature.contains("features.add(0, configuredFeature)"));
+        assertTrue(feature.contains("region.getCenterX()"));
+        assertTrue(feature.contains("region.getCenterZ()"));
+        assertTrue(feature.contains("WorldGenRegistries.CONFIGURED_FEATURE"));
+        assertTrue(feature.contains("features.add(0, () -> configuredFeature)"));
+        assertTrue(feature.contains("world.hasChunk(chunkX, chunkZ)"));
         assertFalse(new File(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/world/ContextFeature.java").exists());
     }
@@ -204,17 +209,16 @@ class ProjectContractTest {
     }
 
     @Test
-    void adjacentForwardFixtureIsLockedToTheAcceptedOneFourteenJar() throws Exception {
+    void adjacentForwardFixtureIsLockedToTheAcceptedOneFifteenJar() throws Exception {
         String manifest = read(
-                "src/test/resources/fixtures/skysgrassslabs-1.14.4-forward-world.manifest");
+                "src/test/resources/fixtures/skysgrassslabs-1.15.2-forward-world.manifest");
+        assertTrue(manifest.contains("fixture_sha256="));
         assertTrue(manifest.contains(
-                "fixture_sha256=F74B9D82994631492ADFC8685BDB8C4DB485B45B4017605C1954A595826D7B8B"));
-        assertTrue(manifest.contains(
-                "source_jar_sha256=213A09F31EE02CE1C01E4C504147C13D3BD63A6AA11EBE52CE41A38735D45D1B"));
+                "source_jar_sha256=9AE28332EA21700C5DE8D3597FC40F5B06D85E8A7FB3C0DE650A2F8BC5E0895C"));
         String build = read("build.gradle");
-        assertTrue(build.contains("oneFourteenForwardUpgradeTest"));
-        assertTrue(build.contains("upgrade-114-first"));
-        assertTrue(build.contains("upgrade-114-reload"));
+        assertTrue(build.contains("oneFifteenForwardUpgradeTest"));
+        assertTrue(build.contains("upgrade-115-first"));
+        assertTrue(build.contains("upgrade-115-reload"));
     }
 
     @Test
@@ -235,13 +239,13 @@ class ProjectContractTest {
         for (String name : Arrays.asList("ci.yml", "codeql-analysis.yml",
                 "validate-gradle-build.yml")) {
             String workflow = read(".github/workflows/" + name);
-            assertTrue(workflow.contains("master-1.15.2"), name);
-            assertFalse(workflow.contains("master-1.14.4"), name);
+            assertTrue(workflow.contains("master-1.16.5"), name);
+            assertFalse(workflow.contains("master-1.15.2"), name);
         }
         String ci = read(".github/workflows/ci.yml");
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.115021.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.115021-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.115021-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.116051.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.116051-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.116051-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
     }
 

@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[25,)"
+loaderVersion="[36,)"
 license="LGPL-2.1-only"
 
 [[mods]]
@@ -11,20 +11,20 @@ description='''Build-only rendered client and world reload fixture.'''
 [[dependencies.skysgrassslabsclienttest]]
 modId="forge"
 mandatory=true
-versionRange="[25,)"
+versionRange="[36,)"
 ordering="NONE"
 side="CLIENT"
 
 [[dependencies.skysgrassslabsclienttest]]
 modId="skysgrassslabs"
 mandatory=true
-versionRange="[1.0.1.115021]"
+versionRange="[1.0.1.116051]"
 ordering="AFTER"
 side="CLIENT"
 
 [[dependencies.skysgrassslabsclienttest]]
 modId="minecraft"
 mandatory=true
-versionRange="[1.15.2]"
+versionRange="[1.16.5]"
 ordering="NONE"
 side="CLIENT"

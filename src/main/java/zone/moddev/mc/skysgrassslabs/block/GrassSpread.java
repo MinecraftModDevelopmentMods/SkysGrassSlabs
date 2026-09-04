@@ -14,16 +14,16 @@ public final class GrassSpread {
     private static final int SPREAD_ATTEMPTS = 4;
 
     public static boolean canRemainGrass(World world, BlockPos pos) {
-        BlockPos above = pos.up();
-        return world.getLight(above) >= 4 ||
-                world.getBlockState(above).getOpacity(world, above) < world.getMaxLightLevel();
+        BlockPos above = pos.above();
+        return world.getMaxLocalRawBrightness(above) >= 4 ||
+                world.getBlockState(above).getLightBlock(world, above) < world.getMaxLightLevel();
     }
 
     public static boolean hasSpreadLight(World world, BlockPos pos) {
-        BlockPos above = pos.up();
-        return world.getLight(above) >= 4 &&
-                world.getBlockState(above).getOpacity(world, above) < world.getMaxLightLevel() &&
-                !world.getFluidState(above).isTagged(FluidTags.WATER);
+        BlockPos above = pos.above();
+        return world.getMaxLocalRawBrightness(above) >= 4 &&
+                world.getBlockState(above).getLightBlock(world, above) < world.getMaxLightLevel() &&
+                !world.getFluidState(above).is(FluidTags.WATER);
     }
 
     public static void spreadFrom(World world, BlockPos source, Random random,
@@ -32,12 +32,12 @@ public final class GrassSpread {
             return;
         }
         for (int attempt = 0; attempt < SPREAD_ATTEMPTS; ++attempt) {
-            BlockPos target = source.add(random.nextInt(3) - 1,
+            BlockPos target = source.offset(random.nextInt(3) - 1,
                     random.nextInt(5) - 3, random.nextInt(3) - 1);
             if (target.equals(excludedTarget)) {
                 continue;
             }
-            if (target.getY() < 0 || target.getY() >= 256 || !world.isBlockPresent(target)) {
+            if (target.getY() < 0 || target.getY() >= 256 || !world.isLoaded(target)) {
                 return;
             }
             growTarget(world, target);
@@ -50,13 +50,13 @@ public final class GrassSpread {
             return;
         }
         for (int attempt = 0; attempt < SPREAD_ATTEMPTS; ++attempt) {
-            BlockPos source = target.add(random.nextInt(3) - 1,
+            BlockPos source = target.offset(random.nextInt(3) - 1,
                     random.nextInt(5) - 1, random.nextInt(3) - 1);
-            if (source.getY() < 0 || source.getY() >= 256 || !world.isBlockPresent(source)) {
+            if (source.getY() < 0 || source.getY() >= 256 || !world.isLoaded(source)) {
                 return;
             }
             if (isViableSource(world, source)) {
-                world.setBlockState(target, ModBlocks.grassStateLike(state), 3);
+                world.setBlock(target, ModBlocks.grassStateLike(state), 3);
                 return;
             }
         }
@@ -68,13 +68,13 @@ public final class GrassSpread {
         }
         BlockState state = world.getBlockState(target);
         if (state.getBlock() == Blocks.DIRT) {
-            return world.setBlockState(target, Blocks.GRASS_BLOCK.getDefaultState(), 3);
+            return world.setBlock(target, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
         }
         if (state.getBlock() == ModBlocks.DIRT_SLAB) {
-            if (state.get(SlabBlock.TYPE) == SlabType.DOUBLE) {
-                return world.setBlockState(target, Blocks.GRASS_BLOCK.getDefaultState(), 3);
+            if (state.getValue(SlabBlock.TYPE) == SlabType.DOUBLE) {
+                return world.setBlock(target, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
             }
-            return world.setBlockState(target, ModBlocks.grassStateLike(state), 3);
+            return world.setBlock(target, ModBlocks.grassStateLike(state), 3);
         }
         return false;
     }
@@ -88,27 +88,27 @@ public final class GrassSpread {
             return true;
         }
         if (state.getBlock() == ModBlocks.GRASS_SLAB) {
-            return !state.get(SlabBlock.WATERLOGGED);
+            return !state.getValue(SlabBlock.WATERLOGGED);
         }
         return state.getBlock() == ModBlocks.TURF &&
-                world.getBlockState(pos.down()).getBlock() == Blocks.DIRT;
+                world.getBlockState(pos.below()).getBlock() == Blocks.DIRT;
     }
 
     private static boolean targetIsViable(World world, BlockPos target) {
         BlockState state = world.getBlockState(target);
         boolean dirt = state.getBlock() == Blocks.DIRT ||
-                state.getBlock() == ModBlocks.DIRT_SLAB && !state.get(SlabBlock.WATERLOGGED);
+                state.getBlock() == ModBlocks.DIRT_SLAB && !state.getValue(SlabBlock.WATERLOGGED);
         if (!dirt) {
             return false;
         }
-        BlockPos above = target.up();
+        BlockPos above = target.above();
         BlockState cover = world.getBlockState(above);
         if (cover.getBlock() == ModBlocks.TURF || cover.getBlock() == ModBlocks.GRASS_SLAB) {
             return false;
         }
-        return world.getLight(above) >= 4 &&
-                cover.getOpacity(world, above) < world.getMaxLightLevel() &&
-                !world.getFluidState(above).isTagged(FluidTags.WATER);
+        return world.getMaxLocalRawBrightness(above) >= 4 &&
+                cover.getLightBlock(world, above) < world.getMaxLightLevel() &&
+                !world.getFluidState(above).is(FluidTags.WATER);
     }
 
     private GrassSpread() {

@@ -15,30 +15,30 @@ public final class TurfEatingAI extends Goal {
 
     public TurfEatingAI(SheepEntity sheep) {
         this.sheep = sheep;
-        world = sheep.world;
-        setMutexFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
+        world = sheep.level;
+        setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
     }
 
     @Override
-    public boolean shouldExecute() {
-        return sheep.getRNG().nextInt(sheep.isChild() ? 50 : 1000) == 0 &&
+    public boolean canUse() {
+        return sheep.getRandom().nextInt(sheep.isBaby() ? 50 : 1000) == 0 &&
                 world.getBlockState(position()).getBlock() == ModBlocks.TURF;
     }
 
     @Override
-    public void startExecuting() {
+    public void start() {
         eatingTimer = 40;
-        world.setEntityState(sheep, (byte) 10);
-        sheep.getNavigator().clearPath();
+        world.broadcastEntityEvent(sheep, (byte) 10);
+        sheep.getNavigation().stop();
     }
 
     @Override
-    public void resetTask() {
+    public void stop() {
         eatingTimer = 0;
     }
 
     @Override
-    public boolean shouldContinueExecuting() {
+    public boolean canContinueToUse() {
         return eatingTimer > 0;
     }
 
@@ -55,10 +55,10 @@ public final class TurfEatingAI extends Goal {
         if (ForgeEventFactory.getMobGriefingEvent(world, sheep)) {
             world.destroyBlock(pos, false);
         }
-        sheep.eatGrassBonus();
+        sheep.ate();
     }
 
     private BlockPos position() {
-        return new BlockPos(sheep.getPosX(), sheep.getPosY(), sheep.getPosZ());
+        return new BlockPos(sheep.getX(), sheep.getY(), sheep.getZ());
     }
 }

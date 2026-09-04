@@ -28,9 +28,9 @@ class MigrationMappingTest {
                 assertSame(grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB,
                         migrated.getBlock());
                 assertEquals((metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM,
-                        migrated.get(SlabBlock.TYPE));
-                assertFalse(migrated.get(SlabBlock.WATERLOGGED));
-                assertFalse(migrated.get(SnowyDirtBlock.SNOWY));
+                        migrated.getValue(SlabBlock.TYPE));
+                assertFalse(migrated.getValue(SlabBlock.WATERLOGGED));
+                assertFalse(migrated.getValue(SnowyDirtBlock.SNOWY));
             }
         }
     }
@@ -49,6 +49,6 @@ class MigrationMappingTest {
 
     @Test
     void flatteningTableCanHoldLegacyForgeNumericIdsAboveVanillasRange() {
-        assertTrue(LegacyWorldDataHook.expandFlatteningTable(8192).length >= 8192);
+        assertTrue(LegacyWorldDataHook.expandFlatteningTable(8192) >= 8192);
     }
 }

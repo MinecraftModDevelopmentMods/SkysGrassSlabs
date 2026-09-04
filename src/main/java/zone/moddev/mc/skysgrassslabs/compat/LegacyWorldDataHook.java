@@ -1,13 +1,13 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
-import com.mojang.datafixers.Dynamic;
-import cpw.mods.modlauncher.api.INameMappingService;
+import com.mojang.serialization.Dynamic;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -29,7 +29,11 @@ import net.minecraft.nbt.NBTUtil;
 import net.minecraft.state.properties.SlabType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.datafix.fixes.BlockStateFlatteningMap;
+import net.minecraft.world.storage.FolderName;
+import net.minecraft.world.storage.IServerConfiguration;
+import net.minecraft.world.storage.SaveFormat;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.WorldPersistenceHooks;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
 import org.apache.logging.log4j.LogManager;
@@ -47,6 +51,7 @@ public final class LegacyWorldDataHook {
             new LinkedHashSet<ResourceLocation>();
     private static final String PRESERVE_CHUNK_MARKER = "SkysGrassSlabsLegacyPreserveChunk";
     private static final String SIDECAR_NAME = "skysgrassslabs_legacy_registry.dat";
+    private static CompoundNBT legacyFmlData = new CompoundNBT();
     private static volatile boolean legacyWorldActive;
     private static boolean registered;
 
@@ -62,27 +67,47 @@ public final class LegacyWorldDataHook {
 
     public static synchronized void register() {
         if (!registered) {
+            WorldPersistenceHooks.addHook(new WorldPersistenceHooks.WorldPersistenceHook() {
+                @Override
+                public String getModId() {
+                    return "FML";
+                }
+
+                @Override
+                public CompoundNBT getDataForWriting(SaveFormat.LevelSave levelSave,
+                        IServerConfiguration serverInfo) {
+                    return legacyFmlData.copy();
+                }
+
+                @Override
+                public void readData(SaveFormat.LevelSave levelSave,
+                        IServerConfiguration serverInfo, CompoundNBT fmlData) {
+                    prepareLegacyWorld(levelSave.getWorldDir().toFile(), fmlData);
+                }
+            });
             MinecraftForge.EVENT_BUS.addListener(LegacyWorldDataHook::onServerAboutToStart);
             registered = true;
         }
     }
 
     public static void onServerAboutToStart(FMLServerAboutToStartEvent event) {
-        File levelDat = event.getServer().getActiveAnvilConverter()
-                .getFile(event.getServer().getFolderName(), "level.dat");
+        File levelDat = event.getServer().getWorldPath(FolderName.LEVEL_DATA_FILE).toFile();
         prepareLegacyWorld(levelDat);
     }
 
     static synchronized void prepareLegacyWorld(File levelDat) {
         legacyWorldActive = false;
+        legacyFmlData = new CompoundNBT();
         LEGACY_CHUNKS.clear();
         if (!levelDat.isFile()) return;
 
         try (FileInputStream input = new FileInputStream(levelDat)) {
             CompoundNBT root = CompressedStreamTools.readCompressed(input);
             if (root.contains("FML", 10)) {
-                CompoundNBT registries = root.getCompound("FML").getCompound("Registries");
+                CompoundNBT fml = root.getCompound("FML");
+                CompoundNBT registries = fml.getCompound("Registries");
                 if (registries.contains("minecraft:blocks", 10)) {
+                    legacyFmlData = fml.copy();
                     CompoundNBT blocks = registries.getCompound("minecraft:blocks");
                     install(levelDat.getParentFile(), blocks);
                     writeSidecar(levelDat.getParentFile(), blocks);
@@ -99,6 +124,34 @@ public final class LegacyWorldDataHook {
         if (sidecar.isFile()) {
             try (FileInputStream input = new FileInputStream(sidecar)) {
                 install(levelDat.getParentFile(),
+                        CompressedStreamTools.readCompressed(input).getCompound("Blocks"));
+            } catch (IOException exception) {
+                LOGGER.warn("Could not read legacy Sky's Grass Slabs registry sidecar '{}'",
+                        sidecar, exception);
+            }
+        }
+    }
+
+    private static synchronized void prepareLegacyWorld(File worldDirectory,
+            CompoundNBT fmlData) {
+        legacyWorldActive = false;
+        LEGACY_CHUNKS.clear();
+        legacyFmlData = new CompoundNBT();
+        if (fmlData.contains("Registries", 10)) {
+            CompoundNBT registries = fmlData.getCompound("Registries");
+            if (registries.contains("minecraft:blocks", 10)) {
+                CompoundNBT blocks = registries.getCompound("minecraft:blocks");
+                legacyFmlData = fmlData.copy();
+                install(worldDirectory, blocks);
+                writeSidecar(worldDirectory, blocks);
+                return;
+            }
+        }
+
+        File sidecar = sidecar(worldDirectory);
+        if (sidecar.isFile()) {
+            try (FileInputStream input = new FileInputStream(sidecar)) {
+                install(worldDirectory,
                         CompressedStreamTools.readCompressed(input).getCompound("Blocks"));
             } catch (IOException exception) {
                 LOGGER.warn("Could not read legacy Sky's Grass Slabs registry sidecar '{}'",
@@ -201,15 +254,22 @@ public final class LegacyWorldDataHook {
         }
         if (supported.isEmpty()) return 0;
 
-        Dynamic<?>[] table = expandFlatteningTable(highestStateId + 1);
+        expandFlatteningTable(highestStateId + 1);
+        Method addEntry = ObfuscationReflectionHelper.findMethod(BlockStateFlatteningMap.class,
+                "func_199194_a", int.class, String.class, String[].class);
         int mapped = 0;
         for (Map.Entry<ResourceLocation, Integer> entry : supported.entrySet()) {
             SUPPORTED_BLOCK_IDS.set(entry.getValue());
             for (int metadata = 0; metadata < 16; ++metadata) {
                 BlockState state = legacyState(entry.getKey(), metadata);
                 int stateId = (entry.getValue() << 4) | metadata;
-                table[stateId] = BlockStateFlatteningMap.makeDynamic(
-                        NBTUtil.writeBlockState(state).toString());
+                try {
+                    addEntry.invoke(null, stateId, NBTUtil.writeBlockState(state).toString(),
+                            new String[0]);
+                } catch (ReflectiveOperationException exception) {
+                    throw new IllegalStateException("Could not register legacy block state " +
+                            entry.getKey() + ":" + metadata, exception);
+                }
                 ++mapped;
             }
         }
@@ -218,21 +278,21 @@ public final class LegacyWorldDataHook {
 
     static BlockState legacyState(ResourceLocation id, int metadata) {
         if (id.equals(new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf"))) {
-            return ModBlocks.TURF.getDefaultState();
+            return ModBlocks.TURF.defaultBlockState();
         }
         boolean grass = id.equals(new ResourceLocation(SkysGrassSlabs.MOD_ID, "grass_slab")) ||
                 id.equals(BuildingBricksCompat.GRASS_SLAB_ID) ||
                 id.equals(BuildingBricksCompat.HISTORICAL_GRASS_SLAB_ID);
         boolean dirt = id.equals(new ResourceLocation(SkysGrassSlabs.MOD_ID, "dirt_slab")) ||
                 id.equals(BuildingBricksCompat.DIRT_SLAB_ID);
-        BlockState state = grass ? ModBlocks.GRASS_SLAB.getDefaultState()
-                : dirt ? ModBlocks.DIRT_SLAB.getDefaultState()
-                : ModBlocks.PATH_SLAB.getDefaultState();
-        state = state.with(SlabBlock.TYPE,
+        BlockState state = grass ? ModBlocks.GRASS_SLAB.defaultBlockState()
+                : dirt ? ModBlocks.DIRT_SLAB.defaultBlockState()
+                : ModBlocks.PATH_SLAB.defaultBlockState();
+        state = state.setValue(SlabBlock.TYPE,
                 (metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM)
-                .with(SlabBlock.WATERLOGGED, Boolean.FALSE);
-        if (state.has(SnowyDirtBlock.SNOWY)) {
-            state = state.with(SnowyDirtBlock.SNOWY, Boolean.FALSE);
+                 .setValue(SlabBlock.WATERLOGGED, Boolean.FALSE);
+        if (state.hasProperty(SnowyDirtBlock.SNOWY)) {
+            state = state.setValue(SnowyDirtBlock.SNOWY, Boolean.FALSE);
         }
         return state;
     }
@@ -296,25 +356,29 @@ public final class LegacyWorldDataHook {
     }
 
     @SuppressWarnings("unchecked")
-    static Dynamic<?>[] expandFlatteningTable(int requiredLength) {
+    static int expandFlatteningTable(int requiredLength) {
         try {
-            Field valuesField;
-            try {
-                valuesField = BlockStateFlatteningMap.class.getDeclaredField("ID_TO_FIXED_NBT");
-            } catch (NoSuchFieldException ignored) {
-                String fieldName = ObfuscationReflectionHelper.remapName(
-                        INameMappingService.Domain.FIELD, "field_199200_b");
-                valuesField = BlockStateFlatteningMap.class.getDeclaredField(fieldName);
+            int requiredBlocks = (requiredLength + 15) >> 4;
+            int largestLength = 0;
+            for (Field valuesField : BlockStateFlatteningMap.class.getDeclaredFields()) {
+                if (!valuesField.getType().isArray() ||
+                        valuesField.getType().getComponentType() != Dynamic.class) {
+                    continue;
+                }
+                valuesField.setAccessible(true);
+                Field modifiersField = Field.class.getDeclaredField("modifiers");
+                modifiersField.setAccessible(true);
+                modifiersField.setInt(valuesField,
+                        valuesField.getModifiers() & ~Modifier.FINAL);
+                Dynamic<?>[] current = (Dynamic<?>[]) valuesField.get(null);
+                int targetLength = current.length >= 4096 ? requiredLength : requiredBlocks;
+                if (current.length < targetLength) {
+                    valuesField.set(null, Arrays.copyOf(current, targetLength));
+                    current = (Dynamic<?>[]) valuesField.get(null);
+                }
+                largestLength = Math.max(largestLength, current.length);
             }
-            valuesField.setAccessible(true);
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(valuesField, valuesField.getModifiers() & ~Modifier.FINAL);
-            Dynamic<?>[] current = (Dynamic<?>[]) valuesField.get(null);
-            if (current.length >= requiredLength) return current;
-            Dynamic<?>[] expanded = Arrays.copyOf(current, requiredLength);
-            valuesField.set(null, expanded);
-            return expanded;
+            return largestLength;
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException(
                     "Could not expand Minecraft's legacy block-state flattening table", exception);

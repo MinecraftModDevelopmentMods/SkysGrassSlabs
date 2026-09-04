@@ -20,25 +20,26 @@ public final class TurfBlockItem extends BlockItem {
     }
 
     @Override
-    public ActionResultType onItemUse(ItemUseContext context) {
-        ItemStack stack = context.getItem();
-        BlockState state = context.getWorld().getBlockState(context.getPos());
-        if (context.getFace() == Direction.UP && state.getBlock() == ModBlocks.DIRT_SLAB) {
+    public ActionResultType useOn(ItemUseContext context) {
+        ItemStack stack = context.getItemInHand();
+        BlockState state = context.getLevel().getBlockState(context.getClickedPos());
+        if (context.getClickedFace() == Direction.UP && state.getBlock() == ModBlocks.DIRT_SLAB) {
             PlayerEntity player = context.getPlayer();
-            if (player == null || !player.canPlayerEdit(context.getPos(), context.getFace(), stack) ||
-                    state.get(SlabBlock.WATERLOGGED)) {
+            if (player == null || !player.mayUseItemAt(
+                    context.getClickedPos(), context.getClickedFace(), stack) ||
+                    state.getValue(SlabBlock.WATERLOGGED)) {
                 return ActionResultType.FAIL;
             }
-            BlockState replacement = state.get(SlabBlock.TYPE) == SlabType.DOUBLE
-                    ? Blocks.GRASS_BLOCK.getDefaultState() : ModBlocks.grassStateLike(state);
-            if (context.getWorld().setBlockState(context.getPos(), replacement, 3)) {
-                if (!player.abilities.isCreativeMode) {
+            BlockState replacement = state.getValue(SlabBlock.TYPE) == SlabType.DOUBLE
+                    ? Blocks.GRASS_BLOCK.defaultBlockState() : ModBlocks.grassStateLike(state);
+            if (context.getLevel().setBlock(context.getClickedPos(), replacement, 3)) {
+                if (!player.abilities.instabuild) {
                     stack.shrink(1);
                 }
                 return ActionResultType.SUCCESS;
             }
             return ActionResultType.FAIL;
         }
-        return super.onItemUse(context);
+        return super.useOn(context);
     }
 }

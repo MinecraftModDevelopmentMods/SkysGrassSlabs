@@ -7,7 +7,7 @@ import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraftforge.common.ToolType;
 
-/** Common native 1.15 slab behaviour shared by the three permanent slabs. */
+/** Common native slab behaviour shared by the three permanent slabs. */
 public abstract class LegacySlabBlock extends SlabBlock {
     protected LegacySlabBlock(Material material, SoundType sound, float hardness,
             boolean randomTicks) {
@@ -16,9 +16,9 @@ public abstract class LegacySlabBlock extends SlabBlock {
 
     private static Block.Properties properties(Material material, SoundType sound,
             float hardness, boolean randomTicks) {
-        Block.Properties properties = Block.Properties.create(material)
-                .hardnessAndResistance(hardness).sound(sound).variableOpacity();
-        return randomTicks ? properties.tickRandomly() : properties;
+        Block.Properties properties = Block.Properties.of(material)
+                .strength(hardness).sound(sound).noOcclusion();
+        return randomTicks ? properties.randomTicks() : properties;
     }
 
     @Override

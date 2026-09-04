@@ -8,11 +8,11 @@ import net.minecraft.world.IBlockReader;
 
 final class SnowySlabAppearance {
     static boolean hasNearbySnow(IBlockReader world, BlockPos pos) {
-        if (isSnow(world.getBlockState(pos.up()).getBlock())) {
+        if (isSnow(world.getBlockState(pos.above()).getBlock())) {
             return true;
         }
         for (Direction direction : Direction.Plane.HORIZONTAL) {
-            if (isSnow(world.getBlockState(pos.offset(direction)).getBlock())) {
+            if (isSnow(world.getBlockState(pos.relative(direction)).getBlock())) {
                 return true;
             }
         }

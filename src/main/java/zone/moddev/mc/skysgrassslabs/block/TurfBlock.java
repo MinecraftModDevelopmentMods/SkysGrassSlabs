@@ -18,11 +18,11 @@ import net.minecraft.world.server.ServerWorld;
 
 public final class TurfBlock extends Block {
     public static final VoxelShape TURF_SHAPE =
-            Block.makeCuboidShape(0.0D, 0.0D, 0.0D, 16.0D, 1.0D, 16.0D);
+            Block.box(0.0D, 0.0D, 0.0D, 16.0D, 1.0D, 16.0D);
 
     public TurfBlock() {
-        super(Block.Properties.create(Material.CARPET).hardnessAndResistance(0.1F)
-                .sound(SoundType.CLOTH).tickRandomly().variableOpacity());
+        super(Block.Properties.of(Material.CLOTH_DECORATION).strength(0.1F)
+                .sound(SoundType.WOOL).randomTicks().noOcclusion());
     }
 
     @Override
@@ -32,31 +32,31 @@ public final class TurfBlock extends Block {
     }
 
     @Override
-    public boolean isValidPosition(BlockState state, IWorldReader world, BlockPos pos) {
+    public boolean canSurvive(BlockState state, IWorldReader world, BlockPos pos) {
         return hasFullSupport(world, pos);
     }
 
     @Override
-    public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState,
+    public void onPlace(BlockState state, World world, BlockPos pos, BlockState oldState,
             boolean isMoving) {
-        super.onBlockAdded(state, world, pos, oldState, isMoving);
+        super.onPlace(state, world, pos, oldState, isMoving);
         dirtifyGrassSupport(world, pos);
     }
 
     @Override
-    public BlockState updatePostPlacement(BlockState state, Direction facing,
+    public BlockState updateShape(BlockState state, Direction facing,
             BlockState facingState, IWorld world, BlockPos pos, BlockPos facingPos) {
         if (world instanceof World) {
             dirtifyGrassSupport((World) world, pos);
         }
-        return !state.isValidPosition(world, pos)
-                ? Blocks.AIR.getDefaultState()
-                : super.updatePostPlacement(state, facing, facingState, world, pos, facingPos);
+        return !state.canSurvive(world, pos)
+                ? Blocks.AIR.defaultBlockState()
+                : super.updateShape(state, facing, facingState, world, pos, facingPos);
     }
 
     @Override
     public void tick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        BlockPos support = pos.down();
+        BlockPos support = pos.below();
         if (world.getBlockState(support).getBlock() != Blocks.DIRT) {
             world.destroyBlock(pos, true);
             return;
@@ -77,13 +77,13 @@ public final class TurfBlock extends Block {
     }
 
     private static boolean hasFullSupport(IWorldReader world, BlockPos pos) {
-        BlockPos support = pos.down();
-        return world.getBlockState(support).isNormalCube(world, support);
+        BlockPos support = pos.below();
+        return world.getBlockState(support).isCollisionShapeFullBlock(world, support);
     }
 
     private static void dirtifyGrassSupport(World world, BlockPos pos) {
-        if (!world.isRemote && world.getBlockState(pos.down()).getBlock() == Blocks.GRASS_BLOCK) {
-            world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
+        if (!world.isClientSide && world.getBlockState(pos.below()).getBlock() == Blocks.GRASS_BLOCK) {
+            world.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), 2);
         }
     }
 }

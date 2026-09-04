@@ -40,8 +40,8 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     public boolean matches(CraftingInventory inventory, World world) {
         int grassInputs = 0;
         int shovels = 0;
-        for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
-            ItemStack stack = inventory.getStackInSlot(slot);
+        for (int slot = 0; slot < inventory.getContainerSize(); ++slot) {
+            ItemStack stack = inventory.getItem(slot);
             if (stack.isEmpty()) continue;
             if (!soilRemainder(stack).isEmpty()) {
                 ++grassInputs;
@@ -55,17 +55,17 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     }
 
     @Override
-    public ItemStack getCraftingResult(CraftingInventory inventory) {
+    public ItemStack assemble(CraftingInventory inventory) {
         return matches(inventory, null) ? new ItemStack(ModBlocks.TURF) : ItemStack.EMPTY;
     }
 
     @Override
-    public boolean canFit(int width, int height) {
+    public boolean canCraftInDimensions(int width, int height) {
         return width * height >= 2;
     }
 
     @Override
-    public ItemStack getRecipeOutput() {
+    public ItemStack getResultItem() {
         return new ItemStack(ModBlocks.TURF);
     }
 
@@ -77,9 +77,9 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     @Override
     public NonNullList<ItemStack> getRemainingItems(CraftingInventory inventory) {
         NonNullList<ItemStack> remaining = NonNullList.withSize(
-                inventory.getSizeInventory(), ItemStack.EMPTY);
-        for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
-            ItemStack stack = inventory.getStackInSlot(slot);
+                inventory.getContainerSize(), ItemStack.EMPTY);
+        for (int slot = 0; slot < inventory.getContainerSize(); ++slot) {
+            ItemStack stack = inventory.getItem(slot);
             if (stack.isEmpty()) continue;
             ItemStack soil = soilRemainder(stack);
             if (!soil.isEmpty()) {
@@ -94,7 +94,7 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     }
 
     @Override
-    public boolean isDynamic() {
+    public boolean isSpecial() {
         return false;
     }
 
@@ -126,13 +126,13 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
 
     private static NonNullList<Ingredient> createIngredients() {
         NonNullList<Ingredient> result = NonNullList.create();
-        result.add(Ingredient.fromItems(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB));
+        result.add(Ingredient.of(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB));
         List<ItemStack> shovels = new ArrayList<ItemStack>();
         for (Item item : ForgeRegistries.ITEMS.getValues()) {
             ItemStack candidate = new ItemStack(item);
             if (isShovel(candidate)) shovels.add(candidate);
         }
-        result.add(Ingredient.fromStacks(shovels.toArray(new ItemStack[shovels.size()])));
+        result.add(Ingredient.of(shovels.toArray(new ItemStack[shovels.size()])));
         return result;
     }
 
@@ -152,17 +152,17 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
             extends ForgeRegistryEntry<IRecipeSerializer<?>>
             implements IRecipeSerializer<TurfCuttingRecipe> {
         @Override
-        public TurfCuttingRecipe read(ResourceLocation recipeId, JsonObject json) {
+        public TurfCuttingRecipe fromJson(ResourceLocation recipeId, JsonObject json) {
             return new TurfCuttingRecipe(recipeId);
         }
 
         @Override
-        public TurfCuttingRecipe read(ResourceLocation recipeId, PacketBuffer buffer) {
+        public TurfCuttingRecipe fromNetwork(ResourceLocation recipeId, PacketBuffer buffer) {
             return new TurfCuttingRecipe(recipeId);
         }
 
         @Override
-        public void write(PacketBuffer buffer, TurfCuttingRecipe recipe) {
+        public void toNetwork(PacketBuffer buffer, TurfCuttingRecipe recipe) {
             // The JSON and network forms contain no variable recipe data.
         }
     }

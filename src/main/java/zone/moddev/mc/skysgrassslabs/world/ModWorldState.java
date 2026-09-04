@@ -6,7 +6,6 @@ import java.util.TreeMap;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.WorldSavedData;
 
@@ -31,27 +30,27 @@ public final class ModWorldState extends WorldSavedData {
     }
 
     public static ModWorldState get(World world) {
-        if (!world.isRemote && world.getDimension().getType() != DimensionType.OVERWORLD &&
+        if (!world.isClientSide && world.dimension() != World.OVERWORLD &&
                 world.getServer() != null) {
-            ServerWorld overworld = world.getServer().getWorld(DimensionType.OVERWORLD);
+            ServerWorld overworld = world.getServer().getLevel(World.OVERWORLD);
             if (overworld != null) world = overworld;
         }
         if (!(world instanceof ServerWorld)) {
             return new ModWorldState(DATA_NAME);
         }
-        ModWorldState state = ((ServerWorld) world).getSavedData().getOrCreate(
+        ModWorldState state = ((ServerWorld) world).getDataStorage().computeIfAbsent(
                 () -> new ModWorldState(DATA_NAME), DATA_NAME);
         return state;
     }
 
     public void recordChunk() {
         ++migratedChunks;
-        markDirty();
+        setDirty();
     }
 
     public void recordGrassBlocks(long count) {
         migratedGrassBlocks += count;
-        markDirty();
+        setDirty();
     }
 
     public void recordGrassBlocks(long count, int metadata) {
@@ -63,7 +62,7 @@ public final class ModWorldState extends WorldSavedData {
 
     public void recordDirtBlocks(long count) {
         migratedDirtBlocks += count;
-        markDirty();
+        setDirty();
     }
 
     public void recordDirtBlocks(long count, int metadata) {
@@ -75,18 +74,18 @@ public final class ModWorldState extends WorldSavedData {
 
     public void recordGrassItems(long count) {
         migratedGrassItems += count;
-        markDirty();
+        setDirty();
     }
 
     public void recordDirtItems(long count) {
         migratedDirtItems += count;
-        markDirty();
+        setDirty();
     }
 
     public void recordUnsupported(String id, long count) {
         if (count <= 0) return;
         unsupported.put(id, unsupported.containsKey(id) ? unsupported.get(id) + count : count);
-        markDirty();
+        setDirty();
     }
 
     public long migratedChunks() {
@@ -130,7 +129,7 @@ public final class ModWorldState extends WorldSavedData {
     }
 
     @Override
-    public void read(CompoundNBT nbt) {
+    public void load(CompoundNBT nbt) {
         migratedChunks = nbt.getLong("migrated_chunks");
         migratedGrassBlocks = nbt.getLong("migrated_grass_blocks");
         migratedGrassBlocksTop = nbt.getLong("migrated_grass_blocks_top");
@@ -149,7 +148,7 @@ public final class ModWorldState extends WorldSavedData {
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT nbt) {
+    public CompoundNBT save(CompoundNBT nbt) {
         nbt.putInt("schema_version", SCHEMA_VERSION);
         nbt.putInt("buildingbricks_migration_version", MIGRATION_VERSION);
         nbt.putLong("migrated_chunks", migratedChunks);

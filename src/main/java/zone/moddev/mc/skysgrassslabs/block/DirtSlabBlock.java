@@ -15,38 +15,38 @@ import net.minecraft.world.server.ServerWorld;
 
 public final class DirtSlabBlock extends LegacySlabBlock {
     public DirtSlabBlock() {
-        super(Material.EARTH, SoundType.GROUND, 0.6F, true);
-        setDefaultState(getDefaultState().with(SnowyDirtBlock.SNOWY, Boolean.FALSE));
+        super(Material.DIRT, SoundType.GRAVEL, 0.6F, true);
+        registerDefaultState(defaultBlockState().setValue(SnowyDirtBlock.SNOWY, Boolean.FALSE));
     }
 
     @Override
-    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
-        super.fillStateContainer(builder);
+    protected void createBlockStateDefinition(StateContainer.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
         builder.add(SnowyDirtBlock.SNOWY);
     }
 
     @Override
     public BlockState getStateForPlacement(BlockItemUseContext context) {
         BlockState state = super.getStateForPlacement(context);
-        return state == null ? null : state.with(SnowyDirtBlock.SNOWY,
-                SnowySlabAppearance.hasNearbySnow(context.getWorld(), context.getPos()));
+        return state == null ? null : state.setValue(SnowyDirtBlock.SNOWY,
+                SnowySlabAppearance.hasNearbySnow(context.getLevel(), context.getClickedPos()));
     }
 
     @Override
-    public BlockState updatePostPlacement(BlockState state, Direction facing,
+    public BlockState updateShape(BlockState state, Direction facing,
             BlockState facingState, IWorld world, BlockPos pos, BlockPos facingPos) {
-        BlockState updated = super.updatePostPlacement(state, facing, facingState, world, pos,
+        BlockState updated = super.updateShape(state, facing, facingState, world, pos,
                 facingPos);
-        return updated.with(SnowyDirtBlock.SNOWY,
+        return updated.setValue(SnowyDirtBlock.SNOWY,
                 SnowySlabAppearance.hasNearbySnow(world, pos));
     }
 
     @Override
     public void tick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        BlockState repaired = state.with(SnowyDirtBlock.SNOWY,
+        BlockState repaired = state.setValue(SnowyDirtBlock.SNOWY,
                 SnowySlabAppearance.hasNearbySnow(world, pos));
         if (repaired != state) {
-            world.setBlockState(pos, repaired, 2);
+            world.setBlock(pos, repaired, 2);
         }
         GrassSpread.tickDirtSlab(world, pos, repaired, random);
     }

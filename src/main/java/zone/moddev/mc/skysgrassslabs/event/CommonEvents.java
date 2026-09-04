@@ -22,6 +22,7 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import zone.moddev.mc.skysgrassslabs.entity.ai.TurfEatingAI;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
+import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingFeature;
 
 public final class CommonEvents {
     private static final Set<SheepEntity> TURF_TASK_SHEEP =
@@ -30,10 +31,11 @@ public final class CommonEvents {
     public static void register() {
         MinecraftForge.EVENT_BUS.addListener(CommonEvents::addTurfEatingTask);
         MinecraftForge.EVENT_BUS.addListener(CommonEvents::flattenSlab);
+        MinecraftForge.EVENT_BUS.addListener(GrassSlabSmoothingFeature::onBiomeLoading);
     }
 
     public static void addTurfEatingTask(EntityJoinWorldEvent event) {
-        if (event.getWorld().isRemote || !(event.getEntity() instanceof SheepEntity)) return;
+        if (event.getWorld().isClientSide || !(event.getEntity() instanceof SheepEntity)) return;
         SheepEntity sheep = (SheepEntity) event.getEntity();
         if (TURF_TASK_SHEEP.add(sheep)) {
             sheep.goalSelector.addGoal(5, new TurfEatingAI(sheep));
@@ -50,26 +52,28 @@ public final class CommonEvents {
         BlockState state = world.getBlockState(pos);
         if ((state.getBlock() != ModBlocks.DIRT_SLAB &&
                 state.getBlock() != ModBlocks.GRASS_SLAB) ||
-                state.get(SlabBlock.WATERLOGGED)) return;
+                state.getValue(SlabBlock.WATERLOGGED)) return;
 
         PlayerEntity player = event.getPlayer();
-        if (!world.isAirBlock(pos.up()) || !player.canPlayerEdit(pos, event.getFace(), stack)) return;
+        if (!world.isEmptyBlock(pos.above()) || !player.mayUseItemAt(pos, event.getFace(), stack)) {
+            return;
+        }
 
         event.setCanceled(true);
         event.setCancellationResult(ActionResultType.SUCCESS);
-        if (world.isRemote) return;
+        if (world.isClientSide) return;
 
-        BlockState path = state.get(SlabBlock.TYPE) == SlabType.DOUBLE
-                ? Blocks.GRASS_PATH.getDefaultState()
-                : ModBlocks.PATH_SLAB.getDefaultState()
-                        .with(SlabBlock.TYPE, state.get(SlabBlock.TYPE))
-                        .with(SlabBlock.WATERLOGGED, Boolean.FALSE);
-        if (world.setBlockState(pos, path, 11)) {
-            world.playSound(null, pos, SoundEvents.ITEM_SHOVEL_FLATTEN,
+        BlockState path = state.getValue(SlabBlock.TYPE) == SlabType.DOUBLE
+                ? Blocks.GRASS_PATH.defaultBlockState()
+                : ModBlocks.PATH_SLAB.defaultBlockState()
+                         .setValue(SlabBlock.TYPE, state.getValue(SlabBlock.TYPE))
+                         .setValue(SlabBlock.WATERLOGGED, Boolean.FALSE);
+        if (world.setBlock(pos, path, 11)) {
+            world.playSound(null, pos, SoundEvents.SHOVEL_FLATTEN,
                     SoundCategory.BLOCKS, 1.0F, 1.0F);
-            if (!player.abilities.isCreativeMode) {
-                stack.damageItem(1, player,
-                        entity -> entity.sendBreakAnimation(event.getHand()));
+            if (!player.abilities.instabuild) {
+                stack.hurtAndBreak(1, player,
+                        entity -> entity.broadcastBreakEvent(event.getHand()));
             }
         }
     }

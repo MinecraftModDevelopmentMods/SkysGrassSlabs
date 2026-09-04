@@ -51,7 +51,6 @@ import net.minecraft.nbt.ListNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.state.properties.SlabType;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.BitArray;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
@@ -60,11 +59,11 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -102,8 +101,7 @@ public final class IntegrationTestMod {
     private void serverAboutToStart(FMLServerAboutToStartEvent event) {
         String phase = System.getProperty(PHASE_PROPERTY, "fresh").trim();
         if (!phase.startsWith("forward-sylvester")) return;
-        File levelDat = event.getServer().getActiveAnvilConverter()
-                .getFile(event.getServer().getFolderName(), "level.dat");
+        File levelDat = event.getServer().getWorldPath(FolderName.LEVEL_DATA_FILE).toFile();
         File temporary = new File(levelDat.getParentFile(), "level.dat.sky-test");
         try (InputStream input = Files.newInputStream(levelDat.toPath())) {
             CompoundNBT root = CompressedStreamTools.readCompressed(input);
@@ -129,7 +127,7 @@ public final class IntegrationTestMod {
 
     private void serverStarted(FMLServerStartedEvent event) {
         MinecraftServer server = event.getServer();
-        ServerWorld world = server.getWorld(DimensionType.OVERWORLD);
+        ServerWorld world = server.getLevel(World.OVERWORLD);
         String phase = System.getProperty(PHASE_PROPERTY, "fresh").trim();
         Path marker = worldRoot(server).resolve(MARKER_NAME);
         try {
@@ -167,6 +165,11 @@ public final class IntegrationTestMod {
                 verifyForwardFixture(world, "1.14.4", "1.0.1.114041",
                         "213A09F31EE02CE1C01E4C504147C13D3BD63A6AA11EBE52CE41A38735D45D1B");
                 verifyFlattenedFixtureStates(world, "1.14");
+                evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
+            } else if (phase.startsWith("upgrade-115-")) {
+                verifyForwardFixture(world, "1.15.2", "1.0.1.115021",
+                        "9AE28332EA21700C5DE8D3597FC40F5B06D85E8A7FB3C0DE650A2F8BC5E0895C");
+                verifyFlattenedFixtureStates(world, "1.15");
                 evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
             } else if (phase.startsWith("forward-sylvester")) {
                 SylvesterCounts counts = auditSylvester(worldRoot(server));
@@ -211,7 +214,7 @@ public final class IntegrationTestMod {
             LOGGER.error("Sky's Grass Slabs integration audit failed", failure);
             throw new RuntimeException(failure);
         } finally {
-            server.initiateShutdown(false);
+            server.halt(false);
         }
     }
 
@@ -226,82 +229,81 @@ public final class IntegrationTestMod {
         BlockState grassBottom = snowySlab(ModBlocks.GRASS_SLAB, SlabType.BOTTOM, false, false);
         BlockState pathTop = slab(ModBlocks.PATH_SLAB, SlabType.TOP, false);
         BlockState pathBottom = slab(ModBlocks.PATH_SLAB, SlabType.BOTTOM, false);
-        require(dirtTop.get(SlabBlock.TYPE) == SlabType.TOP
-                && dirtBottom.get(SlabBlock.TYPE) == SlabType.BOTTOM,
+        require(dirtTop.getValue(SlabBlock.TYPE) == SlabType.TOP
+                && dirtBottom.getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
                 "Native slab orientation is unavailable");
-        require(near(dirtBottom.getShape(world, ORIGIN).getBoundingBox().maxY, 0.5D)
-                && near(dirtTop.getShape(world, ORIGIN).getBoundingBox().minY, 0.5D),
+        require(near(dirtBottom.getShape(world, ORIGIN).bounds().maxY, 0.5D)
+                && near(dirtTop.getShape(world, ORIGIN).bounds().minY, 0.5D),
                 "Native slab geometry changed");
-        require(near(pathBottom.getShape(world, ORIGIN).getBoundingBox().maxY, 7.0D / 16.0D)
-                && near(pathTop.getShape(world, ORIGIN).getBoundingBox().minY, 0.5D)
-                && near(pathTop.getShape(world, ORIGIN).getBoundingBox().maxY, 15.0D / 16.0D),
+        require(near(pathBottom.getShape(world, ORIGIN).bounds().maxY, 7.0D / 16.0D)
+                && near(pathTop.getShape(world, ORIGIN).bounds().minY, 0.5D)
+                && near(pathTop.getShape(world, ORIGIN).bounds().maxY, 15.0D / 16.0D),
                 "Path slab geometry changed");
-        require(near(TurfBlock.TURF_SHAPE.getBoundingBox().maxY, 1.0D / 16.0D),
+        require(near(TurfBlock.TURF_SHAPE.bounds().maxY, 1.0D / 16.0D),
                 "Turf is not one pixel high");
         require(near(defaultState(ModBlocks.TURF).getCollisionShape(world, ORIGIN)
-                        .getBoundingBox().maxY, 1.0D / 16.0D),
+                        .bounds().maxY, 1.0D / 16.0D),
                 "Turf does not have carpet collision");
-        require(!Block.hasSolidSide(defaultState(ModBlocks.TURF), world, ORIGIN,
-                Direction.NORTH),
+        require(!defaultState(ModBlocks.TURF).isFaceSturdy(world, ORIGIN, Direction.NORTH),
                 "Turf presents a solid horizontal face to fences");
         checks += 6;
 
         // Grass covering a full grass block must immediately dirtify the support.
         BlockPos grassCover = ORIGIN;
-        world.setBlockState(grassCover.down(), Blocks.GRASS_BLOCK.getDefaultState(), 3);
-        world.setBlockState(grassCover, grassBottom, 3);
-        require(world.getBlockState(grassCover.down()).getBlock() == Blocks.DIRT,
+        world.setBlock(grassCover.below(), Blocks.GRASS_BLOCK.defaultBlockState(), 3);
+        world.setBlock(grassCover, grassBottom, 3);
+        require(world.getBlockState(grassCover.below()).getBlock() == Blocks.DIRT,
                 "Grass slab did not dirtify its grass support");
         checks++;
 
         // Snow is a native saved state and follows snow above or beside either soil slab.
         BlockPos snow = ORIGIN.east(2);
-        world.setBlockState(snow, dirtBottom, 3);
-        world.setBlockState(snow.east().down(), Blocks.DIRT.getDefaultState(), 3);
-        world.setBlockState(snow.east(), Blocks.SNOW.getDefaultState(), 3);
+        world.setBlock(snow, dirtBottom, 3);
+        world.setBlock(snow.east().below(), Blocks.DIRT.defaultBlockState(), 3);
+        world.setBlock(snow.east(), Blocks.SNOW.defaultBlockState(), 3);
         ((Block) ModBlocks.DIRT_SLAB).tick(world.getBlockState(snow), world, snow,
                 new Random(1L));
-        require(world.getBlockState(snow).get(SnowyDirtBlock.SNOWY),
+        require(world.getBlockState(snow).getValue(SnowyDirtBlock.SNOWY),
                 "Dirt slab did not acquire its snow cap");
         world.removeBlock(snow.east(), false);
         ((Block) ModBlocks.DIRT_SLAB).tick(world.getBlockState(snow), world, snow,
                 new Random(2L));
-        require(!world.getBlockState(snow).get(SnowyDirtBlock.SNOWY),
+        require(!world.getBlockState(snow).getValue(SnowyDirtBlock.SNOWY),
                 "Dirt slab retained a stale snow cap");
         checks += 2;
 
         // Covered, wet grass decays to wet dirt without changing orientation.
         BlockPos wetGrass = ORIGIN.east(4);
-        world.setBlockState(wetGrass, snowySlab(ModBlocks.GRASS_SLAB,
+        world.setBlock(wetGrass, snowySlab(ModBlocks.GRASS_SLAB,
                 SlabType.TOP, true, false), 3);
         ((Block) ModBlocks.GRASS_SLAB).tick(world.getBlockState(wetGrass), world, wetGrass,
                 new Random(3L));
         require(world.getBlockState(wetGrass).getBlock() == ModBlocks.DIRT_SLAB
-                && world.getBlockState(wetGrass).get(SlabBlock.TYPE) == SlabType.TOP
-                && world.getBlockState(wetGrass).get(SlabBlock.WATERLOGGED),
+                && world.getBlockState(wetGrass).getValue(SlabBlock.TYPE) == SlabType.TOP
+                && world.getBlockState(wetGrass).getValue(SlabBlock.WATERLOGGED),
                 "Wet grass did not decay to matching wet dirt");
         checks++;
 
         // A path accepts water only by becoming matching wet dirt.
         BlockPos wetPath = ORIGIN.east(6);
-        world.setBlockState(wetPath, pathBottom, 3);
-        require(((SlabBlock) ModBlocks.PATH_SLAB).receiveFluid(world, wetPath, pathBottom,
-                Fluids.WATER.getStillFluidState(false)), "Path slab rejected water unexpectedly");
+        world.setBlock(wetPath, pathBottom, 3);
+        require(((SlabBlock) ModBlocks.PATH_SLAB).placeLiquid(world, wetPath, pathBottom,
+                Fluids.WATER.defaultFluidState()), "Path slab rejected water unexpectedly");
         require(world.getBlockState(wetPath).getBlock() == ModBlocks.DIRT_SLAB
-                && world.getBlockState(wetPath).get(SlabBlock.WATERLOGGED)
-                && world.getBlockState(wetPath).get(SlabBlock.TYPE) == SlabType.BOTTOM,
+                && world.getBlockState(wetPath).getValue(SlabBlock.WATERLOGGED)
+                && world.getBlockState(wetPath).getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
                 "Waterlogged path did not become matching wet dirt");
         checks += 2;
 
         PlayerEntity player = FakePlayerFactory.getMinecraft(world);
-        player.abilities.allowEdit = true;
+        player.abilities.mayBuild = true;
 
         // Matching slab items normalize rather than retaining DOUBLE.
         BlockPos normalize = ORIGIN.east(8);
-        world.setBlockState(normalize, dirtBottom, 3);
+        world.setBlock(normalize, dirtBottom, 3);
         ItemStack secondSlab = new ItemStack(ModBlocks.DIRT_SLAB);
-        player.setHeldItem(Hand.MAIN_HAND, secondSlab);
-        ActionResultType combined = item(ModBlocks.DIRT_SLAB).onItemUse(
+        player.setItemInHand(Hand.MAIN_HAND, secondSlab);
+        ActionResultType combined = item(ModBlocks.DIRT_SLAB).useOn(
                 useContext(player, normalize, Direction.UP));
         require(combined == ActionResultType.SUCCESS
                 && world.getBlockState(normalize).getBlock() == Blocks.DIRT,
@@ -310,18 +312,18 @@ public final class IntegrationTestMod {
 
         // Turf converts dry dirt slabs and leaves wet slabs untouched.
         BlockPos turfUse = ORIGIN.east(10);
-        world.setBlockState(turfUse, dirtTop, 3);
+        world.setBlock(turfUse, dirtTop, 3);
         ItemStack turfStack = new ItemStack(ModBlocks.TURF, 2);
-        player.setHeldItem(Hand.MAIN_HAND, turfStack);
-        require(item(ModBlocks.TURF).onItemUse(
+        player.setItemInHand(Hand.MAIN_HAND, turfStack);
+        require(item(ModBlocks.TURF).useOn(
                 useContext(player, turfUse, Direction.UP)) == ActionResultType.SUCCESS
                 && world.getBlockState(turfUse).getBlock() == ModBlocks.GRASS_SLAB
-                && world.getBlockState(turfUse).get(SlabBlock.TYPE) == SlabType.TOP,
+                && world.getBlockState(turfUse).getValue(SlabBlock.TYPE) == SlabType.TOP,
                 "Turf did not convert a dry dirt slab");
-        world.setBlockState(turfUse.east(), slab(ModBlocks.DIRT_SLAB,
+        world.setBlock(turfUse.east(), slab(ModBlocks.DIRT_SLAB,
                 SlabType.BOTTOM, true), 3);
         int before = turfStack.getCount();
-        require(item(ModBlocks.TURF).onItemUse(
+        require(item(ModBlocks.TURF).useOn(
                 useContext(player, turfUse.east(), Direction.UP)) == ActionResultType.FAIL
                 && turfStack.getCount() == before,
                 "Turf changed or consumed itself on a wet dirt slab");
@@ -329,17 +331,17 @@ public final class IntegrationTestMod {
 
         // Vanilla shovels use the common Forge tool classification and preserve orientation.
         BlockPos flatten = ORIGIN.east(12);
-        world.setBlockState(flatten, grassTop, 3);
-        world.removeBlock(flatten.up(), false);
+        world.setBlock(flatten, grassTop, 3);
+        world.removeBlock(flatten.above(), false);
         ItemStack shovel = new ItemStack(Items.IRON_SHOVEL);
-        player.setHeldItem(Hand.MAIN_HAND, shovel);
+        player.setItemInHand(Hand.MAIN_HAND, shovel);
         PlayerInteractEvent.RightClickBlock flattenEvent = new PlayerInteractEvent.RightClickBlock(
                 player, Hand.MAIN_HAND, flatten, Direction.UP);
         CommonEvents.flattenSlab(flattenEvent);
         require(flattenEvent.isCanceled()
                 && world.getBlockState(flatten).getBlock() == ModBlocks.PATH_SLAB
-                && world.getBlockState(flatten).get(SlabBlock.TYPE) == SlabType.TOP
-                && shovel.getDamage() == 1,
+                && world.getBlockState(flatten).getValue(SlabBlock.TYPE) == SlabType.TOP
+                && shovel.getDamageValue() == 1,
                 "Shovel flattening did not preserve the slab and tool contract");
         checks++;
 
@@ -356,10 +358,10 @@ public final class IntegrationTestMod {
         checks++;
 
         // Leave stable save sentinels for the reload phase.
-        world.setBlockState(ORIGIN.south(4), grassBottom, 3);
-        world.setBlockState(ORIGIN.south(5), pathTop, 3);
-        world.setBlockState(ORIGIN.south(6).down(), Blocks.DIRT.getDefaultState(), 3);
-        world.setBlockState(ORIGIN.south(6), defaultState(ModBlocks.TURF), 3);
+        world.setBlock(ORIGIN.south(4), grassBottom, 3);
+        world.setBlock(ORIGIN.south(5), pathTop, 3);
+        world.setBlock(ORIGIN.south(6).below(), Blocks.DIRT.defaultBlockState(), 3);
+        world.setBlock(ORIGIN.south(6), defaultState(ModBlocks.TURF), 3);
         return checks;
     }
 
@@ -381,18 +383,18 @@ public final class IntegrationTestMod {
 
     private static void verifyTurfSupportAndSheep(ServerWorld world) {
         BlockPos turf = ORIGIN.south(2);
-        world.setBlockState(turf.down(), Blocks.DIRT.getDefaultState(), 3);
-        world.setBlockState(turf, defaultState(ModBlocks.TURF), 3);
-        require(world.getBlockState(turf).isValidPosition(world, turf),
+        world.setBlock(turf.below(), Blocks.DIRT.defaultBlockState(), 3);
+        world.setBlock(turf, defaultState(ModBlocks.TURF), 3);
+        require(world.getBlockState(turf).canSurvive(world, turf),
                 "Turf rejected full dirt support");
-        world.setBlockState(turf.down(), slab(ModBlocks.DIRT_SLAB,
+        world.setBlock(turf.below(), slab(ModBlocks.DIRT_SLAB,
                 SlabType.BOTTOM, false), 3);
-        require(!defaultState(ModBlocks.TURF).isValidPosition(world, turf),
+        require(!defaultState(ModBlocks.TURF).canSurvive(world, turf),
                 "Turf accepted partial support");
 
-        BlockPos coveredDirt = turf.east(2).down();
-        world.setBlockState(coveredDirt, Blocks.GRASS_BLOCK.getDefaultState(), 3);
-        world.setBlockState(coveredDirt.up(), defaultState(ModBlocks.TURF), 3);
+        BlockPos coveredDirt = turf.east(2).below();
+        world.setBlock(coveredDirt, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
+        world.setBlock(coveredDirt.above(), defaultState(ModBlocks.TURF), 3);
         require(world.getBlockState(coveredDirt).getBlock() == Blocks.DIRT,
                 "Turf did not dirtify its grass support on placement");
         require(!GrassSpread.growTarget(world, coveredDirt),
@@ -412,42 +414,42 @@ public final class IntegrationTestMod {
         String[] names = {"dirt_slab", "grass_slab", "grass_block_from_seeds",
                 "grass_slab_from_seeds", "turf"};
         for (String name : names) {
-            require(world.getRecipeManager().getRecipe(id(name)).isPresent(),
+            require(world.getRecipeManager().byKey(id(name)).isPresent(),
                     "Recipe did not load: " + name);
         }
-        IRecipe<?> loadedRecipe = world.getRecipeManager().getRecipe(id("turf")).orElseThrow(
+        IRecipe<?> loadedRecipe = world.getRecipeManager().byKey(id("turf")).orElseThrow(
                 () -> new IllegalStateException("Turf recipe did not load"));
         require(loadedRecipe instanceof ICraftingRecipe,
                 "Turf recipe cannot be used by a crafting container");
         ICraftingRecipe recipe = (ICraftingRecipe) loadedRecipe;
-        require(!recipe.isDynamic() && recipe.getSerializer() == TurfCuttingRecipe.SERIALIZER,
+        require(!recipe.isSpecial() && recipe.getSerializer() == TurfCuttingRecipe.SERIALIZER,
                 "Turf recipe is not visible or has the wrong serializer");
 
         CraftingInventory crafting = new CraftingInventory(new Container(null, 0) {
             @Override
-            public boolean canInteractWith(PlayerEntity player) {
+            public boolean stillValid(PlayerEntity player) {
                 return true;
             }
         }, 2, 2);
-        crafting.setInventorySlotContents(0, new ItemStack(ModBlocks.GRASS_SLAB));
+        crafting.setItem(0, new ItemStack(ModBlocks.GRASS_SLAB));
         ItemStack shovel = new ItemStack(Items.DIAMOND_SHOVEL);
         CompoundNBT tag = new CompoundNBT();
         tag.putString("probe", "retained");
         shovel.setTag(tag);
-        shovel.setDamage(17);
-        crafting.setInventorySlotContents(1, shovel);
+        shovel.setDamageValue(17);
+        crafting.setItem(1, shovel);
         require(recipe.matches(crafting, world)
-                && recipe.getCraftingResult(crafting).getItem() == item(ModBlocks.TURF),
+                && recipe.assemble(crafting).getItem() == item(ModBlocks.TURF),
                 "Turf recipe did not match a grass slab and shovel");
         NonNullList<ItemStack> remaining = recipe.getRemainingItems(crafting);
         require(remaining.get(0).getItem() == item(ModBlocks.DIRT_SLAB)
                 && remaining.get(1).getItem() == Items.DIAMOND_SHOVEL
                 && remaining.get(1).getCount() == 1
-                && remaining.get(1).getDamage() == 17
+                && remaining.get(1).getDamageValue() == 17
                 && remaining.get(1).hasTag()
                 && "retained".equals(remaining.get(1).getTag().getString("probe")),
                 "Turf recipe changed its shovel or returned the wrong soil: "
-                        + remaining + ", damage=" + remaining.get(1).getDamage()
+                        + remaining + ", damage=" + remaining.get(1).getDamageValue()
                         + ", tag=" + remaining.get(1).getTag());
     }
 
@@ -476,7 +478,7 @@ public final class IntegrationTestMod {
                 for (int localZ = 0; localZ < 16; ++localZ) {
                     for (int localX = 0; localX < 16; ++localX) {
                         for (int y = 1; y < 255; ++y) {
-                            if (chunk.getBlockState(pos.setPos(startX + localX, y,
+                            if (chunk.getBlockState(pos.set(startX + localX, y,
                                     startZ + localZ)).getBlock() == ModBlocks.GRASS_SLAB) {
                                 ++skySlabs;
                             }
@@ -492,10 +494,10 @@ public final class IntegrationTestMod {
     private static void verifyReload(ServerWorld world) {
         world.getChunk(0, 0);
         require(world.getBlockState(ORIGIN.south(4)).getBlock() == ModBlocks.GRASS_SLAB
-                && world.getBlockState(ORIGIN.south(4)).get(SlabBlock.TYPE) == SlabType.BOTTOM,
+                && world.getBlockState(ORIGIN.south(4)).getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
                 "Grass slab changed across reload");
         require(world.getBlockState(ORIGIN.south(5)).getBlock() == ModBlocks.PATH_SLAB
-                && world.getBlockState(ORIGIN.south(5)).get(SlabBlock.TYPE) == SlabType.TOP,
+                && world.getBlockState(ORIGIN.south(5)).getValue(SlabBlock.TYPE) == SlabType.TOP,
                 "Path slab changed across reload");
         require(world.getBlockState(ORIGIN.south(6)).getBlock() == ModBlocks.TURF,
                 "Turf changed across reload");
@@ -519,7 +521,8 @@ public final class IntegrationTestMod {
         }
         Path legacyRegistry = worldRoot(world.getServer()).resolve(
                 "data/skysgrassslabs_legacy_registry.dat");
-        if ("1.13.2".equals(minecraft) || "1.14.4".equals(minecraft)) {
+        if ("1.13.2".equals(minecraft) || "1.14.4".equals(minecraft) ||
+                "1.15.2".equals(minecraft)) {
             require(!Files.exists(legacyRegistry),
                     "The numeric legacy bridge ran on an already flattened world");
         } else {
@@ -537,23 +540,24 @@ public final class IntegrationTestMod {
         require(world.getBlockState(origin.east(6)).getBlock() == ModBlocks.TURF,
                 "Forward fixture turf was lost");
 
-        TileEntity entity = world.getTileEntity(origin.south(2));
+        TileEntity entity = world.getBlockEntity(origin.south(2));
         require(entity instanceof IInventory, "Forward fixture chest was lost");
         IInventory chest = (IInventory) entity;
-        verifyFixtureStack(chest.getStackInSlot(0), ModBlocks.DIRT_SLAB, 2);
-        verifyFixtureStack(chest.getStackInSlot(1), ModBlocks.GRASS_SLAB, 3);
-        require(chest.getStackInSlot(1).hasTag()
-                && "retained".equals(chest.getStackInSlot(1).getTag().getString("fixture")),
+        verifyFixtureStack(chest.getItem(0), ModBlocks.DIRT_SLAB, 2);
+        verifyFixtureStack(chest.getItem(1), ModBlocks.GRASS_SLAB, 3);
+        require(chest.getItem(1).hasTag()
+                && "retained".equals(chest.getItem(1).getTag().getString("fixture")),
                 "Forward fixture stack NBT was lost");
-        if ("1.13.2".equals(minecraft) || "1.14.4".equals(minecraft)) {
-            require(chest.getStackInSlot(1).getTag().getInt("source_data_version") == 1631,
+        if ("1.13.2".equals(minecraft) || "1.14.4".equals(minecraft) ||
+                "1.15.2".equals(minecraft)) {
+            require(chest.getItem(1).getTag().getInt("source_data_version") == 1631,
                     "The flattened fixture's custom integer NBT was lost");
         }
-        verifyFixtureStack(chest.getStackInSlot(2), ModBlocks.PATH_SLAB, 4);
-        verifyFixtureStack(chest.getStackInSlot(3), ModBlocks.TURF, 5);
+        verifyFixtureStack(chest.getItem(2), ModBlocks.PATH_SLAB, 4);
+        verifyFixtureStack(chest.getItem(3), ModBlocks.TURF, 5);
 
-        List<ItemEntity> items = world.getEntitiesWithinAABB(ItemEntity.class,
-                new AxisAlignedBB(origin.add(2, 0, 0), origin.add(7, 4, 5)));
+        List<ItemEntity> items = world.getEntitiesOfClass(ItemEntity.class,
+                new AxisAlignedBB(origin.offset(2, 0, 0), origin.offset(7, 4, 5)));
         require(items.size() == 1, "Forward fixture entity stack count changed: " + items.size());
         verifyFixtureStack(items.get(0).getItem(), ModBlocks.GRASS_SLAB, 6);
 
@@ -577,25 +581,25 @@ public final class IntegrationTestMod {
         BlockPos origin = new BlockPos(8, 65, 8);
         BlockState snowyDirt = world.getBlockState(origin.south(4));
         require(snowyDirt.getBlock() == ModBlocks.DIRT_SLAB
-                && snowyDirt.get(SlabBlock.TYPE) == SlabType.TOP
-                && snowyDirt.get(SnowyDirtBlock.SNOWY)
-                && !snowyDirt.get(SlabBlock.WATERLOGGED),
+                && snowyDirt.getValue(SlabBlock.TYPE) == SlabType.TOP
+                && snowyDirt.getValue(SnowyDirtBlock.SNOWY)
+                && !snowyDirt.getValue(SlabBlock.WATERLOGGED),
                 "The " + sourceVersion + " snowy dirt slab state changed: " + snowyDirt);
         BlockState wetDirt = world.getBlockState(origin.south(5));
         require(wetDirt.getBlock() == ModBlocks.DIRT_SLAB
-                && wetDirt.get(SlabBlock.TYPE) == SlabType.BOTTOM
-                && wetDirt.get(SlabBlock.WATERLOGGED),
+                && wetDirt.getValue(SlabBlock.TYPE) == SlabType.BOTTOM
+                && wetDirt.getValue(SlabBlock.WATERLOGGED),
                 "The " + sourceVersion + " waterlogged dirt slab state changed: " + wetDirt);
         BlockState snowyGrass = world.getBlockState(origin.south(6));
         require(snowyGrass.getBlock() == ModBlocks.GRASS_SLAB
-                && snowyGrass.get(SlabBlock.TYPE) == SlabType.TOP
-                && snowyGrass.get(SnowyDirtBlock.SNOWY)
-                && !snowyGrass.get(SlabBlock.WATERLOGGED),
+                && snowyGrass.getValue(SlabBlock.TYPE) == SlabType.TOP
+                && snowyGrass.getValue(SnowyDirtBlock.SNOWY)
+                && !snowyGrass.getValue(SlabBlock.WATERLOGGED),
                 "The " + sourceVersion + " snowy grass slab state changed: " + snowyGrass);
         BlockState wetGrass = world.getBlockState(origin.south(7));
         require(wetGrass.getBlock() == ModBlocks.GRASS_SLAB
-                && wetGrass.get(SlabBlock.TYPE) == SlabType.BOTTOM
-                && wetGrass.get(SlabBlock.WATERLOGGED),
+                && wetGrass.getValue(SlabBlock.TYPE) == SlabType.BOTTOM
+                && wetGrass.getValue(SlabBlock.WATERLOGGED),
                 "The " + sourceVersion + " waterlogged grass slab state changed: " + wetGrass);
     }
 
@@ -755,13 +759,37 @@ public final class IntegrationTestMod {
         }
         int bits = 4;
         while ((1 << bits) < palette.size()) ++bits;
-        BitArray values = new BitArray(bits, 4096, packed);
         for (int index = 0; index < 4096; ++index) {
-            int paletteIndex = values.getAt(index);
+            int paletteIndex = packedValue(packed, bits, index);
             if (paletteIndex >= 0 && paletteIndex < names.length) {
                 countBlock(names[paletteIndex], top[paletteIndex], counts);
             }
         }
+    }
+
+    private static int packedValue(long[] packed, int bits, int index) {
+        int valuesPerLong = 64 / bits;
+        int paddedLength = (4096 + valuesPerLong - 1) / valuesPerLong;
+        long mask = (1L << bits) - 1L;
+        if (packed.length == paddedLength) {
+            int longIndex = index / valuesPerLong;
+            int offset = index % valuesPerLong * bits;
+            return (int) (packed[longIndex] >>> offset & mask);
+        }
+
+        int compactLength = (4096 * bits + 63) / 64;
+        if (packed.length != compactLength) {
+            throw new IllegalArgumentException("Invalid block-state storage length "
+                    + packed.length + " for " + bits + " bits");
+        }
+        int bitIndex = index * bits;
+        int longIndex = bitIndex >>> 6;
+        int offset = bitIndex & 63;
+        long value = packed[longIndex] >>> offset;
+        if (offset + bits > 64) {
+            value |= packed[longIndex + 1] << (64 - offset);
+        }
+        return (int) (value & mask);
     }
 
     private static int nibble(byte[] values, int index) {
@@ -790,7 +818,7 @@ public final class IntegrationTestMod {
                 else if ("skysgrassslabs:path_slab".equals(id)) counts.pathItems += count;
                 else if ("skysgrassslabs:turf".equals(id)) counts.turfItems += count;
             }
-            for (String key : new ArrayList<String>(compound.keySet())) {
+            for (String key : new ArrayList<String>(compound.getAllKeys())) {
                 INBT child = compound .get(key);
                 if (child != null) countStacks(child, counts);
             }
@@ -817,8 +845,8 @@ public final class IntegrationTestMod {
     private static void verifyFixtureSlab(World world, BlockPos pos, Block expected,
             SlabType type) {
         BlockState state = world.getBlockState(pos);
-        require(state.getBlock() == expected && state.get(SlabBlock.TYPE) == type
-                && !state.get(SlabBlock.WATERLOGGED),
+        require(state.getBlock() == expected && state.getValue(SlabBlock.TYPE) == type
+                && !state.getValue(SlabBlock.WATERLOGGED),
                 "Forward fixture slab changed at " + pos + ": " + state);
     }
 
@@ -828,12 +856,12 @@ public final class IntegrationTestMod {
     }
 
     private static BlockState slab(Block block, SlabType type, boolean waterlogged) {
-        return defaultState(block).with(SlabBlock.TYPE, type)
-                .with(SlabBlock.WATERLOGGED, waterlogged);
+        return defaultState(block) .setValue(SlabBlock.TYPE, type)
+                 .setValue(SlabBlock.WATERLOGGED, waterlogged);
     }
 
     private static BlockState defaultState(Block block) {
-        return block.getDefaultState();
+        return block.defaultBlockState();
     }
 
     private static net.minecraft.item.Item item(Block block) {
@@ -841,7 +869,8 @@ public final class IntegrationTestMod {
     }
 
     private static ItemUseContext useContext(PlayerEntity player, BlockPos pos, Direction face) {
-        Vec3d hit = new Vec3d(pos).add(0.5D, face == Direction.UP ? 1.0D : 0.5D, 0.5D);
+        Vector3d hit = Vector3d.atLowerCornerOf(pos).add(
+                0.5D, face == Direction.UP ? 1.0D : 0.5D, 0.5D);
         return new ItemUseContext(player, Hand.MAIN_HAND,
                 new BlockRayTraceResult(hit, face, pos, false));
     }
@@ -868,7 +897,7 @@ public final class IntegrationTestMod {
 
     private static BlockState snowySlab(Block block, SlabType type,
             boolean waterlogged, boolean snowy) {
-        return slab(block, type, waterlogged).with(SnowyDirtBlock.SNOWY, snowy);
+        return slab(block, type, waterlogged) .setValue(SnowyDirtBlock.SNOWY, snowy);
     }
 
     private static ResourceLocation id(String path) {
@@ -890,8 +919,7 @@ public final class IntegrationTestMod {
     }
 
     private static Path worldRoot(MinecraftServer server) {
-        return server.getActiveAnvilConverter().getFile(server.getFolderName(), "level.dat")
-                .toPath().toAbsolutePath().normalize().getParent();
+        return server.getWorldPath(FolderName.ROOT).toAbsolutePath().normalize();
     }
 
     private static Properties read(Path marker) throws IOException {
@@ -906,7 +934,7 @@ public final class IntegrationTestMod {
 
     private static void write(Path marker, Properties values) throws IOException {
         try (OutputStream output = Files.newOutputStream(marker)) {
-            values.store(output, "Sky's Grass Slabs Forge 1.15.2 integration evidence");
+            values.store(output, "Sky's Grass Slabs Forge 1.16.5 integration evidence");
         }
     }
 

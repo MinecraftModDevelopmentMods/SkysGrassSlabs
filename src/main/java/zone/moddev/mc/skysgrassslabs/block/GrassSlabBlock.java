@@ -19,7 +19,6 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
-import net.minecraft.world.gen.feature.DecoratedFeatureConfig;
 import net.minecraft.world.gen.feature.FlowersFeature;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.IPlantable;
@@ -27,35 +26,35 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     public GrassSlabBlock() {
-        super(Material.ORGANIC, SoundType.PLANT, 0.6F, true);
-        setDefaultState(getDefaultState().with(SnowyDirtBlock.SNOWY, Boolean.FALSE));
+        super(Material.GRASS, SoundType.GRASS, 0.6F, true);
+        registerDefaultState(defaultBlockState().setValue(SnowyDirtBlock.SNOWY, Boolean.FALSE));
     }
 
     @Override
-    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
-        super.fillStateContainer(builder);
+    protected void createBlockStateDefinition(StateContainer.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
         builder.add(SnowyDirtBlock.SNOWY);
     }
 
     @Override
     public BlockState getStateForPlacement(BlockItemUseContext context) {
         BlockState state = super.getStateForPlacement(context);
-        return state == null ? null : state.with(SnowyDirtBlock.SNOWY,
-                SnowySlabAppearance.hasNearbySnow(context.getWorld(), context.getPos()));
+        return state == null ? null : state.setValue(SnowyDirtBlock.SNOWY,
+                SnowySlabAppearance.hasNearbySnow(context.getLevel(), context.getClickedPos()));
     }
 
     @Override
-    public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState,
+    public void onPlace(BlockState state, World world, BlockPos pos, BlockState oldState,
             boolean isMoving) {
-        super.onBlockAdded(state, world, pos, oldState, isMoving);
+        super.onPlace(state, world, pos, oldState, isMoving);
         dirtifyGrassSupport(world, pos);
     }
 
     @Override
-    public BlockState updatePostPlacement(BlockState state, Direction facing,
+    public BlockState updateShape(BlockState state, Direction facing,
             BlockState facingState, IWorld world, BlockPos pos, BlockPos facingPos) {
-        BlockState updated = super.updatePostPlacement(state, facing, facingState, world, pos,
-                facingPos).with(SnowyDirtBlock.SNOWY,
+        BlockState updated = super.updateShape(state, facing, facingState, world, pos,
+                facingPos).setValue(SnowyDirtBlock.SNOWY,
                         SnowySlabAppearance.hasNearbySnow(world, pos));
         if (world instanceof World) {
             dirtifyGrassSupport((World) world, pos);
@@ -66,45 +65,45 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     @Override
     public void tick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
         dirtifyGrassSupport(world, pos);
-        if (state.get(SlabBlock.WATERLOGGED) || !GrassSpread.canRemainGrass(world, pos)) {
-            world.setBlockState(pos, ModBlocks.dirtStateLike(state), 3);
+        if (state.getValue(SlabBlock.WATERLOGGED) || !GrassSpread.canRemainGrass(world, pos)) {
+            world.setBlock(pos, ModBlocks.dirtStateLike(state), 3);
             return;
         }
-        BlockState repaired = state.with(SnowyDirtBlock.SNOWY,
+        BlockState repaired = state.setValue(SnowyDirtBlock.SNOWY,
                 SnowySlabAppearance.hasNearbySnow(world, pos));
         if (repaired != state) {
-            world.setBlockState(pos, repaired, 2);
+            world.setBlock(pos, repaired, 2);
         }
-        GrassSpread.spreadFrom(world, pos, random, pos.down());
+        GrassSpread.spreadFrom(world, pos, random, pos.below());
     }
 
     @Override
     public boolean canSustainPlant(BlockState state, IBlockReader world, BlockPos pos,
             Direction direction, IPlantable plantable) {
-        return direction == Direction.UP && state.get(SlabBlock.TYPE) == SlabType.TOP &&
-                !state.get(SlabBlock.WATERLOGGED) && Blocks.GRASS_BLOCK.canSustainPlant(
-                        Blocks.GRASS_BLOCK.getDefaultState(), world, pos, direction, plantable);
+        return direction == Direction.UP && state.getValue(SlabBlock.TYPE) == SlabType.TOP &&
+                !state.getValue(SlabBlock.WATERLOGGED) && Blocks.GRASS_BLOCK.canSustainPlant(
+                        Blocks.GRASS_BLOCK.defaultBlockState(), world, pos, direction, plantable);
     }
 
     @Override
-    public boolean canGrow(IBlockReader world, BlockPos pos, BlockState state,
+    public boolean isValidBonemealTarget(IBlockReader world, BlockPos pos, BlockState state,
             boolean isClient) {
-        return state.get(SlabBlock.TYPE) == SlabType.TOP &&
-                !state.get(SlabBlock.WATERLOGGED) && world.getBlockState(pos.up()).isAir();
+        return state.getValue(SlabBlock.TYPE) == SlabType.TOP &&
+                !state.getValue(SlabBlock.WATERLOGGED) && world.getBlockState(pos.above()).isAir();
     }
 
     @Override
-    public boolean canUseBonemeal(World world, Random random, BlockPos pos, BlockState state) {
-        return state.get(SlabBlock.TYPE) == SlabType.TOP && !state.get(SlabBlock.WATERLOGGED);
+    public boolean isBonemealSuccess(World world, Random random, BlockPos pos, BlockState state) {
+        return state.getValue(SlabBlock.TYPE) == SlabType.TOP && !state.getValue(SlabBlock.WATERLOGGED);
     }
 
     @Override
-    public void grow(ServerWorld world, Random random, BlockPos pos, BlockState state) {
-        if (!canUseBonemeal(world, random, pos, state)) {
+    public void performBonemeal(ServerWorld world, Random random, BlockPos pos, BlockState state) {
+        if (!isBonemealSuccess(world, random, pos, state)) {
             return;
         }
-        BlockPos start = pos.up();
-        BlockState grassPlant = Blocks.GRASS.getDefaultState();
+        BlockPos start = pos.above();
+        BlockState grassPlant = Blocks.GRASS.defaultBlockState();
         for (int attempt = 0; attempt < 128; ++attempt) {
             BlockPos target = start;
             int walk = 0;
@@ -113,7 +112,8 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
                     BlockState targetState = world.getBlockState(target);
                     if (targetState.getBlock() == grassPlant.getBlock() &&
                             random.nextInt(10) == 0) {
-                        ((IGrowable) grassPlant.getBlock()).grow(world, random, target, targetState);
+                        ((IGrowable) grassPlant.getBlock()).performBonemeal(
+                                world, random, target, targetState);
                     }
                     if (!targetState.isAir()) {
                         break;
@@ -121,31 +121,30 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
                     BlockState growth;
                     if (random.nextInt(8) == 0) {
                         List<ConfiguredFeature<?, ?>> flowers =
-                                world.getBiome(target).getFlowers();
+                                world.getBiome(target).getGenerationSettings().getFlowerFeatures();
                         if (flowers.isEmpty()) {
                             break;
                         }
-                        ConfiguredFeature<?, ?> flower =
-                                ((DecoratedFeatureConfig) flowers.get(0).config).feature;
-                        growth = ((FlowersFeature) flower.feature)
-                                .getFlowerToPlace(random, target, flower.config);
+                        ConfiguredFeature<?, ?> flower = flowers.get(0);
+                        growth = ((FlowersFeature) flower.feature())
+                                .getRandomFlower(random, target, flower.config());
                     } else {
                         growth = grassPlant;
                     }
-                    if (growth.isValidPosition(world, target)) {
-                        world.setBlockState(target, growth, 3);
+                    if (growth.canSurvive(world, target)) {
+                        world.setBlock(target, growth, 3);
                     }
                     break;
                 }
-                target = target.add(random.nextInt(3) - 1,
+                target = target.offset(random.nextInt(3) - 1,
                         (random.nextInt(3) - 1) * random.nextInt(3) / 2,
                         random.nextInt(3) - 1);
-                BlockState support = world.getBlockState(target.down());
+                BlockState support = world.getBlockState(target.below());
                 boolean suitable = support.getBlock() == Blocks.GRASS_BLOCK ||
                         support.getBlock() == this &&
-                                support.get(SlabBlock.TYPE) == SlabType.TOP;
+                                support.getValue(SlabBlock.TYPE) == SlabType.TOP;
                 if (!suitable || world.getBlockState(target)
-                        .isCollisionShapeOpaque(world, target)) {
+                        .isCollisionShapeFullBlock(world, target)) {
                     break;
                 }
                 ++walk;
@@ -154,8 +153,8 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     }
 
     private static void dirtifyGrassSupport(World world, BlockPos pos) {
-        if (!world.isRemote && world.getBlockState(pos.down()).getBlock() == Blocks.GRASS_BLOCK) {
-            world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
+        if (!world.isClientSide && world.getBlockState(pos.below()).getBlock() == Blocks.GRASS_BLOCK) {
+            world.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), 2);
         }
     }
 }

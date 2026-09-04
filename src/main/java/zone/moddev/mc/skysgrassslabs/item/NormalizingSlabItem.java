@@ -28,45 +28,45 @@ public final class NormalizingSlabItem extends BlockItem {
     }
 
     @Override
-    public ActionResultType onItemUse(ItemUseContext context) {
+    public ActionResultType useOn(ItemUseContext context) {
         PlayerEntity player = context.getPlayer();
-        if (player == null || context.getItem().isEmpty()) {
+        if (player == null || context.getItemInHand().isEmpty()) {
             return ActionResultType.FAIL;
         }
-        World world = context.getWorld();
-        BlockPos clicked = context.getPos();
+        World world = context.getLevel();
+        BlockPos clicked = context.getClickedPos();
         BlockState state = world.getBlockState(clicked);
         if (state.getBlock() == slab) {
-            SlabType type = state.get(SlabBlock.TYPE);
-            if ((context.getFace() == Direction.UP && type == SlabType.BOTTOM) ||
-                    (context.getFace() == Direction.DOWN && type == SlabType.TOP)) {
+            SlabType type = state.getValue(SlabBlock.TYPE);
+            if ((context.getClickedFace() == Direction.UP && type == SlabType.BOTTOM) ||
+                    (context.getClickedFace() == Direction.DOWN && type == SlabType.TOP)) {
                 return combine(context, clicked);
             }
         }
 
-        BlockPos placement = new BlockItemUseContext(context).getPos();
+        BlockPos placement = new BlockItemUseContext(context).getClickedPos();
         if (world.getBlockState(placement).getBlock() == slab) {
             return combine(context, placement);
         }
-        return super.onItemUse(context);
+        return super.useOn(context);
     }
 
     private ActionResultType combine(ItemUseContext context, BlockPos pos) {
         PlayerEntity player = context.getPlayer();
-        World world = context.getWorld();
-        ItemStack stack = context.getItem();
-        if (player == null || !player.canPlayerEdit(pos, context.getFace(), stack)) {
+        World world = context.getLevel();
+        ItemStack stack = context.getItemInHand();
+        if (player == null || !player.mayUseItemAt(pos, context.getClickedFace(), stack)) {
             return ActionResultType.FAIL;
         }
-        BlockState combined = combinedBlock.getDefaultState();
-        if (!combined.isTopSolid(world, pos, player) ||
-                !world.setBlockState(pos, combined, 11)) {
+        BlockState combined = combinedBlock.defaultBlockState();
+        if (!combined.isFaceSturdy(world, pos, Direction.UP) ||
+                !world.setBlock(pos, combined, 11)) {
             return ActionResultType.FAIL;
         }
         SoundType sound = combined.getSoundType(world, pos, player);
         world.playSound(player, pos, sound.getPlaceSound(), SoundCategory.BLOCKS,
                 (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
-        if (!player.abilities.isCreativeMode) {
+        if (!player.abilities.instabuild) {
             stack.shrink(1);
         }
         return ActionResultType.SUCCESS;
