@@ -225,7 +225,6 @@ repositories {
 dependencies {
     implementation minecraft.dependency(
             "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}")
-    compileOnly 'org.lwjgl.lwjgl:lwjgl_util:2.9.4-nightly-20150209'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
@@ -1262,7 +1261,7 @@ idea {
 }
 eclipse {
     classpath { downloadSources = true; downloadJavadoc = true }
-    synchronizationTasks 'genEclipseRuns'
+    synchronizationTasks 'isolateEclipseProductionRuns'
 }
 
 def prepareEclipseResources = tasks.register('prepareEclipseResources') {
@@ -1297,6 +1296,8 @@ def configureEclipseBuildship = tasks.register('configureEclipseBuildship') {
 
 tasks.register('isolateEclipseProductionRuns') {
     group = 'ide'
+    dependsOn tasks.named('genEclipseRuns')
+    dependsOn configureEclipseBuildship
     dependsOn prepareEclipseResources
     doLast {
         // Forge 25's generated launches retain unresolved environment values.
@@ -1346,13 +1347,9 @@ tasks.register('isolateEclipseProductionRuns') {
     }
 }
 
-tasks.named('genEclipseRuns') {
-    finalizedBy configureEclipseBuildship, 'isolateEclipseProductionRuns'
-}
-
 tasks.register('verifyEclipseProductionClasspath') {
     group = 'verification'
-    dependsOn tasks.named('genEclipseRuns'), tasks.named('eclipse')
+    dependsOn tasks.named('eclipseClasspath'), tasks.named('isolateEclipseProductionRuns')
     doLast {
         File prefsFile = file('.settings/org.eclipse.buildship.core.prefs')
         if (!prefsFile.isFile()) throw new GradleException('Missing Buildship preferences')
@@ -1360,6 +1357,15 @@ tasks.register('verifyEclipseProductionClasspath') {
         prefsFile.withInputStream { prefs.load(it) }
         if (file(prefs.getProperty('connection.gradle.user.home', '')).canonicalFile != gradle.gradleUserHomeDir.canonicalFile) {
             throw new GradleException('Eclipse Buildship uses the wrong Gradle home')
+        }
+        Set<String> legacyLwjglArtifacts = configurations.compileClasspath.resolvedConfiguration
+                .resolvedArtifacts
+                .findAll { it.moduleVersion.id.group == 'org.lwjgl.lwjgl' }
+                .collect { "${it.moduleVersion.id.group}:${it.name}:${it.moduleVersion.id.version}" }
+                .toSet()
+        if (!legacyLwjglArtifacts.isEmpty()) {
+            throw new GradleException(
+                    "Forge 1.13 Eclipse classpath contains sealed LWJGL 2 artifacts: ${legacyLwjglArtifacts}")
         }
         File metadata = file('bin/main/META-INF/mods.toml')
         String metadataText = metadata.isFile() ? metadata.getText('UTF-8') : ''

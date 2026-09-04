@@ -125,6 +125,14 @@ class ProjectContractTest {
     }
 
     @Test
+    void eclipseClasspathCannotContainSealedLwjglTwoArtifacts() throws Exception {
+        String build = read("build.gradle");
+        assertFalse(build.contains("org.lwjgl.lwjgl:lwjgl"));
+        assertTrue(build.contains("sealed LWJGL 2 artifacts"));
+        assertTrue(build.contains("synchronizationTasks 'isolateEclipseProductionRuns'"));
+    }
+
+    @Test
     void pathTextureAlignmentAndFenceSafeTurfRemainAccepted() throws Exception {
         for (String name : Arrays.asList("path_slab.json", "path_slab_top.json")) {
             String model = read("src/main/resources/assets/skysgrassslabs/models/block/" + name);
