@@ -9,7 +9,7 @@ import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.proxy.ClientProxy;
 
 @Mod.EventBusSubscriber(modid = SkysGrassSlabs.MOD_ID, value = Dist.CLIENT,
-        bus = Mod.EventBusSubscriber.Bus.MOD)
+        bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ClientRegistryEvents {
     @SubscribeEvent
     public static void registerModels(ModelRegistryEvent event) {

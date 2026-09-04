@@ -12,12 +12,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.recipebook.RecipeList;
 import net.minecraft.client.renderer.model.IBakedModel;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.state.properties.SlabType;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GrassColors;
 import net.minecraft.world.GameType;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
+import net.minecraft.world.biome.BiomeColors;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -37,6 +41,7 @@ public final class ClientProbeTestMod {
     private int stateTicks;
     private int firstWorldFrames;
     private int reloadWorldFrames;
+    private boolean colorsVerified;
     private boolean modelsVerified;
     private boolean recipeBookVerified;
 
@@ -78,6 +83,7 @@ public final class ClientProbeTestMod {
                     if (minecraft.world != null && minecraft.player != null
                             && firstWorldFrames >= 8 && stateTicks >= 100) {
                         verifyModels(minecraft);
+                        verifyColors(minecraft);
                         verifyRecipeBook(minecraft);
                         stopIntegratedServer(minecraft);
                         nextState(2);
@@ -97,6 +103,7 @@ public final class ClientProbeTestMod {
                     if (minecraft.world != null && minecraft.player != null
                             && reloadWorldFrames >= 8 && stateTicks >= 100) {
                         verifyModels(minecraft);
+                        verifyColors(minecraft);
                         verifyRecipeBook(minecraft);
                         stopIntegratedServer(minecraft);
                         nextState(4);
@@ -147,6 +154,35 @@ public final class ClientProbeTestMod {
                 .with(BlockSlab.WATERLOGGED, Boolean.FALSE);
     }
 
+    private void verifyColors(Minecraft minecraft) {
+        BlockPos pos = minecraft.player.getPosition();
+        int expectedBlockColor = BiomeColors.getGrassColor(minecraft.world, pos);
+        for (IBlockState stateToCheck : new IBlockState[] {
+                slabState(ModBlocks.GRASS_SLAB, SlabType.TOP),
+                slabState(ModBlocks.GRASS_SLAB, SlabType.BOTTOM),
+                ModBlocks.TURF.getDefaultState()
+        }) {
+            int actual = minecraft.getBlockColors().getColor(
+                    stateToCheck, minecraft.world, pos, 0);
+            if (actual != expectedBlockColor) {
+                throw new IllegalStateException("Missing biome grass tint for "
+                        + stateToCheck.getBlock().getRegistryName() + ": expected "
+                        + expectedBlockColor + " but got " + actual);
+            }
+        }
+
+        int expectedItemColor = GrassColors.get(0.5D, 1.0D);
+        for (Block block : new Block[] {ModBlocks.GRASS_SLAB, ModBlocks.TURF}) {
+            int actual = minecraft.getItemColors().getColor(new ItemStack(block), 0);
+            if (actual != expectedItemColor) {
+                throw new IllegalStateException("Missing inventory grass tint for "
+                        + block.getRegistryName() + ": expected " + expectedItemColor
+                        + " but got " + actual);
+            }
+        }
+        colorsVerified = true;
+    }
+
     private void verifyRecipeBook(Minecraft minecraft) {
         IRecipe turfRecipe = minecraft.world.getRecipeManager().getRecipe(
                 new ResourceLocation("skysgrassslabs", "turf"));
@@ -171,6 +207,7 @@ public final class ClientProbeTestMod {
 
     private void writeMarker() throws IOException {
         Properties values = new Properties();
+        values.setProperty("colors_verified", Boolean.toString(colorsVerified));
         values.setProperty("models_verified", Boolean.toString(modelsVerified));
         values.setProperty("recipe_book_verified", Boolean.toString(recipeBookVerified));
         values.setProperty("first_world_rendered", Boolean.toString(firstWorldFrames >= 8));

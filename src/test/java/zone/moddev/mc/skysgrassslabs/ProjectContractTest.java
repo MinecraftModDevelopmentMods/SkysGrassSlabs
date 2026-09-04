@@ -133,6 +133,16 @@ class ProjectContractTest {
     }
 
     @Test
+    void clientColorHandlersUseForgeTwentyFiveEventBus() throws Exception {
+        String events = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/init/ClientRegistryEvents.java");
+        assertTrue(events.contains("bus = Mod.EventBusSubscriber.Bus.FORGE"));
+        assertFalse(events.contains("bus = Mod.EventBusSubscriber.Bus.MOD"));
+        assertTrue(events.contains("ColorHandlerEvent.Block"));
+        assertTrue(events.contains("ColorHandlerEvent.Item"));
+    }
+
+    @Test
     void pathTextureAlignmentAndFenceSafeTurfRemainAccepted() throws Exception {
         for (String name : Arrays.asList("path_slab.json", "path_slab_top.json")) {
             String model = read("src/main/resources/assets/skysgrassslabs/models/block/" + name);
