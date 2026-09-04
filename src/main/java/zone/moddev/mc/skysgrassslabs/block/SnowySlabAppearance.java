@@ -1,8 +1,8 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import net.minecraft.block.Block;
-import net.minecraft.init.Blocks;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.block.Blocks;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 
@@ -11,8 +11,8 @@ final class SnowySlabAppearance {
         if (isSnow(world.getBlockState(pos.up()).getBlock())) {
             return true;
         }
-        for (EnumFacing facing : EnumFacing.Plane.HORIZONTAL) {
-            if (isSnow(world.getBlockState(pos.offset(facing)).getBlock())) {
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            if (isSnow(world.getBlockState(pos.offset(direction)).getBlock())) {
                 return true;
             }
         }

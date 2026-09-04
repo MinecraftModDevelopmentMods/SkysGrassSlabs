@@ -1,10 +1,10 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockDirtSnowy;
-import net.minecraft.block.BlockSlab;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.SlabBlock;
+import net.minecraft.block.SnowyDirtBlock;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.state.properties.SlabType;
@@ -40,27 +40,27 @@ public final class ModBlocks {
                         new Item.Properties().group(ItemGroup.BUILDING_BLOCKS)), TURF));
     }
 
-    public static IBlockState dirtStateLike(IBlockState source) {
-        IBlockState state = DIRT_SLAB.getDefaultState()
-                .with(BlockSlab.TYPE, source.get(BlockSlab.TYPE))
-                .with(BlockSlab.WATERLOGGED, source.get(BlockSlab.WATERLOGGED));
-        return state.with(BlockDirtSnowy.SNOWY,
-                source.has(BlockDirtSnowy.SNOWY) && source.get(BlockDirtSnowy.SNOWY));
+    public static BlockState dirtStateLike(BlockState source) {
+        BlockState state = DIRT_SLAB.getDefaultState()
+                .with(SlabBlock.TYPE, source.get(SlabBlock.TYPE))
+                .with(SlabBlock.WATERLOGGED, source.get(SlabBlock.WATERLOGGED));
+        return state.with(SnowyDirtBlock.SNOWY,
+                source.has(SnowyDirtBlock.SNOWY) && source.get(SnowyDirtBlock.SNOWY));
     }
 
-    public static IBlockState grassStateLike(IBlockState source) {
-        IBlockState state = GRASS_SLAB.getDefaultState()
-                .with(BlockSlab.TYPE, source.get(BlockSlab.TYPE))
-                .with(BlockSlab.WATERLOGGED, source.get(BlockSlab.WATERLOGGED));
-        return state.with(BlockDirtSnowy.SNOWY,
-                source.has(BlockDirtSnowy.SNOWY) && source.get(BlockDirtSnowy.SNOWY));
+    public static BlockState grassStateLike(BlockState source) {
+        BlockState state = GRASS_SLAB.getDefaultState()
+                .with(SlabBlock.TYPE, source.get(SlabBlock.TYPE))
+                .with(SlabBlock.WATERLOGGED, source.get(SlabBlock.WATERLOGGED));
+        return state.with(SnowyDirtBlock.SNOWY,
+                source.has(SnowyDirtBlock.SNOWY) && source.get(SnowyDirtBlock.SNOWY));
     }
 
-    public static IBlockState legacySlabState(boolean grass, int metadata) {
+    public static BlockState legacySlabState(boolean grass, int metadata) {
         return (grass ? GRASS_SLAB : DIRT_SLAB).getDefaultState()
-                .with(BlockSlab.TYPE, (metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM)
-                .with(BlockSlab.WATERLOGGED, Boolean.FALSE)
-                .with(BlockDirtSnowy.SNOWY, Boolean.FALSE);
+                .with(SlabBlock.TYPE, (metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM)
+                .with(SlabBlock.WATERLOGGED, Boolean.FALSE)
+                .with(SnowyDirtBlock.SNOWY, Boolean.FALSE);
     }
 
     private static <T extends Block> T configure(T block, String name) {

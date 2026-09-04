@@ -3,13 +3,13 @@ package zone.moddev.mc.skysgrassslabs.compat;
 import java.util.ArrayList;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.INBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.ResourceLocation;
@@ -18,7 +18,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.world.ChunkDataEvent;
-import net.minecraftforge.fml.common.gameevent.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 
@@ -44,7 +44,7 @@ public final class LegacyMigrationHandler {
         if (!BuildingBricksCompat.hasLegacyAliases()) {
             return;
         }
-        EntityPlayer player = event.getPlayer();
+        PlayerEntity player = event.getPlayer();
         ModWorldState state = ModWorldState.get(player.world);
         migrateInventory(player.inventory, state);
         migrateInventory(player.getInventoryEnderChest(), state);
@@ -76,17 +76,17 @@ public final class LegacyMigrationHandler {
         return id.equals(BuildingBricksCompat.DIRT_SLAB_ID) ? LegacySlabKind.DIRT : null;
     }
 
-    public static boolean migrateStacksInNbt(INBTBase tag, ModWorldState state) {
+    public static boolean migrateStacksInNbt(INBT tag, ModWorldState state) {
         boolean changed = false;
-        if (tag instanceof NBTTagCompound) {
-            NBTTagCompound compound = (NBTTagCompound) tag;
+        if (tag instanceof CompoundNBT) {
+            CompoundNBT compound = (CompoundNBT) tag;
             if (compound.contains("id", 8) && compound.contains("Count", 99)) {
                 String id = compound.getString("id");
                 boolean grass = BuildingBricksCompat.GRASS_SLAB_ID.toString().equals(id) ||
                         BuildingBricksCompat.HISTORICAL_GRASS_SLAB_ID.toString().equals(id);
                 boolean dirt = BuildingBricksCompat.DIRT_SLAB_ID.toString().equals(id);
                 if (grass || dirt) {
-                    compound.setString("id", (grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB)
+                    compound.putString("id", (grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB)
                             .getRegistryName().toString());
                     int count = compound.getByte("Count") & 255;
                     if (state != null && grass) state.recordGrassItems(count);
@@ -95,11 +95,11 @@ public final class LegacyMigrationHandler {
                 }
             }
             for (String key : new ArrayList<String>(compound.keySet())) {
-                INBTBase child = compound.getTag(key);
+                INBT child = compound.get(key);
                 if (child != null) changed |= migrateStacksInNbt(child, state);
             }
-        } else if (tag instanceof NBTTagList) {
-            NBTTagList list = (NBTTagList) tag;
+        } else if (tag instanceof ListNBT) {
+            ListNBT list = (ListNBT) tag;
             for (int index = 0; index < list.size(); ++index) {
                 changed |= migrateStacksInNbt(list.get(index), state);
             }
@@ -110,7 +110,7 @@ public final class LegacyMigrationHandler {
     private static boolean migrateChunkInventories(Chunk chunk, ModWorldState state) {
         boolean changed = false;
         for (TileEntity tileEntity : chunk.getTileEntityMap().values()) {
-            NBTTagCompound serialized = tileEntity.write(new NBTTagCompound());
+            CompoundNBT serialized = tileEntity.write(new CompoundNBT());
             if (migrateStacksInNbt(serialized, state)) {
                 tileEntity.read(serialized);
                 tileEntity.markDirty();
@@ -119,7 +119,7 @@ public final class LegacyMigrationHandler {
         }
         for (ClassInheritanceMultiMap<Entity> list : chunk.getEntityLists()) {
             for (Entity entity : list) {
-                NBTTagCompound serialized = entity.writeWithoutTypeId(new NBTTagCompound());
+                CompoundNBT serialized = entity.writeWithoutTypeId(new CompoundNBT());
                 if (migrateStacksInNbt(serialized, state)) {
                     entity.read(serialized);
                     changed = true;

@@ -3,11 +3,11 @@ package zone.moddev.mc.skysgrassslabs.world;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.storage.WorldSavedDataStorage;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.WorldSavedData;
 
 public final class ModWorldState extends WorldSavedData {
@@ -33,17 +33,14 @@ public final class ModWorldState extends WorldSavedData {
     public static ModWorldState get(World world) {
         if (!world.isRemote && world.getDimension().getType() != DimensionType.OVERWORLD &&
                 world.getServer() != null) {
-            World overworld = world.getServer().getWorld(DimensionType.OVERWORLD);
+            ServerWorld overworld = world.getServer().getWorld(DimensionType.OVERWORLD);
             if (overworld != null) world = overworld;
         }
-        WorldSavedDataStorage storage = world.getMapStorage();
-        ModWorldState state = storage.func_212426_a(DimensionType.OVERWORLD,
-                ModWorldState::new, DATA_NAME);
-        if (state == null) {
-            state = new ModWorldState(DATA_NAME);
-            storage.func_212424_a(DimensionType.OVERWORLD, DATA_NAME, state);
-            state.markDirty();
+        if (!(world instanceof ServerWorld)) {
+            return new ModWorldState(DATA_NAME);
         }
+        ModWorldState state = ((ServerWorld) world).getSavedData().getOrCreate(
+                () -> new ModWorldState(DATA_NAME), DATA_NAME);
         return state;
     }
 
@@ -133,7 +130,7 @@ public final class ModWorldState extends WorldSavedData {
     }
 
     @Override
-    public void read(NBTTagCompound nbt) {
+    public void read(CompoundNBT nbt) {
         migratedChunks = nbt.getLong("migrated_chunks");
         migratedGrassBlocks = nbt.getLong("migrated_grass_blocks");
         migratedGrassBlocksTop = nbt.getLong("migrated_grass_blocks_top");
@@ -144,34 +141,34 @@ public final class ModWorldState extends WorldSavedData {
         migratedGrassItems = nbt.getLong("migrated_grass_items");
         migratedDirtItems = nbt.getLong("migrated_dirt_items");
         unsupported.clear();
-        NBTTagList list = nbt.getList("unsupported", 10);
+        ListNBT list = nbt.getList("unsupported", 10);
         for (int index = 0; index < list.size(); ++index) {
-            NBTTagCompound entry = list.getCompound(index);
+            CompoundNBT entry = list.getCompound(index);
             unsupported.put(entry.getString("id"), entry.getLong("count"));
         }
     }
 
     @Override
-    public NBTTagCompound write(NBTTagCompound nbt) {
-        nbt.setInt("schema_version", SCHEMA_VERSION);
-        nbt.setInt("buildingbricks_migration_version", MIGRATION_VERSION);
-        nbt.setLong("migrated_chunks", migratedChunks);
-        nbt.setLong("migrated_grass_blocks", migratedGrassBlocks);
-        nbt.setLong("migrated_grass_blocks_top", migratedGrassBlocksTop);
-        nbt.setLong("migrated_grass_blocks_bottom", migratedGrassBlocksBottom);
-        nbt.setLong("migrated_dirt_blocks", migratedDirtBlocks);
-        nbt.setLong("migrated_dirt_blocks_top", migratedDirtBlocksTop);
-        nbt.setLong("migrated_dirt_blocks_bottom", migratedDirtBlocksBottom);
-        nbt.setLong("migrated_grass_items", migratedGrassItems);
-        nbt.setLong("migrated_dirt_items", migratedDirtItems);
-        NBTTagList list = new NBTTagList();
+    public CompoundNBT write(CompoundNBT nbt) {
+        nbt.putInt("schema_version", SCHEMA_VERSION);
+        nbt.putInt("buildingbricks_migration_version", MIGRATION_VERSION);
+        nbt.putLong("migrated_chunks", migratedChunks);
+        nbt.putLong("migrated_grass_blocks", migratedGrassBlocks);
+        nbt.putLong("migrated_grass_blocks_top", migratedGrassBlocksTop);
+        nbt.putLong("migrated_grass_blocks_bottom", migratedGrassBlocksBottom);
+        nbt.putLong("migrated_dirt_blocks", migratedDirtBlocks);
+        nbt.putLong("migrated_dirt_blocks_top", migratedDirtBlocksTop);
+        nbt.putLong("migrated_dirt_blocks_bottom", migratedDirtBlocksBottom);
+        nbt.putLong("migrated_grass_items", migratedGrassItems);
+        nbt.putLong("migrated_dirt_items", migratedDirtItems);
+        ListNBT list = new ListNBT();
         for (Map.Entry<String, Long> value : unsupported.entrySet()) {
-            NBTTagCompound entry = new NBTTagCompound();
-            entry.setString("id", value.getKey());
-            entry.setLong("count", value.getValue());
+            CompoundNBT entry = new CompoundNBT();
+            entry.putString("id", value.getKey());
+            entry.putLong("count", value.getValue());
             list.add(entry);
         }
-        nbt.setTag("unsupported", list);
+        nbt.put("unsupported", list);
         return nbt;
     }
 }

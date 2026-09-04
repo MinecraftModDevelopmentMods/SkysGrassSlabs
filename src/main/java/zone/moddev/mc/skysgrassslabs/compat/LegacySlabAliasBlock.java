@@ -7,7 +7,7 @@ import zone.moddev.mc.skysgrassslabs.block.LegacySlabBlock;
 /** Hidden deserialization holder for a supported historical slab ID. */
 final class LegacySlabAliasBlock extends LegacySlabBlock {
     LegacySlabAliasBlock(boolean grass) {
-        super(grass ? Material.GRASS : Material.GROUND,
+        super(grass ? Material.ORGANIC : Material.EARTH,
                 grass ? SoundType.PLANT : SoundType.GROUND, 0.6F, false);
     }
 }

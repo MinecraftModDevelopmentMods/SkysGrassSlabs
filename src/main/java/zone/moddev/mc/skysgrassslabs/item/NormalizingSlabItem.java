@@ -1,45 +1,45 @@
 package zone.moddev.mc.skysgrassslabs.item;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockSlab;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.SlabBlock;
 import net.minecraft.block.SoundType;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
 import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ActionResultType;
+import net.minecraft.util.Direction;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public final class NormalizingSlabItem extends ItemBlock {
-    private final BlockSlab slab;
+public final class NormalizingSlabItem extends BlockItem {
+    private final SlabBlock slab;
     private final Block combinedBlock;
 
     public NormalizingSlabItem(Block block, Block combinedBlock, Item.Properties properties) {
         super(block, properties);
-        slab = (BlockSlab) block;
+        slab = (SlabBlock) block;
         this.combinedBlock = combinedBlock;
     }
 
     @Override
-    public EnumActionResult onItemUse(ItemUseContext context) {
-        EntityPlayer player = context.getPlayer();
+    public ActionResultType onItemUse(ItemUseContext context) {
+        PlayerEntity player = context.getPlayer();
         if (player == null || context.getItem().isEmpty()) {
-            return EnumActionResult.FAIL;
+            return ActionResultType.FAIL;
         }
         World world = context.getWorld();
         BlockPos clicked = context.getPos();
-        IBlockState state = world.getBlockState(clicked);
+        BlockState state = world.getBlockState(clicked);
         if (state.getBlock() == slab) {
-            SlabType type = state.get(BlockSlab.TYPE);
-            if ((context.getFace() == EnumFacing.UP && type == SlabType.BOTTOM) ||
-                    (context.getFace() == EnumFacing.DOWN && type == SlabType.TOP)) {
+            SlabType type = state.get(SlabBlock.TYPE);
+            if ((context.getFace() == Direction.UP && type == SlabType.BOTTOM) ||
+                    (context.getFace() == Direction.DOWN && type == SlabType.TOP)) {
                 return combine(context, clicked);
             }
         }
@@ -51,17 +51,17 @@ public final class NormalizingSlabItem extends ItemBlock {
         return super.onItemUse(context);
     }
 
-    private EnumActionResult combine(ItemUseContext context, BlockPos pos) {
-        EntityPlayer player = context.getPlayer();
+    private ActionResultType combine(ItemUseContext context, BlockPos pos) {
+        PlayerEntity player = context.getPlayer();
         World world = context.getWorld();
         ItemStack stack = context.getItem();
         if (player == null || !player.canPlayerEdit(pos, context.getFace(), stack)) {
-            return EnumActionResult.FAIL;
+            return ActionResultType.FAIL;
         }
-        IBlockState combined = combinedBlock.getDefaultState();
-        if (!world.checkNoEntityCollision(combined, pos) ||
+        BlockState combined = combinedBlock.getDefaultState();
+        if (!combined.func_215682_a(world, pos, player) ||
                 !world.setBlockState(pos, combined, 11)) {
-            return EnumActionResult.FAIL;
+            return ActionResultType.FAIL;
         }
         SoundType sound = combined.getSoundType(world, pos, player);
         world.playSound(player, pos, sound.getPlaceSound(), SoundCategory.BLOCKS,
@@ -69,6 +69,6 @@ public final class NormalizingSlabItem extends ItemBlock {
         if (!player.abilities.isCreativeMode) {
             stack.shrink(1);
         }
-        return EnumActionResult.SUCCESS;
+        return ActionResultType.SUCCESS;
     }
 }

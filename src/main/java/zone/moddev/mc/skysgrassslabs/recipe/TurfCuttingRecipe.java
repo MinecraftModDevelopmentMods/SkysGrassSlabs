@@ -4,12 +4,13 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import net.minecraft.init.Blocks;
-import net.minecraft.inventory.IInventory;
+import net.minecraft.block.Blocks;
+import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.IRecipeSerializer;
+import net.minecraft.item.crafting.IRecipeType;
 import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.NonNullList;
@@ -17,14 +18,15 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ToolType;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.ForgeRegistryEntry;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-public final class TurfCuttingRecipe implements IRecipe {
+public final class TurfCuttingRecipe implements IRecipe<CraftingInventory> {
     public static final ResourceLocation SERIALIZER_ID =
             new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf_cutting");
-    public static final IRecipeSerializer<TurfCuttingRecipe> SERIALIZER = new Serializer();
+    public static final IRecipeSerializer<TurfCuttingRecipe> SERIALIZER = createSerializer();
 
     private final ResourceLocation id;
     private final NonNullList<Ingredient> ingredients;
@@ -35,7 +37,7 @@ public final class TurfCuttingRecipe implements IRecipe {
     }
 
     @Override
-    public boolean matches(IInventory inventory, World world) {
+    public boolean matches(CraftingInventory inventory, World world) {
         int grassInputs = 0;
         int shovels = 0;
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
@@ -53,7 +55,7 @@ public final class TurfCuttingRecipe implements IRecipe {
     }
 
     @Override
-    public ItemStack getCraftingResult(IInventory inventory) {
+    public ItemStack getCraftingResult(CraftingInventory inventory) {
         return matches(inventory, null) ? new ItemStack(ModBlocks.TURF) : ItemStack.EMPTY;
     }
 
@@ -73,7 +75,7 @@ public final class TurfCuttingRecipe implements IRecipe {
     }
 
     @Override
-    public NonNullList<ItemStack> getRemainingItems(IInventory inventory) {
+    public NonNullList<ItemStack> getRemainingItems(CraftingInventory inventory) {
         NonNullList<ItemStack> remaining = NonNullList.withSize(
                 inventory.getSizeInventory(), ItemStack.EMPTY);
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
@@ -106,9 +108,20 @@ public final class TurfCuttingRecipe implements IRecipe {
         return SERIALIZER;
     }
 
+    @Override
+    public IRecipeType<?> getType() {
+        return IRecipeType.CRAFTING;
+    }
+
     private static boolean isShovel(ItemStack stack) {
         Set<ToolType> types = stack.getItem().getToolTypes(stack);
         return types != null && types.contains(ToolType.SHOVEL);
+    }
+
+    private static IRecipeSerializer<TurfCuttingRecipe> createSerializer() {
+        Serializer serializer = new Serializer();
+        serializer.setRegistryName(SERIALIZER_ID);
+        return serializer;
     }
 
     private static NonNullList<Ingredient> createIngredients() {
@@ -135,7 +148,9 @@ public final class TurfCuttingRecipe implements IRecipe {
         return ItemStack.EMPTY;
     }
 
-    private static final class Serializer implements IRecipeSerializer<TurfCuttingRecipe> {
+    private static final class Serializer
+            extends ForgeRegistryEntry<IRecipeSerializer<?>>
+            implements IRecipeSerializer<TurfCuttingRecipe> {
         @Override
         public TurfCuttingRecipe read(ResourceLocation recipeId, JsonObject json) {
             return new TurfCuttingRecipe(recipeId);
@@ -148,12 +163,7 @@ public final class TurfCuttingRecipe implements IRecipe {
 
         @Override
         public void write(PacketBuffer buffer, TurfCuttingRecipe recipe) {
-            // The JSON and network form contain no variable recipe data.
-        }
-
-        @Override
-        public ResourceLocation getName() {
-            return SERIALIZER_ID;
+            // The JSON and network forms contain no variable recipe data.
         }
     }
 }

@@ -12,7 +12,7 @@ public final class ClientProxy {
     }
 
     public static void registerModels() {
-        // Forge 25 resolves item models from each registered item's name.
+        // Forge resolves item models from each registered item's name.
     }
 
     public static void registerBlockColors(BlockColors colors) {

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.1.114041 - Minecraft 1.14.4
+
+- Ported dirt, grass and path slabs, turf and terrain smoothing to Minecraft
+  1.14.4.
+- Kept both slab orientations, waterlogging, snowy caps, path alignment,
+  grass spreading, turf recipes and sheep interaction.
+- Added Minecraft 1.14 loot tables for the four blocks, including Silk Touch
+  behaviour for grass slabs.
+- Registered terrain smoothing as a Forge feature and retained its existing
+  new chunk only behaviour.
+- Preserved Sky blocks, items, block states, custom item data and saved world
+  state when upgrading worlds from Minecraft 1.10.2 through 1.13.2.
+- Retained all 18 translations and the existing configuration keys.
+
 ## 1.0.1.113021 - Minecraft 1.13.2
 
 - Ported dirt, grass and path slabs, turf and terrain smoothing to Minecraft

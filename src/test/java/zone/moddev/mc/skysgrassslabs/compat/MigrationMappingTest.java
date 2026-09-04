@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import net.minecraft.block.BlockDirtSnowy;
-import net.minecraft.block.BlockSlab;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.SlabBlock;
+import net.minecraft.block.SnowyDirtBlock;
 import net.minecraft.state.properties.SlabType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -24,13 +24,13 @@ class MigrationMappingTest {
     void everyLegacyMetadataValueUsesOnlyItsOrientationBit() {
         for (boolean grass : new boolean[] {false, true}) {
             for (int metadata = 0; metadata < 16; ++metadata) {
-                IBlockState migrated = ModBlocks.legacySlabState(grass, metadata);
+                BlockState migrated = ModBlocks.legacySlabState(grass, metadata);
                 assertSame(grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB,
                         migrated.getBlock());
                 assertEquals((metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM,
-                        migrated.get(BlockSlab.TYPE));
-                assertFalse(migrated.get(BlockSlab.WATERLOGGED));
-                assertFalse(migrated.get(BlockDirtSnowy.SNOWY));
+                        migrated.get(SlabBlock.TYPE));
+                assertFalse(migrated.get(SlabBlock.WATERLOGGED));
+                assertFalse(migrated.get(SnowyDirtBlock.SNOWY));
             }
         }
     }

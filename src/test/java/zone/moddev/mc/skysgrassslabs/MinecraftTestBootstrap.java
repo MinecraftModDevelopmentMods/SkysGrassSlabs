@@ -1,7 +1,7 @@
 package zone.moddev.mc.skysgrassslabs;
 
 import java.lang.reflect.Field;
-import net.minecraft.init.Bootstrap;
+import net.minecraft.util.registry.Bootstrap;
 
 public final class MinecraftTestBootstrap {
     private static boolean initialized;
@@ -10,14 +10,14 @@ public final class MinecraftTestBootstrap {
         if (initialized) return;
         try {
             Class<?> loader = Class.forName("net.minecraftforge.fml.loading.FMLLoader");
-            set(loader, "mcVersion", "1.13.2");
-            set(loader, "mcpVersion", "20190213.203750");
-            set(loader, "forgeVersion", "25.0.223");
+            set(loader, "mcVersion", "1.14.4");
+            set(loader, "mcpVersion", "20190829.143755");
+            set(loader, "forgeVersion", "28.2.26");
             set(loader, "forgeGroup", "net.minecraftforge");
             Bootstrap.register();
             initialized = true;
         } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("Unable to initialize the Forge 25 test runtime",
+            throw new IllegalStateException("Unable to initialize the Forge 28 test runtime",
                     exception);
         }
     }

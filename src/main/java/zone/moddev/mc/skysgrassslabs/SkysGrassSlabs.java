@@ -12,20 +12,18 @@ import zone.moddev.mc.skysgrassslabs.compat.LegacyMigrationHandler;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.event.CommonEvents;
-import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingFeature;
 
 @Mod(SkysGrassSlabs.MOD_ID)
 public final class SkysGrassSlabs {
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.0.1.113021";
+    public static final String VERSION = "1.0.1.114041";
     public static final Logger LOGGER = LogManager.getLogger();
 
     public SkysGrassSlabs() {
         SkysGrassSlabsConfig.migrateLegacyConfig();
         SkysGrassSlabsConfig.register();
-        ModRecipes.registerSerializer();
         LegacyWorldDataHook.register();
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);

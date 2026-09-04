@@ -23,7 +23,7 @@ The setting never adds or removes slabs in chunks that already exist.
 
 This key is retained so configurations and saved migration state remain
 consistent with the Minecraft 1.10.2 release. It does not enable replacement
-of content from unofficial Minecraft 1.13 ports, so ordinary installations
+of content from unofficial Minecraft 1.14 ports, so ordinary installations
 should leave it set to `false`.
 
 Recovery of supported legacy grass and dirt slab IDs from an upgraded 1.10.2

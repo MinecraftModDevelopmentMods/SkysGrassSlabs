@@ -110,7 +110,7 @@ def prepareForgeRunModClasses = tasks.register('prepareForgeRunModClasses', Sync
     into forgeRunModClassesDirectory
 }
 
-def configureForge25Run = { JavaExec runTask, String launchTarget ->
+def configureForge28Run = { JavaExec runTask, String launchTarget ->
     runTask.dependsOn prepareForgeRunModClasses
     runTask.mainClass.set('net.minecraftforge.userdev.LaunchTesting')
     runTask.environment 'target', launchTarget
@@ -121,21 +121,12 @@ def configureForge25Run = { JavaExec runTask, String launchTarget ->
     runTask.environment 'MC_VERSION', minecraft_version
     runTask.environment 'MOD_CLASSES', "${mod_id}%%${forgeRunModClassesDirectory}${File.pathSeparator}" +
             "${mod_id}%%${forgeRunModClassesDirectory}"
-    if (launchTarget == 'fmluserdevclient') {
-        File forgeGradleCache = new File(gradle.gradleUserHomeDir, 'caches/forge_gradle')
-        runTask.environment 'assetDirectory',
-                new File(forgeGradleCache, 'assets').absolutePath
-        runTask.environment 'assetIndex', '1.13.1'
-        runTask.environment 'nativesDirectory', new File(forgeGradleCache,
-                "minecraftforge/forgegradle/slime-launcher/cache/net/minecraftforge/forge/" +
-                        "${minecraft_version}-${forge_version}/natives").absolutePath
-    }
 }
 tasks.withType(JavaExec).configureEach { JavaExec runTask ->
     Map<String, String> targets = [runClient: 'fmluserdevclient', runServer: 'fmluserdevserver']
     String launchTarget = targets.get(runTask.name)
     if (launchTarget != null) {
-        configureForge25Run(runTask, launchTarget)
+        configureForge28Run(runTask, launchTarget)
     }
 }
 
@@ -172,16 +163,6 @@ def configureFromForgeRun = { JavaExec process, String runTaskName ->
             run.environment('MOD_CLASSES',
                     "${mod_id}%%${forgeRunModClassesDirectory}${File.pathSeparator}" +
                             "${mod_id}%%${forgeRunModClassesDirectory}")
-            if (runTaskName == 'runClient') {
-                File forgeGradleCache = new File(gradle.gradleUserHomeDir,
-                        'caches/forge_gradle')
-                run.environment('assetDirectory',
-                        new File(forgeGradleCache, 'assets').absolutePath)
-                run.environment('assetIndex', '1.13.1')
-                run.environment('nativesDirectory', new File(forgeGradleCache,
-                        "minecraftforge/forgegradle/slime-launcher/cache/net/minecraftforge/forge/" +
-                                "${minecraft_version}-${forge_version}/natives").absolutePath)
-            }
             run.exec()
         } finally {
             runOptions.workingDir.set(originalConfiguredWorkingDir)
@@ -381,6 +362,11 @@ def java8Launcher = javaToolchains.launcherFor {
 }
 
 def clientIntegrationRunDirectory = layout.buildDirectory.dir('client-integration-run')
+def forgeClientAssets = providers.gradleProperty('forgeClientAssets').orElse(
+        new File(gradle.gradleUserHomeDir, 'caches/forge_gradle/assets').absolutePath)
+def forgeClientNatives = providers.gradleProperty('forgeClientNatives').orElse(
+        new File(gradle.gradleUserHomeDir,
+                "caches/minecraftforge/forgegradle/slime-launcher/cache/net/minecraftforge/forge/${minecraft_version}-${forge_version}/natives").absolutePath)
 def prepareClientIntegrationTest = tasks.register('prepareClientIntegrationTest') {
     group = 'verification'
     dependsOn clientIntegrationTestModJar
@@ -407,6 +393,14 @@ def clientIntegrationProcess = tasks.register('clientIntegrationProcess', Exec) 
     }
     doFirst {
         JavaExec run = tasks.getByName('runClient') as JavaExec
+        File assets = file(forgeClientAssets.get())
+        File natives = file(forgeClientNatives.get())
+        File assetIndex = new File(assets, 'indexes/1.14.json')
+        [assets, natives, assetIndex].each { entry ->
+            if (!entry.exists()) {
+                throw new GradleException("Incomplete Forge client runtime: ${entry}")
+            }
+        }
         File classpathJar = layout.buildDirectory.file(
                 'client-integration-fixture/client-classpath.jar').get().asFile
         classpathJar.parentFile.mkdirs()
@@ -431,7 +425,6 @@ def clientIntegrationProcess = tasks.register('clientIntegrationProcess', Exec) 
         arguments.add(run.mainClass.orNull ?: 'net.minecraftforge.userdev.LaunchTesting')
         arguments.addAll(run.args)
 
-        File forgeGradleCache = new File(gradle.gradleUserHomeDir, 'caches/forge_gradle')
         Map<String, Object> clientEnvironment = new LinkedHashMap<>(run.environment)
         clientEnvironment.put('target', 'fmluserdevclient')
         clientEnvironment.put('MCP_MAPPINGS', "${mapping_channel}_${mapping_version}")
@@ -439,15 +432,12 @@ def clientIntegrationProcess = tasks.register('clientIntegrationProcess', Exec) 
         clientEnvironment.put('FORGE_VERSION', forge_version)
         clientEnvironment.put('FORGE_GROUP', 'net.minecraftforge')
         clientEnvironment.put('MC_VERSION', minecraft_version)
+        clientEnvironment.put('assetDirectory', assets.absolutePath)
+        clientEnvironment.put('assetIndex', '1.14')
+        clientEnvironment.put('nativesDirectory', natives.absolutePath)
         clientEnvironment.put('MOD_CLASSES',
                 "${mod_id}%%${forgeRunModClassesDirectory}${File.pathSeparator}" +
                         "${mod_id}%%${forgeRunModClassesDirectory}")
-        clientEnvironment.put('assetDirectory',
-                new File(forgeGradleCache, 'assets').absolutePath)
-        clientEnvironment.put('assetIndex', '1.13.1')
-        clientEnvironment.put('nativesDirectory', new File(forgeGradleCache,
-                "minecraftforge/forgegradle/slime-launcher/cache/net/minecraftforge/forge/" +
-                        "${minecraft_version}-${forge_version}/natives").absolutePath)
         workingDir clientIntegrationRunDirectory
         environment clientEnvironment
         commandLine(([java8Launcher.get().executablePath.asFile.absolutePath] +
@@ -478,9 +468,11 @@ tasks.register('clientIntegrationTest') {
 
 def packagedForgeServerRuntime = providers.gradleProperty('packagedForgeServerRuntime')
 def packagedForgeClientRuntime = providers.gradleProperty('packagedForgeClientRuntime')
+def packagedForgeClientAssets = providers.gradleProperty('packagedForgeClientAssets')
+def packagedForgeClientNatives = providers.gradleProperty('packagedForgeClientNatives')
 def requireRuntimeDirectory = { Provider<String> configuredPath, String propertyName ->
     if (!configuredPath.isPresent()) {
-        throw new GradleException("Pass -P${propertyName}=<official Forge 25 runtime directory>")
+        throw new GradleException("Pass -P${propertyName}=<official Forge 28 runtime directory>")
     }
     File runtime = file(configuredPath.get())
     if (!runtime.isDirectory()) {
@@ -579,6 +571,15 @@ def createPackagedServerProcess = { String taskName, String phase, String direct
     }
 }
 
+def acceptedForge28LogNoise = [
+        ~/FML appears to be missing any signature data/,
+        ~/Found multiple arguments for option fml\.mcVersion/,
+        ~/Found multiple arguments for option fml\.forgeVersion/,
+        ~/\/(?:ERROR|FATAL)\] \[net\.minecraftforge\.fml\.network\.simple\.IndexedMessageCodec\/SIMPLENET\]: Received empty payload on channel fml:handshake$/,
+        ~/\/FATAL\] \[net\.minecraftforge\.common\.ForgeConfig\/CORE\]: Forge config just got changed on the file system!$/,
+        ~/\/FATAL\] \[net\.minecraftforge\.fml\.packs\.ModFileResourcePack\/\]: Failed to clean up tempdir /
+]
+
 def verifyPackagedRun = { File runDirectory, String label ->
     List<File> crashReports = fileTree(new File(runDirectory, 'crash-reports')).files as List<File>
     if (!crashReports.isEmpty()) {
@@ -588,11 +589,29 @@ def verifyPackagedRun = { File runDirectory, String label ->
     if (!latest.isFile()) {
         throw new GradleException("${label} did not produce a server log")
     }
-    String log = latest.getText('UTF-8')
-    if (log.contains('Encountered an unexpected exception') ||
-            log.contains('Missing Mods:') || log.contains('MissingModsException') ||
-            log.contains('cascading worldgen lag')) {
-        throw new GradleException("${label} log contains a server or missing-mod failure")
+    List<String> failures = []
+    [latest, new File(runDirectory, 'logs/debug.log')].findAll { it.isFile() }.each { log ->
+        int lineNumber = 0
+        log.eachLine('UTF-8') { String line ->
+            ++lineNumber
+            boolean severe = line ==~ /.*\/(?:ERROR|FATAL)\].*/
+            boolean accepted = acceptedForge28LogNoise.any { line =~ it }
+            boolean fatalText = line.contains('Encountered an unexpected exception') ||
+                    line.contains('Exception stopping the server') ||
+                    line.contains('integration audit failed') ||
+                    line.contains('Missing Mods:') ||
+                    line.contains('MissingModsException') ||
+                    line.contains('NoSuchMethodError') ||
+                    line.contains('NoClassDefFoundError') ||
+                    line.contains('ExceptionInInitializerError') ||
+                    line.contains('cascading worldgen lag')
+            if ((severe && !accepted) || fatalText) {
+                failures.add("${log.name}:${lineNumber}: ${line}")
+            }
+        }
+    }
+    if (!failures.isEmpty()) {
+        throw new GradleException("${label} logs contain failures:\n" + failures.join('\n'))
     }
 }
 
@@ -617,6 +636,10 @@ tasks.register('packagedIntegrationTest') {
 
 def oreSpawnJar = providers.gradleProperty('oreSpawnJar')
 def mineralogyJar = providers.gradleProperty('mineralogyJar')
+def qualifiedOreSpawnSha256 =
+        'EC9BD64F1BD85C430A327FDA9A862EABC37A16C0983791683A3D0D32A852B07A'
+def qualifiedMineralogySha256 =
+        '75CE58BCDCB845407DE55F476FDB06211E2F8DBE6FCB0AC0F7FBDB5B7841F7BA'
 def integratedRunDirectoryName = 'packaged-orespawn-mineralogy-run'
 def prepareIntegratedPackagedTest = tasks.register('prepareIntegratedPackagedTest') {
     group = 'verification'
@@ -626,13 +649,18 @@ def prepareIntegratedPackagedTest = tasks.register('prepareIntegratedPackagedTes
     doLast {
         if (!oreSpawnJar.isPresent() || !mineralogyJar.isPresent()) {
             throw new GradleException(
-                    'Set -PoreSpawnJar and -PmineralogyJar to exact 1.13.2 candidates')
+                    'Set -PoreSpawnJar and -PmineralogyJar to exact 1.14.4 candidates')
         }
         File oreSpawn = file(oreSpawnJar.get())
         File mineralogy = file(mineralogyJar.get())
         if (!oreSpawn.isFile() || !mineralogy.isFile()) {
             throw new GradleException(
                     "Integration candidates are missing: ${oreSpawn}, ${mineralogy}")
+        }
+        if (sha256Of(oreSpawn) != qualifiedOreSpawnSha256
+                || sha256Of(mineralogy) != qualifiedMineralogySha256) {
+            throw new GradleException(
+                    'The supplied OreSpawn or Mineralogy jar is not the qualified 1.14.4 candidate')
         }
         File runDirectory = layout.buildDirectory.dir(
                 integratedRunDirectoryName).get().asFile
@@ -782,12 +810,46 @@ tasks.register('oneTwelveForwardUpgradeTest') {
     }
 }
 
+def oneThirteenForwardFixture = file(
+        'src/test/resources/fixtures/skysgrassslabs-1.13.2-forward-world.zip')
+def oneThirteenForwardFixtureSha256 =
+        'BB30D8108476F2E38EBA26D7B4FD9E0FB431413032A20071D2DE2139BEC7BA0C'
+def oneThirteenForwardRunDirectoryName = 'forward-1.13-upgrade-run'
+def prepareOneThirteenForwardUpgradeTest = preparePackagedRuntime(
+        'prepareOneThirteenForwardUpgradeTest', oneThirteenForwardRunDirectoryName,
+        oneThirteenForwardFixture)
+def oneThirteenForwardUpgradeFirstProcess = createPackagedServerProcess(
+        'oneThirteenForwardUpgradeFirstProcess', 'upgrade-113-first',
+        oneThirteenForwardRunDirectoryName, prepareOneThirteenForwardUpgradeTest)
+def oneThirteenForwardUpgradeReloadProcess = createPackagedServerProcess(
+        'oneThirteenForwardUpgradeReloadProcess', 'upgrade-113-reload',
+        oneThirteenForwardRunDirectoryName, oneThirteenForwardUpgradeFirstProcess)
+tasks.register('oneThirteenForwardUpgradeTest') {
+    group = 'verification'
+    description = 'Upgrades and reloads the checksum locked Minecraft 1.13.2 fixture.'
+    dependsOn oneThirteenForwardUpgradeReloadProcess
+    inputs.file(oneThirteenForwardFixture)
+    doFirst {
+        if (sha256Of(oneThirteenForwardFixture) != oneThirteenForwardFixtureSha256) {
+            throw new GradleException('The committed 1.13.2 forward fixture changed')
+        }
+    }
+    doLast {
+        verifyPackagedRun(layout.buildDirectory.dir(
+                oneThirteenForwardRunDirectoryName).get().asFile,
+                'Minecraft 1.13.2 forward upgrade runtime')
+        if (sha256Of(oneThirteenForwardFixture) != oneThirteenForwardFixtureSha256) {
+            throw new GradleException('The committed 1.13.2 forward fixture was modified')
+        }
+    }
+}
+
 def sylvesterWorld = providers.gradleProperty('sylvesterWorld')
 def sylvesterRunDirectoryName = 'sylvester-forward-upgrade-run'
 def prepareSylvesterForwardUpgradeTest = tasks.register(
         'prepareSylvesterForwardUpgradeTest') {
     group = 'verification'
-    description = 'Copies an already converted disposable Sylvester world for a 1.13 audit.'
+    description = 'Copies an already converted disposable Sylvester world for a 1.14 audit.'
     dependsOn tasks.named('assemble'), packagedIntegrationTestModJar
     outputs.upToDateWhen { false }
     doLast {
@@ -843,7 +905,7 @@ def sylvesterForwardReloadProcess = createPackagedServerProcess(
         sylvesterRunDirectoryName, sylvesterForwardProcess)
 tasks.register('sylvesterForwardUpgradeTest') {
     group = 'verification'
-    description = 'Audits a disposable converted Sylvester world before and after a 1.13 reload.'
+    description = 'Audits a disposable converted Sylvester world before and after a 1.14 reload.'
     dependsOn sylvesterForwardReloadProcess
     doLast {
         verifyPackagedRun(layout.buildDirectory.dir(
@@ -939,16 +1001,19 @@ def packagedClientProcess = tasks.register('packagedClientProcess', Exec) {
     doFirst {
         if (!packagedForgeClientRuntime.isPresent()) {
             throw new GradleException(
-                    'Set -PpackagedForgeClientRuntime to an official Forge 25 client runtime')
+                    'Set -PpackagedForgeClientRuntime to an official Forge 28 client runtime')
         }
         File runtime = file(packagedForgeClientRuntime.get())
         File forgeJsonFile = new File(runtime,
-                'versions/1.13.2-forge-25.0.223/1.13.2-forge-25.0.223.json')
-        File baseJsonFile = new File(runtime, 'versions/1.13.2/1.13.2.json')
-        File baseJar = new File(runtime, 'versions/1.13.2/1.13.2.jar')
+                'versions/1.14.4-forge-28.2.26/1.14.4-forge-28.2.26.json')
+        File baseJsonFile = new File(runtime, 'versions/1.14.4/1.14.4.json')
+        File baseJar = new File(runtime, 'versions/1.14.4/1.14.4.jar')
         File libraries = new File(runtime, 'libraries')
-        File assets = new File(runtime, 'assets-local')
-        File natives = new File(runtime, 'natives')
+        File assets = packagedForgeClientAssets.isPresent()
+                ? file(packagedForgeClientAssets.get()) : new File(runtime, 'assets')
+        File natives = packagedForgeClientNatives.isPresent()
+                ? file(packagedForgeClientNatives.get())
+                : new File(runtime, 'natives/forge-28.2.26')
         [forgeJsonFile, baseJsonFile, baseJar, libraries, assets, natives].each { entry ->
             if (!entry.exists()) {
                 throw new GradleException("Incomplete installed Forge client: ${entry}")
@@ -993,10 +1058,10 @@ def packagedClientProcess = tasks.register('packagedClientProcess', Exec) {
         gameArguments.addAll((List<String>) ((Map) forgeJson.arguments).game)
         gameArguments.addAll([
                 '--username', 'SkysGrassSlabsValidation',
-                '--version', '1.13.2-forge-25.0.223',
+                '--version', '1.14.4-forge-28.2.26',
                 '--gameDir', packagedClientRunDirectory.get().asFile.absolutePath,
                 '--assetsDir', assets.absolutePath,
-                '--assetIndex', '1.13.1',
+                '--assetIndex', (String) ((Map) baseJson.assetIndex).id,
                 '--uuid', '00000000-0000-0000-0000-000000000001',
                 '--accessToken', 'validation-token',
                 '--userType', 'legacy',
@@ -1016,7 +1081,7 @@ def packagedClientProcess = tasks.register('packagedClientProcess', Exec) {
 
 tasks.register('packagedClientIntegrationTest') {
     group = 'verification'
-    description = 'Runs the exact release jar in an official Forge 25 client.'
+    description = 'Runs the exact release jar in an official Forge 28 client.'
     dependsOn packagedClientProcess
     doLast {
         File runDirectory = packagedClientRunDirectory.get().asFile
@@ -1047,13 +1112,13 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.13.2' || project.forge_version != '25.0.223' ||
+        if (project.minecraft_version != '1.14.4' || project.forge_version != '28.2.26' ||
                 project.mapping_channel != 'snapshot' ||
-                project.mapping_version != '20180921-1.13' ||
+                project.mapping_version != '20190719-1.14.3' ||
                 project.loader_name != 'forge' || project.loader_code != '1' ||
                 project.java_version != '8' || project.java_toolchain_version != '8.0.502+7' ||
                 project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 1.13.2 release metadata')
+            throw new GradleException('Unexpected 1.14.4 release metadata')
         }
     }
 }
@@ -1300,13 +1365,8 @@ tasks.register('isolateEclipseProductionRuns') {
     dependsOn configureEclipseBuildship
     dependsOn prepareEclipseResources
     doLast {
-        // Forge 25's generated launches retain unresolved environment values.
-        // Store the target values literally in the ignored Eclipse launch files.
-        File forgeGradleCache = new File(gradle.gradleUserHomeDir, 'caches/forge_gradle')
-        String assets = new File(forgeGradleCache, 'assets').absolutePath
-        String natives = new File(forgeGradleCache,
-                "minecraftforge/forgegradle/slime-launcher/cache/net/minecraftforge/forge/" +
-                        "${minecraft_version}-${forge_version}/natives").absolutePath
+        // Forge 28 leaves MC_VERSION unresolved in generated Eclipse launches.
+        // Store the target value literally in the ignored launch files.
         fileTree(project.projectDir) {
             include 'run*.launch'
         }.files.each { File launch ->
@@ -1314,9 +1374,6 @@ tasks.register('isolateEclipseProductionRuns') {
             contents = contents.replace(
                     'key="MC_VERSION" value="${MC_VERSION}"',
                     "key=\"MC_VERSION\" value=\"${minecraft_version}\"")
-            contents = contents.replace('value="{asset_index}"', 'value="1.13.1"')
-                    .replace('value="{assets_root}"', "value=\"${assets}\"")
-                    .replace('value="{natives}"', "value=\"${natives}\"")
             launch.setText(contents.replace('\r\n', '\n'), 'UTF-8')
         }
 
@@ -1365,7 +1422,7 @@ tasks.register('verifyEclipseProductionClasspath') {
                 .toSet()
         if (!legacyLwjglArtifacts.isEmpty()) {
             throw new GradleException(
-                    "Forge 1.13 Eclipse classpath contains sealed LWJGL 2 artifacts: ${legacyLwjglArtifacts}")
+                    "Forge 1.14 Eclipse classpath contains sealed LWJGL 2 artifacts: ${legacyLwjglArtifacts}")
         }
         File metadata = file('bin/main/META-INF/mods.toml')
         String metadataText = metadata.isFile() ? metadata.getText('UTF-8') : ''
@@ -1392,11 +1449,6 @@ tasks.register('verifyEclipseProductionClasspath') {
                     "key=\"MC_VERSION\" value=\"${minecraft_version}\"")) {
                 throw new GradleException(
                         "${launch.name} does not define literal MC_VERSION=${minecraft_version}")
-            }
-            if (contents.contains('{asset_index}') || contents.contains('{assets_root}') ||
-                    contents.contains('{natives}')) {
-                throw new GradleException(
-                        "${launch.name} retains unresolved Forge 25 client values")
             }
         }
     }

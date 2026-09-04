@@ -2,7 +2,7 @@ package zone.moddev.mc.skysgrassslabs.world;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import org.junit.jupiter.api.Test;
 
 class ModWorldStateTest {
@@ -17,7 +17,7 @@ class ModWorldStateTest {
         original.recordDirtItems(5);
         original.recordUnsupported("block:buildingbricks:oak_step", 7);
 
-        NBTTagCompound nbt = original.write(new NBTTagCompound());
+        CompoundNBT nbt = original.write(new CompoundNBT());
         ModWorldState restored = new ModWorldState(ModWorldState.DATA_NAME);
         restored.read(nbt);
 

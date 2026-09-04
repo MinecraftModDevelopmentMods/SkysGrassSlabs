@@ -2,7 +2,7 @@ package zone.moddev.mc.skysgrassslabs.compat;
 
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.ModList;
@@ -75,7 +75,7 @@ public final class BuildingBricksCompat {
     }
 
     private static Item aliasItem(Block block) {
-        return new ItemBlock(block, new Item.Properties()).setRegistryName(block.getRegistryName());
+        return new BlockItem(block, new Item.Properties()).setRegistryName(block.getRegistryName());
     }
 
     private BuildingBricksCompat() {

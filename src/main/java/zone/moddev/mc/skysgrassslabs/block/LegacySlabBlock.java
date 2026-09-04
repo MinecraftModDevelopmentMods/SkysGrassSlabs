@@ -1,14 +1,14 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockSlab;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.SlabBlock;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
-import net.minecraft.block.state.IBlockState;
 import net.minecraftforge.common.ToolType;
 
-/** Common native 1.13 slab behaviour shared by the three permanent slabs. */
-public abstract class LegacySlabBlock extends BlockSlab {
+/** Common native 1.14 slab behaviour shared by the three permanent slabs. */
+public abstract class LegacySlabBlock extends SlabBlock {
     protected LegacySlabBlock(Material material, SoundType sound, float hardness,
             boolean randomTicks) {
         super(properties(material, sound, hardness, randomTicks));
@@ -18,16 +18,16 @@ public abstract class LegacySlabBlock extends BlockSlab {
             float hardness, boolean randomTicks) {
         Block.Properties properties = Block.Properties.create(material)
                 .hardnessAndResistance(hardness).sound(sound).variableOpacity();
-        return randomTicks ? properties.needsRandomTick() : properties;
+        return randomTicks ? properties.tickRandomly() : properties;
     }
 
     @Override
-    public ToolType getHarvestTool(IBlockState state) {
+    public ToolType getHarvestTool(BlockState state) {
         return ToolType.SHOVEL;
     }
 
     @Override
-    public int getHarvestLevel(IBlockState state) {
+    public int getHarvestLevel(BlockState state) {
         return 0;
     }
 }

@@ -2,18 +2,19 @@ package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.Random;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
-import net.minecraft.block.state.BlockFaceShape;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
+import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.IWorldReaderBase;
+import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
 
 public final class TurfBlock extends Block {
@@ -22,39 +23,30 @@ public final class TurfBlock extends Block {
 
     public TurfBlock() {
         super(Block.Properties.create(Material.CARPET).hardnessAndResistance(0.1F)
-                .sound(SoundType.CLOTH).needsRandomTick().variableOpacity());
+                .sound(SoundType.CLOTH).tickRandomly().variableOpacity());
     }
 
     @Override
-    public VoxelShape getShape(IBlockState state, IBlockReader world, BlockPos pos) {
+    public VoxelShape getShape(BlockState state, IBlockReader world, BlockPos pos,
+            ISelectionContext context) {
         return TURF_SHAPE;
     }
 
     @Override
-    public boolean isFullCube(IBlockState state) {
-        return false;
-    }
-
-    @Override
-    public BlockFaceShape getBlockFaceShape(IBlockReader world, IBlockState state, BlockPos pos,
-            EnumFacing face) {
-        return face == EnumFacing.DOWN ? BlockFaceShape.SOLID : BlockFaceShape.UNDEFINED;
-    }
-
-    @Override
-    public boolean isValidPosition(IBlockState state, IWorldReaderBase world, BlockPos pos) {
+    public boolean isValidPosition(BlockState state, IWorldReader world, BlockPos pos) {
         return hasFullSupport(world, pos);
     }
 
     @Override
-    public void onBlockAdded(IBlockState state, World world, BlockPos pos, IBlockState oldState) {
-        super.onBlockAdded(state, world, pos, oldState);
+    public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState,
+            boolean isMoving) {
+        super.onBlockAdded(state, world, pos, oldState, isMoving);
         dirtifyGrassSupport(world, pos);
     }
 
     @Override
-    public IBlockState updatePostPlacement(IBlockState state, EnumFacing facing,
-            IBlockState facingState, IWorld world, BlockPos pos, BlockPos facingPos) {
+    public BlockState updatePostPlacement(BlockState state, Direction facing,
+            BlockState facingState, IWorld world, BlockPos pos, BlockPos facingPos) {
         if (world instanceof World) {
             dirtifyGrassSupport((World) world, pos);
         }
@@ -64,7 +56,7 @@ public final class TurfBlock extends Block {
     }
 
     @Override
-    public void tick(IBlockState state, World world, BlockPos pos, Random random) {
+    public void tick(BlockState state, World world, BlockPos pos, Random random) {
         if (world.isRemote) {
             return;
         }
@@ -77,14 +69,14 @@ public final class TurfBlock extends Block {
     }
 
     @Override
-    public int getFlammability(IBlockState state, IBlockReader world, BlockPos pos,
-            EnumFacing face) {
+    public int getFlammability(BlockState state, IBlockReader world, BlockPos pos,
+            Direction face) {
         return 60;
     }
 
     @Override
-    public int getFireSpreadSpeed(IBlockState state, IBlockReader world, BlockPos pos,
-            EnumFacing face) {
+    public int getFireSpreadSpeed(BlockState state, IBlockReader world, BlockPos pos,
+            Direction face) {
         return 30;
     }
 
@@ -93,8 +85,9 @@ public final class TurfBlock extends Block {
         return BlockRenderLayer.CUTOUT_MIPPED;
     }
 
-    private static boolean hasFullSupport(IWorldReaderBase world, BlockPos pos) {
-        return world.getBlockState(pos.down()).isFullCube();
+    private static boolean hasFullSupport(IWorldReader world, BlockPos pos) {
+        BlockPos support = pos.down();
+        return world.getBlockState(support).isNormalCube(world, support);
     }
 
     private static void dirtifyGrassSupport(World world, BlockPos pos) {
