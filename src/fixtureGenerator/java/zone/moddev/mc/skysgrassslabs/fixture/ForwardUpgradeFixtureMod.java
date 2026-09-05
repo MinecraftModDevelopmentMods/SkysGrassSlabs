@@ -4,16 +4,16 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
-import net.minecraft.block.BlockSlab;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.world.level.block.BlockSlab;
+import net.minecraft.world.level.block.state.IBlockState;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntityChest;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldServer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.LevelServer;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
@@ -94,7 +94,7 @@ public final class ForwardUpgradeFixtureMod {
     }
 
     private static void placeSlab(WorldServer world, BlockPos pos,
-            net.minecraft.block.Block block, BlockSlab.EnumBlockHalf half) {
+            net.minecraft.world.level.block.Block block, BlockSlab.EnumBlockHalf half) {
         support(world, pos);
         IBlockState state = block.getDefaultState().withProperty(BlockSlab.HALF, half);
         world.setBlockState(pos, state, 3);
@@ -104,7 +104,7 @@ public final class ForwardUpgradeFixtureMod {
         world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 3);
     }
 
-    private static IBlockState defaultState(net.minecraft.block.Block block) {
+    private static IBlockState defaultState(net.minecraft.world.level.block.Block block) {
         return block.getDefaultState();
     }
 

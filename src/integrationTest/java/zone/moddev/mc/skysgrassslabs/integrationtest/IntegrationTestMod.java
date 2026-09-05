@@ -24,53 +24,53 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SnowyDirtBlock;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.goal.GoalSelector;
-import net.minecraft.entity.ai.goal.PrioritizedGoal;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.passive.SheepEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.item.Items;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.item.crafting.ICraftingRecipe;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.goal.GoalSelector;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.Container;
+import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.storage.FolderName;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.NonNullList;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
+import net.minecraftforge.fmlserverevents.FMLServerAboutToStartEvent;
+import net.minecraftforge.fmlserverevents.FMLServerStartedEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -92,20 +92,23 @@ public final class IntegrationTestMod {
     private static final String MARKER_NAME = "skysgrassslabs-integration.properties";
     private static final Logger LOGGER = LogManager.getLogger();
     private static final BlockPos ORIGIN = new BlockPos(8, 200, 8);
+    private MinecraftServer pendingServer;
+    private int pendingTicks;
 
     public IntegrationTestMod() {
         MinecraftForge.EVENT_BUS.addListener(this::serverAboutToStart);
         MinecraftForge.EVENT_BUS.addListener(this::serverStarted);
+        MinecraftForge.EVENT_BUS.addListener(this::serverTick);
     }
 
     private void serverAboutToStart(FMLServerAboutToStartEvent event) {
         String phase = System.getProperty(PHASE_PROPERTY, "fresh").trim();
         if (!phase.startsWith("forward-sylvester")) return;
-        File levelDat = event.getServer().getWorldPath(FolderName.LEVEL_DATA_FILE).toFile();
+        File levelDat = event.getServer().getWorldPath(LevelResource.LEVEL_DATA_FILE).toFile();
         File temporary = new File(levelDat.getParentFile(), "level.dat.sky-test");
         try (InputStream input = Files.newInputStream(levelDat.toPath())) {
-            CompoundNBT root = CompressedStreamTools.readCompressed(input);
-            CompoundNBT data = root.getCompound("Data");
+            CompoundTag root = NbtIo.readCompressed(input);
+            CompoundTag data = root.getCompound("Data");
             // The audit scans the saved Sylvester chunks directly. A distant test-only
             // spawn keeps Forge from trying to instantiate unrelated missing legacy
             // entities before that audit can run.
@@ -113,7 +116,7 @@ public final class IntegrationTestMod {
             data.putInt("SpawnY", 80);
             data.putInt("SpawnZ", 2000000);
             try (OutputStream output = Files.newOutputStream(temporary.toPath())) {
-                CompressedStreamTools.writeCompressed(root, output);
+                NbtIo.writeCompressed(root, output);
             }
             Files.move(temporary.toPath(), levelDat.toPath(),
                     StandardCopyOption.REPLACE_EXISTING);
@@ -126,8 +129,24 @@ public final class IntegrationTestMod {
     }
 
     private void serverStarted(FMLServerStartedEvent event) {
-        MinecraftServer server = event.getServer();
-        ServerWorld world = server.getLevel(World.OVERWORLD);
+        // Forge 37 moves entities from legacy chunk NBT into separate entity storage
+        // after the server-started event. Audit after one second so fixture entities
+        // have completed that normal migration before their saved state is checked.
+        pendingServer = event.getServer();
+        pendingTicks = 20;
+    }
+
+    private void serverTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || pendingServer == null || --pendingTicks > 0) {
+            return;
+        }
+        MinecraftServer server = pendingServer;
+        pendingServer = null;
+        runAudit(server);
+    }
+
+    private void runAudit(MinecraftServer server) {
+        ServerLevel world = server.getLevel(Level.OVERWORLD);
         String phase = System.getProperty(PHASE_PROPERTY, "fresh").trim();
         Path marker = worldRoot(server).resolve(MARKER_NAME);
         try {
@@ -147,6 +166,9 @@ public final class IntegrationTestMod {
             } else if (phase.startsWith("upgrade-110-")) {
                 verifyForwardFixture(world, "1.10.2", "1.0.0.110021",
                         "2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861");
+                if (phase.contains("-combined-")) {
+                    verifyLegacyHookCoexistence(worldRoot(server));
+                }
                 evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
             } else if (phase.startsWith("upgrade-111-")) {
                 verifyForwardFixture(world, "1.11.2", "1.0.1.111021",
@@ -170,6 +192,11 @@ public final class IntegrationTestMod {
                 verifyForwardFixture(world, "1.15.2", "1.0.1.115021",
                         "9AE28332EA21700C5DE8D3597FC40F5B06D85E8A7FB3C0DE650A2F8BC5E0895C");
                 verifyFlattenedFixtureStates(world, "1.15");
+                evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
+            } else if (phase.startsWith("upgrade-116-")) {
+                verifyForwardFixture(world, "1.16.5", "1.0.1.116051",
+                        "54388D358581579723EFBEF6B06DDEF775CEB6FF8DD9289DFDDE82B951A9A2D7");
+                verifyFlattenedFixtureStates(world, "1.16");
                 evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
             } else if (phase.startsWith("forward-sylvester")) {
                 SylvesterCounts counts = auditSylvester(worldRoot(server));
@@ -218,7 +245,7 @@ public final class IntegrationTestMod {
         }
     }
 
-    private static int verifyGameplay(ServerWorld world) {
+    private static int verifyGameplay(ServerLevel world) {
         int checks = 0;
         verifyRegistries();
         checks += 8;
@@ -295,17 +322,17 @@ public final class IntegrationTestMod {
                 "Waterlogged path did not become matching wet dirt");
         checks += 2;
 
-        PlayerEntity player = FakePlayerFactory.getMinecraft(world);
-        player.abilities.mayBuild = true;
+        Player player = FakePlayerFactory.getMinecraft(world);
+        player.getAbilities().mayBuild = true;
 
         // Matching slab items normalize rather than retaining DOUBLE.
         BlockPos normalize = ORIGIN.east(8);
         world.setBlock(normalize, dirtBottom, 3);
         ItemStack secondSlab = new ItemStack(ModBlocks.DIRT_SLAB);
-        player.setItemInHand(Hand.MAIN_HAND, secondSlab);
-        ActionResultType combined = item(ModBlocks.DIRT_SLAB).useOn(
+        player.setItemInHand(InteractionHand.MAIN_HAND, secondSlab);
+        InteractionResult combined = item(ModBlocks.DIRT_SLAB).useOn(
                 useContext(player, normalize, Direction.UP));
-        require(combined == ActionResultType.SUCCESS
+        require(combined == InteractionResult.SUCCESS
                 && world.getBlockState(normalize).getBlock() == Blocks.DIRT,
                 "Two dirt slabs did not normalize to vanilla dirt");
         checks++;
@@ -314,9 +341,9 @@ public final class IntegrationTestMod {
         BlockPos turfUse = ORIGIN.east(10);
         world.setBlock(turfUse, dirtTop, 3);
         ItemStack turfStack = new ItemStack(ModBlocks.TURF, 2);
-        player.setItemInHand(Hand.MAIN_HAND, turfStack);
+        player.setItemInHand(InteractionHand.MAIN_HAND, turfStack);
         require(item(ModBlocks.TURF).useOn(
-                useContext(player, turfUse, Direction.UP)) == ActionResultType.SUCCESS
+                useContext(player, turfUse, Direction.UP)) == InteractionResult.SUCCESS
                 && world.getBlockState(turfUse).getBlock() == ModBlocks.GRASS_SLAB
                 && world.getBlockState(turfUse).getValue(SlabBlock.TYPE) == SlabType.TOP,
                 "Turf did not convert a dry dirt slab");
@@ -324,7 +351,7 @@ public final class IntegrationTestMod {
                 SlabType.BOTTOM, true), 3);
         int before = turfStack.getCount();
         require(item(ModBlocks.TURF).useOn(
-                useContext(player, turfUse.east(), Direction.UP)) == ActionResultType.FAIL
+                useContext(player, turfUse.east(), Direction.UP)) == InteractionResult.FAIL
                 && turfStack.getCount() == before,
                 "Turf changed or consumed itself on a wet dirt slab");
         checks += 2;
@@ -334,12 +361,11 @@ public final class IntegrationTestMod {
         world.setBlock(flatten, grassTop, 3);
         world.removeBlock(flatten.above(), false);
         ItemStack shovel = new ItemStack(Items.IRON_SHOVEL);
-        player.setItemInHand(Hand.MAIN_HAND, shovel);
-        PlayerInteractEvent.RightClickBlock flattenEvent = new PlayerInteractEvent.RightClickBlock(
-                player, Hand.MAIN_HAND, flatten, Direction.UP);
-        CommonEvents.flattenSlab(flattenEvent);
-        require(flattenEvent.isCanceled()
-                && world.getBlockState(flatten).getBlock() == ModBlocks.PATH_SLAB
+        player.setItemInHand(InteractionHand.MAIN_HAND, shovel);
+        InteractionResult flattened = Items.IRON_SHOVEL.useOn(
+                useContext(player, flatten, Direction.UP));
+        require(flattened.consumesAction() &&
+                world.getBlockState(flatten).getBlock() == ModBlocks.PATH_SLAB
                 && world.getBlockState(flatten).getValue(SlabBlock.TYPE) == SlabType.TOP
                 && shovel.getDamageValue() == 1,
                 "Shovel flattening did not preserve the slab and tool contract");
@@ -381,7 +407,7 @@ public final class IntegrationTestMod {
         }
     }
 
-    private static void verifyTurfSupportAndSheep(ServerWorld world) {
+    private static void verifyTurfSupportAndSheep(ServerLevel world) {
         BlockPos turf = ORIGIN.south(2);
         world.setBlock(turf.below(), Blocks.DIRT.defaultBlockState(), 3);
         world.setBlock(turf, defaultState(ModBlocks.TURF), 3);
@@ -400,7 +426,7 @@ public final class IntegrationTestMod {
         require(!GrassSpread.growTarget(world, coveredDirt),
                 "Grass spread through turf to its supporting dirt");
 
-        SheepEntity sheep = EntityType.SHEEP.create(world);
+        Sheep sheep = EntityType.SHEEP.create(world);
         EntityJoinWorldEvent join = new EntityJoinWorldEvent(sheep, world);
         CommonEvents.addTurfEatingTask(join);
         CommonEvents.addTurfEatingTask(join);
@@ -410,30 +436,30 @@ public final class IntegrationTestMod {
                 turf, Direction.UP) > 0, "Turf is not flammable");
     }
 
-    private static void verifyRecipes(ServerWorld world) {
+    private static void verifyRecipes(ServerLevel world) {
         String[] names = {"dirt_slab", "grass_slab", "grass_block_from_seeds",
                 "grass_slab_from_seeds", "turf"};
         for (String name : names) {
             require(world.getRecipeManager().byKey(id(name)).isPresent(),
                     "Recipe did not load: " + name);
         }
-        IRecipe<?> loadedRecipe = world.getRecipeManager().byKey(id("turf")).orElseThrow(
+        Recipe<?> loadedRecipe = world.getRecipeManager().byKey(id("turf")).orElseThrow(
                 () -> new IllegalStateException("Turf recipe did not load"));
-        require(loadedRecipe instanceof ICraftingRecipe,
+        require(loadedRecipe instanceof CraftingRecipe,
                 "Turf recipe cannot be used by a crafting container");
-        ICraftingRecipe recipe = (ICraftingRecipe) loadedRecipe;
+        CraftingRecipe recipe = (CraftingRecipe) loadedRecipe;
         require(!recipe.isSpecial() && recipe.getSerializer() == TurfCuttingRecipe.SERIALIZER,
                 "Turf recipe is not visible or has the wrong serializer");
 
-        CraftingInventory crafting = new CraftingInventory(new Container(null, 0) {
+        CraftingContainer crafting = new CraftingContainer(new AbstractContainerMenu(null, 0) {
             @Override
-            public boolean stillValid(PlayerEntity player) {
+            public boolean stillValid(Player player) {
                 return true;
             }
         }, 2, 2);
         crafting.setItem(0, new ItemStack(ModBlocks.GRASS_SLAB));
         ItemStack shovel = new ItemStack(Items.DIAMOND_SHOVEL);
-        CompoundNBT tag = new CompoundNBT();
+        CompoundTag tag = new CompoundTag();
         tag.putString("probe", "retained");
         shovel.setTag(tag);
         shovel.setDamageValue(17);
@@ -453,8 +479,8 @@ public final class IntegrationTestMod {
                         + ", tag=" + remaining.get(1).getTag());
     }
 
-    private static void verifyDrops(ServerWorld world) {
-        PlayerEntity player = FakePlayerFactory.getMinecraft(world);
+    private static void verifyDrops(ServerLevel world) {
+        Player player = FakePlayerFactory.getMinecraft(world);
         List<ItemStack> grassDrops = Block.getDrops(snowySlab(ModBlocks.GRASS_SLAB,
                 SlabType.BOTTOM, false, false), world, ORIGIN, null, player, ItemStack.EMPTY);
         require(grassDrops.size() == 1
@@ -467,12 +493,12 @@ public final class IntegrationTestMod {
                 "Path slab drop changed");
     }
 
-    private static int verifyWorldGeneration(ServerWorld world) {
+    private static int verifyWorldGeneration(ServerLevel world) {
         int skySlabs = 0;
-        BlockPos.Mutable pos = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int chunkZ = 24; chunkZ < 29; ++chunkZ) {
             for (int chunkX = 24; chunkX < 29; ++chunkX) {
-                IChunk chunk = world.getChunk(chunkX, chunkZ);
+                ChunkAccess chunk = world.getChunk(chunkX, chunkZ);
                 int startX = chunkX << 4;
                 int startZ = chunkZ << 4;
                 for (int localZ = 0; localZ < 16; ++localZ) {
@@ -491,7 +517,7 @@ public final class IntegrationTestMod {
         return skySlabs;
     }
 
-    private static void verifyReload(ServerWorld world) {
+    private static void verifyReload(ServerLevel world) {
         world.getChunk(0, 0);
         require(world.getBlockState(ORIGIN.south(4)).getBlock() == ModBlocks.GRASS_SLAB
                 && world.getBlockState(ORIGIN.south(4)).getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
@@ -505,7 +531,7 @@ public final class IntegrationTestMod {
                 "World state changed across reload");
     }
 
-    private static void verifyForwardFixture(ServerWorld world, String minecraft,
+    private static void verifyForwardFixture(ServerLevel world, String minecraft,
             String modVersion, String jarSha256) throws IOException {
         world.getChunk(0, 0);
         Path sourceMarker = worldRoot(world.getServer()).resolve(
@@ -522,7 +548,7 @@ public final class IntegrationTestMod {
         Path legacyRegistry = worldRoot(world.getServer()).resolve(
                 "data/skysgrassslabs_legacy_registry.dat");
         if ("1.13.2".equals(minecraft) || "1.14.4".equals(minecraft) ||
-                "1.15.2".equals(minecraft)) {
+                "1.15.2".equals(minecraft) || "1.16.5".equals(minecraft)) {
             require(!Files.exists(legacyRegistry),
                     "The numeric legacy bridge ran on an already flattened world");
         } else {
@@ -540,16 +566,16 @@ public final class IntegrationTestMod {
         require(world.getBlockState(origin.east(6)).getBlock() == ModBlocks.TURF,
                 "Forward fixture turf was lost");
 
-        TileEntity entity = world.getBlockEntity(origin.south(2));
-        require(entity instanceof IInventory, "Forward fixture chest was lost");
-        IInventory chest = (IInventory) entity;
+        BlockEntity entity = world.getBlockEntity(origin.south(2));
+        require(entity instanceof Container, "Forward fixture chest was lost");
+        Container chest = (Container) entity;
         verifyFixtureStack(chest.getItem(0), ModBlocks.DIRT_SLAB, 2);
         verifyFixtureStack(chest.getItem(1), ModBlocks.GRASS_SLAB, 3);
         require(chest.getItem(1).hasTag()
                 && "retained".equals(chest.getItem(1).getTag().getString("fixture")),
                 "Forward fixture stack NBT was lost");
         if ("1.13.2".equals(minecraft) || "1.14.4".equals(minecraft) ||
-                "1.15.2".equals(minecraft)) {
+                "1.15.2".equals(minecraft) || "1.16.5".equals(minecraft)) {
             require(chest.getItem(1).getTag().getInt("source_data_version") == 1631,
                     "The flattened fixture's custom integer NBT was lost");
         }
@@ -557,7 +583,8 @@ public final class IntegrationTestMod {
         verifyFixtureStack(chest.getItem(3), ModBlocks.TURF, 5);
 
         List<ItemEntity> items = world.getEntitiesOfClass(ItemEntity.class,
-                new AxisAlignedBB(origin.offset(2, 0, 0), origin.offset(7, 4, 5)));
+                new AABB(0.0D, world.getMinBuildHeight(), 0.0D,
+                        16.0D, world.getMaxBuildHeight(), 16.0D));
         require(items.size() == 1, "Forward fixture entity stack count changed: " + items.size());
         verifyFixtureStack(items.get(0).getItem(), ModBlocks.GRASS_SLAB, 6);
 
@@ -577,7 +604,7 @@ public final class IntegrationTestMod {
                 "Forward fixture world state changed");
     }
 
-    private static void verifyFlattenedFixtureStates(ServerWorld world, String sourceVersion) {
+    private static void verifyFlattenedFixtureStates(ServerLevel world, String sourceVersion) {
         BlockPos origin = new BlockPos(8, 65, 8);
         BlockState snowyDirt = world.getBlockState(origin.south(4));
         require(snowyDirt.getBlock() == ModBlocks.DIRT_SLAB
@@ -636,8 +663,8 @@ public final class IntegrationTestMod {
                     DataInputStream input = readRegionChunk(region, index, file);
                     if (input == null) continue;
                     try (DataInputStream chunk = input) {
-                        CompoundNBT root = CompressedStreamTools.read(chunk);
-                        CompoundNBT level = root.getCompound("Level");
+                        CompoundTag root = NbtIo.read(chunk);
+                        CompoundTag level = root.getCompound("Level");
                         countSavedBlocks(level, legacyBlocks, counts);
                         countStacks(level.getList("TileEntities", 10), counts);
                         countStacks(level.getList("Entities", 10), counts);
@@ -680,15 +707,15 @@ public final class IntegrationTestMod {
     }
 
     private static Map<Integer, String> savedBlockNames(Path worldDirectory) throws IOException {
-        CompoundNBT root;
+        CompoundTag root;
         try (FileInputStream input = new FileInputStream(
                 worldDirectory.resolve("level.dat").toFile())) {
-            root = CompressedStreamTools.readCompressed(input);
+            root = NbtIo.readCompressed(input);
         }
-        CompoundNBT data = root.getCompound("Data");
-        CompoundNBT fml = data.getCompound("FML");
+        CompoundTag data = root.getCompound("Data");
+        CompoundTag fml = data.getCompound("FML");
         if (!fml.contains("Registries", 10)) fml = root.getCompound("FML");
-        CompoundNBT registries = fml.getCompound("Registries");
+        CompoundTag registries = fml.getCompound("Registries");
         Map<Integer, String> names = new LinkedHashMap<Integer, String>();
         for (String registry : new String[] {"minecraft:blocks", "fml:blocks"}) {
             addSavedBlockNames(registries.getCompound(registry), names);
@@ -698,7 +725,7 @@ public final class IntegrationTestMod {
                     .resolve("skysgrassslabs_legacy_registry.dat").toFile();
             if (sidecar.isFile()) {
                 try (FileInputStream input = new FileInputStream(sidecar)) {
-                    addSavedBlockNames(CompressedStreamTools.readCompressed(input)
+                    addSavedBlockNames(NbtIo.readCompressed(input)
                             .getCompound("Blocks"), names);
                 }
             }
@@ -706,20 +733,44 @@ public final class IntegrationTestMod {
         return names;
     }
 
-    private static void addSavedBlockNames(CompoundNBT blockSnapshot,
+    private static void verifyLegacyHookCoexistence(Path worldDirectory) throws IOException {
+        Path skySidecar = worldDirectory.resolve("data")
+                .resolve("skysgrassslabs_legacy_registry.dat");
+        Path mineralogySidecar = worldDirectory.resolve("data")
+                .resolve("mineralogy_legacy_registry.dat");
+        require(Files.isRegularFile(skySidecar),
+                "Sky's Grass Slabs legacy registry sidecar is missing");
+        require(Files.isRegularFile(mineralogySidecar),
+                "Mineralogy legacy registry sidecar is missing");
+
+        CompoundTag skySnapshot;
+        CompoundTag mineralogySnapshot;
+        try (FileInputStream input = new FileInputStream(skySidecar.toFile())) {
+            skySnapshot = NbtIo.readCompressed(input).getCompound("Blocks");
+        }
+        try (FileInputStream input = new FileInputStream(mineralogySidecar.toFile())) {
+            mineralogySnapshot = NbtIo.readCompressed(input).getCompound("Blocks");
+        }
+        require(skySnapshot.equals(mineralogySnapshot),
+                "Legacy hooks did not preserve the same FML block snapshot");
+        require(savedBlockNames(worldDirectory).containsValue("skysgrassslabs:grass_slab"),
+                "The shared legacy registry snapshot lost Sky's grass slab ID");
+    }
+
+    private static void addSavedBlockNames(CompoundTag blockSnapshot,
             Map<Integer, String> names) {
-        ListNBT ids = blockSnapshot.getList("ids", 10);
+        ListTag ids = blockSnapshot.getList("ids", 10);
         for (int index = 0; index < ids.size(); ++index) {
-            CompoundNBT entry = ids.getCompound(index);
+            CompoundTag entry = ids.getCompound(index);
             names.put(Integer.valueOf(entry.getInt("V")), entry.getString("K"));
         }
     }
 
-    private static void countSavedBlocks(CompoundNBT level,
+    private static void countSavedBlocks(CompoundTag level,
             Map<Integer, String> legacyBlocks, SylvesterCounts counts) {
-        ListNBT sections = level.getList("Sections", 10);
+        ListTag sections = level.getList("Sections", 10);
         for (int sectionIndex = 0; sectionIndex < sections.size(); ++sectionIndex) {
-            CompoundNBT section = sections.getCompound(sectionIndex);
+            CompoundTag section = sections.getCompound(sectionIndex);
             if (section.contains("Palette", 9)) {
                 countFlattenedSection(section, counts);
             } else {
@@ -728,7 +779,7 @@ public final class IntegrationTestMod {
         }
     }
 
-    private static void countLegacySection(CompoundNBT section,
+    private static void countLegacySection(CompoundTag section,
             Map<Integer, String> names, SylvesterCounts counts) {
         byte[] blocks = section.getByteArray("Blocks");
         if (blocks.length != 4096) return;
@@ -741,15 +792,15 @@ public final class IntegrationTestMod {
         }
     }
 
-    private static void countFlattenedSection(CompoundNBT section, SylvesterCounts counts) {
-        ListNBT palette = section.getList("Palette", 10);
+    private static void countFlattenedSection(CompoundTag section, SylvesterCounts counts) {
+        ListTag palette = section.getList("Palette", 10);
         if (palette.isEmpty()) return;
         String[] names = new String[palette.size()];
         boolean[] top = new boolean[palette.size()];
         for (int index = 0; index < palette.size(); ++index) {
-            CompoundNBT entry = palette.getCompound(index);
+            CompoundTag entry = palette.getCompound(index);
             names[index] = entry.getString("Name");
-            CompoundNBT properties = entry.getCompound("Properties");
+            CompoundTag properties = entry.getCompound("Properties");
             top[index] = "top".equals(properties.getString("type"));
         }
         long[] packed = section.getLongArray("BlockStates");
@@ -807,9 +858,9 @@ public final class IntegrationTestMod {
         }
     }
 
-    private static void countStacks(INBT tag, SylvesterCounts counts) {
-        if (tag instanceof CompoundNBT) {
-            CompoundNBT compound = (CompoundNBT) tag;
+    private static void countStacks(Tag tag, SylvesterCounts counts) {
+        if (tag instanceof CompoundTag) {
+            CompoundTag compound = (CompoundTag) tag;
             if (compound.contains("id", 8) && compound.contains("Count", 99)) {
                 int count = compound.getByte("Count") & 255;
                 String id = compound.getString("id");
@@ -819,11 +870,11 @@ public final class IntegrationTestMod {
                 else if ("skysgrassslabs:turf".equals(id)) counts.turfItems += count;
             }
             for (String key : new ArrayList<String>(compound.getAllKeys())) {
-                INBT child = compound .get(key);
+                Tag child = compound .get(key);
                 if (child != null) countStacks(child, counts);
             }
-        } else if (tag instanceof ListNBT) {
-            ListNBT list = (ListNBT) tag;
+        } else if (tag instanceof ListTag) {
+            ListTag list = (ListTag) tag;
             for (int index = 0; index < list.size(); ++index) {
                 countStacks(list.get(index), counts);
             }
@@ -842,7 +893,7 @@ public final class IntegrationTestMod {
         evidence.setProperty("sylvester_turf_items", Long.toString(counts.turfItems));
     }
 
-    private static void verifyFixtureSlab(World world, BlockPos pos, Block expected,
+    private static void verifyFixtureSlab(Level world, BlockPos pos, Block expected,
             SlabType type) {
         BlockState state = world.getBlockState(pos);
         require(state.getBlock() == expected && state.getValue(SlabBlock.TYPE) == type
@@ -864,15 +915,15 @@ public final class IntegrationTestMod {
         return block.defaultBlockState();
     }
 
-    private static net.minecraft.item.Item item(Block block) {
+    private static net.minecraft.world.item.Item item(Block block) {
         return block.asItem();
     }
 
-    private static ItemUseContext useContext(PlayerEntity player, BlockPos pos, Direction face) {
-        Vector3d hit = Vector3d.atLowerCornerOf(pos).add(
+    private static UseOnContext useContext(Player player, BlockPos pos, Direction face) {
+        Vec3 hit = Vec3.atLowerCornerOf(pos).add(
                 0.5D, face == Direction.UP ? 1.0D : 0.5D, 0.5D);
-        return new ItemUseContext(player, Hand.MAIN_HAND,
-                new BlockRayTraceResult(hit, face, pos, false));
+        return new UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(hit, face, pos, false));
     }
 
     @SuppressWarnings("unchecked")
@@ -883,8 +934,8 @@ public final class IntegrationTestMod {
                 if (!Set.class.isAssignableFrom(field.getType())) continue;
                 field.setAccessible(true);
                 for (Object entry : (Set<Object>) field.get(selector)) {
-                    if (entry instanceof PrioritizedGoal
-                            && ((PrioritizedGoal) entry).getGoal() instanceof TurfEatingAI) {
+                    if (entry instanceof WrappedGoal
+                            && ((WrappedGoal) entry).getGoal() instanceof TurfEatingAI) {
                         ++count;
                     }
                 }
@@ -908,7 +959,7 @@ public final class IntegrationTestMod {
         return Math.abs(actual - expected) < 0.000001D;
     }
 
-    private static void clearProbe(World world) {
+    private static void clearProbe(Level world) {
         for (int x = ORIGIN.getX() - 1; x <= ORIGIN.getX() + 15; ++x) {
             for (int z = ORIGIN.getZ() - 1; z <= ORIGIN.getZ() + 8; ++z) {
                 for (int y = ORIGIN.getY() - 2; y <= ORIGIN.getY() + 2; ++y) {
@@ -919,7 +970,7 @@ public final class IntegrationTestMod {
     }
 
     private static Path worldRoot(MinecraftServer server) {
-        return server.getWorldPath(FolderName.ROOT).toAbsolutePath().normalize();
+        return server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize();
     }
 
     private static Properties read(Path marker) throws IOException {
@@ -934,7 +985,7 @@ public final class IntegrationTestMod {
 
     private static void write(Path marker, Properties values) throws IOException {
         try (OutputStream output = Files.newOutputStream(marker)) {
-            values.store(output, "Sky's Grass Slabs Forge 1.16.5 integration evidence");
+            values.store(output, "Sky's Grass Slabs Forge 1.17.1 integration evidence");
         }
     }
 

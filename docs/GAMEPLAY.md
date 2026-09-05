@@ -8,7 +8,7 @@ vanilla block:
 
 - two dirt slabs become a dirt block;
 - two grass slabs become a grass block;
-- two path slabs become a grass path block.
+- two path slabs become a dirt path block.
 
 Grass slabs use the surrounding biome colour. They spread grass to nearby dirt
 blocks and dirt slabs, and vanilla grass can spread back to dirt slabs. A grass

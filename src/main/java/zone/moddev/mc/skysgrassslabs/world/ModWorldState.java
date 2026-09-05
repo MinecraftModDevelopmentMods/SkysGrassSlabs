@@ -3,13 +3,13 @@ package zone.moddev.mc.skysgrassslabs.world;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.storage.WorldSavedData;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.saveddata.SavedData;
 
-public final class ModWorldState extends WorldSavedData {
+public final class ModWorldState extends SavedData {
     public static final String DATA_NAME = "skysgrassslabs_world_state";
     public static final int SCHEMA_VERSION = 1;
     public static final int MIGRATION_VERSION = 1;
@@ -26,20 +26,23 @@ public final class ModWorldState extends WorldSavedData {
     private final Map<String, Long> unsupported = new TreeMap<String, Long>();
 
     public ModWorldState(String name) {
-        super(name);
     }
 
-    public static ModWorldState get(World world) {
-        if (!world.isClientSide && world.dimension() != World.OVERWORLD &&
+    private ModWorldState(CompoundTag nbt) {
+        load(nbt);
+    }
+
+    public static ModWorldState get(Level world) {
+        if (!world.isClientSide && world.dimension() != Level.OVERWORLD &&
                 world.getServer() != null) {
-            ServerWorld overworld = world.getServer().getLevel(World.OVERWORLD);
+            ServerLevel overworld = world.getServer().getLevel(Level.OVERWORLD);
             if (overworld != null) world = overworld;
         }
-        if (!(world instanceof ServerWorld)) {
+        if (!(world instanceof ServerLevel)) {
             return new ModWorldState(DATA_NAME);
         }
-        ModWorldState state = ((ServerWorld) world).getDataStorage().computeIfAbsent(
-                () -> new ModWorldState(DATA_NAME), DATA_NAME);
+        ModWorldState state = ((ServerLevel) world).getDataStorage().computeIfAbsent(
+                ModWorldState::new, () -> new ModWorldState(DATA_NAME), DATA_NAME);
         return state;
     }
 
@@ -128,8 +131,7 @@ public final class ModWorldState extends WorldSavedData {
         return Collections.unmodifiableMap(unsupported);
     }
 
-    @Override
-    public void load(CompoundNBT nbt) {
+    public void load(CompoundTag nbt) {
         migratedChunks = nbt.getLong("migrated_chunks");
         migratedGrassBlocks = nbt.getLong("migrated_grass_blocks");
         migratedGrassBlocksTop = nbt.getLong("migrated_grass_blocks_top");
@@ -140,15 +142,15 @@ public final class ModWorldState extends WorldSavedData {
         migratedGrassItems = nbt.getLong("migrated_grass_items");
         migratedDirtItems = nbt.getLong("migrated_dirt_items");
         unsupported.clear();
-        ListNBT list = nbt.getList("unsupported", 10);
+        ListTag list = nbt.getList("unsupported", 10);
         for (int index = 0; index < list.size(); ++index) {
-            CompoundNBT entry = list.getCompound(index);
+            CompoundTag entry = list.getCompound(index);
             unsupported.put(entry.getString("id"), entry.getLong("count"));
         }
     }
 
     @Override
-    public CompoundNBT save(CompoundNBT nbt) {
+    public CompoundTag save(CompoundTag nbt) {
         nbt.putInt("schema_version", SCHEMA_VERSION);
         nbt.putInt("buildingbricks_migration_version", MIGRATION_VERSION);
         nbt.putLong("migrated_chunks", migratedChunks);
@@ -160,9 +162,9 @@ public final class ModWorldState extends WorldSavedData {
         nbt.putLong("migrated_dirt_blocks_bottom", migratedDirtBlocksBottom);
         nbt.putLong("migrated_grass_items", migratedGrassItems);
         nbt.putLong("migrated_dirt_items", migratedDirtItems);
-        ListNBT list = new ListNBT();
+        ListTag list = new ListTag();
         for (Map.Entry<String, Long> value : unsupported.entrySet()) {
-            CompoundNBT entry = new CompoundNBT();
+            CompoundTag entry = new CompoundTag();
             entry.putString("id", value.getKey());
             entry.putLong("count", value.getValue());
             list.add(entry);

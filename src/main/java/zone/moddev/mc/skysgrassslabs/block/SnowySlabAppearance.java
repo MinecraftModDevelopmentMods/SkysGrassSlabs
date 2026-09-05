@@ -1,13 +1,13 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockReader;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.BlockGetter;
 
 final class SnowySlabAppearance {
-    static boolean hasNearbySnow(IBlockReader world, BlockPos pos) {
+    static boolean hasNearbySnow(BlockGetter world, BlockPos pos) {
         if (isSnow(world.getBlockState(pos.above()).getBlock())) {
             return true;
         }

@@ -18,13 +18,13 @@ side="SERVER"
 [[dependencies.skysgrassslabsintegrationtest]]
 modId="skysgrassslabs"
 mandatory=true
-versionRange="[1.0.1.116051]"
+versionRange="[1.0.1.117011]"
 ordering="AFTER"
 side="SERVER"
 
 [[dependencies.skysgrassslabsintegrationtest]]
 modId="minecraft"
 mandatory=true
-versionRange="[1.16.5]"
+versionRange="[1.17.1]"
 ordering="NONE"
 side="SERVER"

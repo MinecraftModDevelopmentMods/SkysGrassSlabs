@@ -6,7 +6,7 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.0.1.116051.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.0.1.117011.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -21,8 +21,8 @@ vanilla numeric range. Old top and bottom orientations are retained and begin
 dry. Keep the mod installed during the first upgraded start so unopened chunks
 can be converted when they are later visited.
 
-Minecraft 1.13.2 through 1.15.2 worlds already use named block states. Their
-orientation, snowy and waterlogged states load directly in Minecraft 1.16.5
+Minecraft 1.13.2 through 1.16.5 worlds already use named block states. Their
+orientation, snowy and waterlogged states load directly in Minecraft 1.17.1
 without the numeric conversion step.
 
 World smoothing still affects only newly generated chunks. Indexed chunks from
@@ -46,15 +46,15 @@ missing and may remove it after offering its normal backup and confirmation
 screen. Do not continue unless losing those unsupported blocks is acceptable
 for that copy of the world.
 
-If an important world uses other content without a Minecraft 1.16.5 version,
+If an important world uses other content without a Minecraft 1.17.1 version,
 keep playing it on its existing Minecraft version until a suitable migration
 is available.
 
 ## Modpack checklist
 
 1. Back up the complete instance and world.
-2. Update Forge and every required mod to a matching Minecraft 1.16.5 build.
-3. Install the 1.16.5 Sky's Grass Slabs jar before the first upgraded start.
+2. Update Forge and every required mod to a matching Minecraft 1.17.1 build.
+3. Install the 1.17.1 Sky's Grass Slabs jar before the first upgraded start.
 4. Read the complete Forge missing content list before confirming it.
 5. Check representative slabs, turf, paths, inventories and previously
    generated terrain.

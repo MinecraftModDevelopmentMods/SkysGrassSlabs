@@ -6,29 +6,29 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.OptionalLong;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SlabBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.MainMenuScreen;
-import net.minecraft.client.gui.recipebook.RecipeList;
-import net.minecraft.client.renderer.model.IBakedModel;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.ICraftingRecipe;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GrassColors;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.GrassColor;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameType;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.WorldSettings;
-import net.minecraft.world.biome.BiomeColors;
-import net.minecraft.util.registry.DynamicRegistries;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.datafix.codec.DatapackCodec;
-import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.client.renderer.BiomeColors;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.Registry;
+import net.minecraft.world.level.DataPackConfig;
+import net.minecraft.world.level.levelgen.WorldGenSettings;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -78,7 +78,7 @@ public final class ClientProbeTestMod {
         try {
             switch (state) {
                 case 0:
-                    if (minecraft.screen instanceof MainMenuScreen) {
+                    if (minecraft.screen instanceof TitleScreen) {
                         createWorld(minecraft);
                         nextState(1);
                     }
@@ -136,10 +136,10 @@ public final class ClientProbeTestMod {
                 slabState(ModBlocks.PATH_SLAB, SlabType.BOTTOM),
                 ((Block) ModBlocks.TURF).defaultBlockState()
         };
-        IBakedModel missing = minecraft.getBlockRenderer().getBlockModelShaper()
+        BakedModel missing = minecraft.getBlockRenderer().getBlockModelShaper()
                 .getModelManager().getMissingModel();
         for (BlockState stateToCheck : states) {
-            IBakedModel model = minecraft.getBlockRenderer().getBlockModel(stateToCheck);
+            BakedModel model = minecraft.getBlockRenderer().getBlockModel(stateToCheck);
             ResourceLocation registryName = stateToCheck.getBlock().getRegistryName();
             if (model == null || model == missing ||
                     model.getParticleIcon() == null ||
@@ -174,7 +174,7 @@ public final class ClientProbeTestMod {
             }
         }
 
-        int expectedItemColor = GrassColors.get(0.5D, 1.0D);
+        int expectedItemColor = GrassColor.get(0.5D, 1.0D);
         for (Block block : new Block[] {ModBlocks.GRASS_SLAB, ModBlocks.TURF}) {
             int actual = minecraft.getItemColors().getColor(new ItemStack(block), 0);
             if (actual != expectedItemColor) {
@@ -187,13 +187,13 @@ public final class ClientProbeTestMod {
     }
 
     private void verifyRecipeBook(Minecraft minecraft) {
-        IRecipe turfRecipe = minecraft.level.getRecipeManager().byKey(
+        Recipe turfRecipe = minecraft.level.getRecipeManager().byKey(
                 new ResourceLocation("skysgrassslabs", "turf")).orElse(null);
-        if (!(turfRecipe instanceof ICraftingRecipe) || turfRecipe.isSpecial()
+        if (!(turfRecipe instanceof CraftingRecipe) || turfRecipe.isSpecial()
                 || turfRecipe.getIngredients().size() != 2) {
             throw new IllegalStateException("Turf recipe is not recipe book compatible");
         }
-        for (RecipeList recipeList : minecraft.player.getRecipeBook().getCollections()) {
+        for (RecipeCollection recipeList : minecraft.player.getRecipeBook().getCollections()) {
             if (recipeList.getRecipes().contains(turfRecipe)) {
                 recipeBookVerified = true;
                 return;
@@ -204,19 +204,19 @@ public final class ClientProbeTestMod {
 
     private static void stopIntegratedServer(Minecraft minecraft) {
         if (minecraft.level != null) minecraft.level.disconnect();
-        minecraft.clearLevel(new MainMenuScreen());
+        minecraft.clearLevel(new TitleScreen());
     }
 
     private static void createWorld(Minecraft minecraft) {
-        DynamicRegistries.Impl registries = DynamicRegistries.builtin();
-        DimensionGeneratorSettings generator = DimensionGeneratorSettings.makeDefault(
+        RegistryAccess.RegistryHolder registries = RegistryAccess.builtin();
+        WorldGenSettings generator = WorldGenSettings.makeDefault(
                 registries.registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY),
                 registries.registryOrThrow(Registry.BIOME_REGISTRY),
                 registries.registryOrThrow(Registry.NOISE_GENERATOR_SETTINGS_REGISTRY))
                 .withSeed(false, OptionalLong.of(81726354L));
-        WorldSettings settings = new WorldSettings("Sky's Grass Slabs Client Smoke",
+        LevelSettings settings = new LevelSettings("Sky's Grass Slabs Client Smoke",
                 GameType.CREATIVE, false, Difficulty.NORMAL, true, new GameRules(),
-                DatapackCodec.DEFAULT);
+                DataPackConfig.DEFAULT);
         minecraft.createLevel(WORLD_DIRECTORY, settings, registries, generator);
     }
 
@@ -230,7 +230,7 @@ public final class ClientProbeTestMod {
         values.setProperty("world_directory", WORLD_DIRECTORY);
         try (FileOutputStream output = new FileOutputStream(
                 new File("client-smoke-pass.properties"))) {
-            values.store(output, "Sky's Grass Slabs Forge 1.16.5 client gate");
+            values.store(output, "Sky's Grass Slabs Forge 1.17.1 client gate");
         }
     }
 

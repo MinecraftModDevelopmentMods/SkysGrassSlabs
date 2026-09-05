@@ -1,11 +1,11 @@
 package zone.moddev.mc.skysgrassslabs.proxy;
 
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.RenderTypeLookup;
-import net.minecraft.client.renderer.color.BlockColors;
-import net.minecraft.client.renderer.color.ItemColors;
-import net.minecraft.world.GrassColors;
-import net.minecraft.world.biome.BiomeColors;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.color.item.ItemColors;
+import net.minecraft.world.level.GrassColor;
+import net.minecraft.client.renderer.BiomeColors;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 public final class ClientProxy {
@@ -19,19 +19,19 @@ public final class ClientProxy {
 
     public static void registerRenderLayers() {
         RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderTypeLookup.setRenderLayer(ModBlocks.GRASS_SLAB, cutoutMipped);
-        RenderTypeLookup.setRenderLayer(ModBlocks.TURF, cutoutMipped);
+        ItemBlockRenderTypes.setRenderLayer(ModBlocks.GRASS_SLAB, cutoutMipped);
+        ItemBlockRenderTypes.setRenderLayer(ModBlocks.TURF, cutoutMipped);
     }
 
     public static void registerBlockColors(BlockColors colors) {
         colors.register((state, world, pos, tintIndex) -> world == null || pos == null
-                        ? GrassColors.get(0.5D, 1.0D)
+                        ? GrassColor.get(0.5D, 1.0D)
                         : BiomeColors.getAverageGrassColor(world, pos),
                 ModBlocks.GRASS_SLAB, ModBlocks.TURF);
     }
 
     public static void registerItemColors(ItemColors colors) {
-        colors.register((stack, tintIndex) -> GrassColors.get(0.5D, 1.0D),
+        colors.register((stack, tintIndex) -> GrassColor.get(0.5D, 1.0D),
                 ModBlocks.GRASS_SLAB, ModBlocks.TURF);
     }
 

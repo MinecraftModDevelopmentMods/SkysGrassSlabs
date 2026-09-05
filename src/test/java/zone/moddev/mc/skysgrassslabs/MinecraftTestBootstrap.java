@@ -1,7 +1,8 @@
 package zone.moddev.mc.skysgrassslabs;
 
 import java.lang.reflect.Field;
-import net.minecraft.util.registry.Bootstrap;
+import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
 
 public final class MinecraftTestBootstrap {
     private static boolean initialized;
@@ -10,19 +11,21 @@ public final class MinecraftTestBootstrap {
         if (initialized) return;
         try {
             Class<?> loader = Class.forName("net.minecraftforge.fml.loading.FMLLoader");
-            set(loader, "mcVersion", "1.16.5");
-            set(loader, "mcpVersion", "20210115.111550");
-            set(loader, "forgeVersion", "36.2.34");
-            set(loader, "forgeGroup", "net.minecraftforge");
+            Class<?> versionInfo = Class.forName("net.minecraftforge.fml.loading.VersionInfo");
+            Object forgeVersion = versionInfo
+                    .getConstructor(String.class, String.class, String.class, String.class)
+                    .newInstance("37.1.1", "1.17.1", "20210706.113038", "net.minecraftforge");
+            set(loader, "versionInfo", forgeVersion);
+            SharedConstants.tryDetectVersion();
             Bootstrap.bootStrap();
             initialized = true;
         } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("Unable to initialize the Forge 36 test runtime",
+            throw new IllegalStateException("Unable to initialize the Forge 37 test runtime",
                     exception);
         }
     }
 
-    private static void set(Class<?> owner, String name, String value)
+    private static void set(Class<?> owner, String name, Object value)
             throws ReflectiveOperationException {
         Field field = owner.getDeclaredField(name);
         field.setAccessible(true);

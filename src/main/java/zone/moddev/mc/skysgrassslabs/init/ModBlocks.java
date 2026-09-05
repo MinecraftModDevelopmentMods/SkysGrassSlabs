@@ -1,14 +1,14 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SnowyDirtBlock;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.IForgeRegistry;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
@@ -31,13 +31,13 @@ public final class ModBlocks {
     public static void registerItems(IForgeRegistry<Item> registry) {
         registry.registerAll(
                 item(new NormalizingSlabItem(DIRT_SLAB, Blocks.DIRT,
-                        new Item.Properties().tab(ItemGroup.TAB_BUILDING_BLOCKS)), DIRT_SLAB),
+                        new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)), DIRT_SLAB),
                 item(new NormalizingSlabItem(GRASS_SLAB, Blocks.GRASS_BLOCK,
-                        new Item.Properties().tab(ItemGroup.TAB_BUILDING_BLOCKS)), GRASS_SLAB),
-                item(new NormalizingSlabItem(PATH_SLAB, Blocks.GRASS_PATH,
-                        new Item.Properties().tab(ItemGroup.TAB_BUILDING_BLOCKS)), PATH_SLAB),
+                        new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)), GRASS_SLAB),
+                item(new NormalizingSlabItem(PATH_SLAB, Blocks.DIRT_PATH,
+                        new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)), PATH_SLAB),
                 item(new TurfBlockItem(TURF,
-                        new Item.Properties().tab(ItemGroup.TAB_BUILDING_BLOCKS)), TURF));
+                        new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)), TURF));
     }
 
     public static BlockState dirtStateLike(BlockState source) {

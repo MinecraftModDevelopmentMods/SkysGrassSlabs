@@ -3,12 +3,13 @@ package zone.moddev.mc.skysgrassslabs.compat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SnowyDirtBlock;
-import net.minecraft.state.properties.SlabType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.state.properties.SlabType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import zone.moddev.mc.skysgrassslabs.MinecraftTestBootstrap;
@@ -48,7 +49,9 @@ class MigrationMappingTest {
     }
 
     @Test
-    void flatteningTableCanHoldLegacyForgeNumericIdsAboveVanillasRange() {
-        assertTrue(LegacyWorldDataHook.expandFlatteningTable(8192) >= 8192);
+    void absentCoremodIsReportedBeforeHighNumericIdsCanBeLost() {
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+                () -> LegacyWorldDataHook.expandFlatteningTable(8192));
+        assertTrue(failure.getMessage().contains("Forge 37 coremod did not expand it"));
     }
 }

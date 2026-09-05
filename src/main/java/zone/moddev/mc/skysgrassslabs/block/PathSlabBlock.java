@@ -1,19 +1,19 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SoundType;
-import net.minecraft.block.material.Material;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.Level;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 public final class PathSlabBlock extends LegacySlabBlock {
@@ -23,18 +23,18 @@ public final class PathSlabBlock extends LegacySlabBlock {
             Block.box(0.0D, 8.0D, 0.0D, 16.0D, 15.0D, 16.0D);
 
     public PathSlabBlock() {
-        super(Material.DIRT, SoundType.GRASS, 0.65F, false);
+        super(Material.DIRT, SoundType.GRASS, 0.65F, false, false);
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, IBlockReader world, BlockPos pos,
-            ISelectionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos,
+            CollisionContext context) {
         return state.getValue(SlabBlock.TYPE) == SlabType.TOP
                 ? TOP_PATH_SHAPE : BOTTOM_PATH_SHAPE;
     }
 
     @Override
-    public void onPlace(BlockState state, World world, BlockPos pos, BlockState oldState,
+    public void onPlace(BlockState state, Level world, BlockPos pos, BlockState oldState,
             boolean isMoving) {
         super.onPlace(state, world, pos, oldState, isMoving);
         if (!world.isClientSide && (state.getValue(SlabBlock.WATERLOGGED) ||
@@ -45,7 +45,7 @@ public final class PathSlabBlock extends LegacySlabBlock {
 
     @Override
     public BlockState updateShape(BlockState state, Direction facing,
-            BlockState facingState, IWorld world, BlockPos pos, BlockPos facingPos) {
+            BlockState facingState, LevelAccessor world, BlockPos pos, BlockPos facingPos) {
         BlockState updated = super.updateShape(state, facing, facingState, world, pos,
                 facingPos);
         if (!world.isClientSide() && (updated.getValue(SlabBlock.WATERLOGGED) ||
@@ -56,7 +56,7 @@ public final class PathSlabBlock extends LegacySlabBlock {
     }
 
     @Override
-    public boolean placeLiquid(IWorld world, BlockPos pos, BlockState state,
+    public boolean placeLiquid(LevelAccessor world, BlockPos pos, BlockState state,
             FluidState fluidState) {
         boolean received = super.placeLiquid(world, pos, state, fluidState);
         if (received && !world.isClientSide()) {

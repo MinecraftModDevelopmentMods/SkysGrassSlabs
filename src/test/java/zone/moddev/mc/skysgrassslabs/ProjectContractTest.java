@@ -22,14 +22,17 @@ class ProjectContractTest {
     @Test
     void releaseIdentityAndToolchainArePinned() throws Exception {
         String properties = read("gradle.properties");
-        assertTrue(properties.contains("minecraft_version=1.16.5"));
-        assertTrue(properties.contains("forge_version=36.2.34"));
+        assertTrue(properties.contains("minecraft_version=1.17.1"));
+        assertTrue(properties.contains("forge_version=37.1.1"));
         assertTrue(properties.contains("mapping_channel=official"));
-        assertTrue(properties.contains("mapping_version=1.16.5"));
-        assertTrue(properties.contains("mcp_version=20210115.111550"));
-        assertTrue(properties.contains("mod_version=1.0.1.116051"));
+        assertTrue(properties.contains("mapping_version=1.17.1"));
+        assertTrue(properties.contains("mcp_version=20210706.113038"));
+        assertTrue(properties.contains("mod_version=1.0.1.117011"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
-        assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
+        assertTrue(properties.contains("java_toolchain_version=16.0.2+7"));
+        String build = read("build.gradle");
+        assertTrue(build.contains("'Built-On-Java': '16'"));
+        assertTrue(build.contains("major != 60"));
     }
 
     @Test
@@ -51,12 +54,12 @@ class ProjectContractTest {
     }
 
     @Test
-    void forgeThirtySixMetadataAndPackFormatArePresent() throws Exception {
+    void forgeThirtySevenMetadataAndPackFormatArePresent() throws Exception {
         assertTrue(new File("src/main/resources/META-INF/mods.toml").isFile());
         assertFalse(new File("src/main/resources/mcmod.info").exists());
         assertTrue(read("src/main/resources/META-INF/mods.toml")
                 .contains("modId=\"skysgrassslabs\""));
-        assertTrue(read("src/main/resources/pack.mcmeta").contains("\"pack_format\": 6"));
+        assertTrue(read("src/main/resources/pack.mcmeta").contains("\"pack_format\": 7"));
     }
 
     @Test
@@ -75,13 +78,14 @@ class ProjectContractTest {
                 .get("type").getAsString());
         String serializer = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java");
-        assertTrue(serializer.contains("implements ICraftingRecipe"));
-        assertTrue(serializer.contains("IRecipeSerializer<TurfCuttingRecipe>"));
+        assertTrue(serializer.contains("implements CraftingRecipe"));
+        assertTrue(serializer.contains("RecipeSerializer<TurfCuttingRecipe>"));
         assertTrue(serializer.contains("new ResourceLocation(SkysGrassSlabs.MOD_ID, \"turf_cutting\")"));
         assertTrue(serializer.contains("public boolean isSpecial()"));
         assertTrue(serializer.contains("return false;"));
-        assertTrue(serializer.contains("IRecipeType.CRAFTING"));
+        assertTrue(serializer.contains("RecipeType.CRAFTING"));
         assertTrue(serializer.contains("public NonNullList<Ingredient> getIngredients()"));
+        assertTrue(serializer.contains("canPerformAction(ToolActions.SHOVEL_FLATTEN)"));
 
         JsonObject seeds = json("src/main/resources/data/forge/tags/items/seeds.json");
         assertEquals(4, seeds.getAsJsonArray("values").size());
@@ -101,6 +105,15 @@ class ProjectContractTest {
                 "src/main/resources/assets/skysgrassslabs/blockstates/path_slab.json");
         assertTrue(path.contains("type=bottom,waterlogged=false"));
         assertTrue(path.contains("type=top,waterlogged=true"));
+        assertTrue(path.contains("minecraft:block/dirt_path"));
+
+        for (String modelName : Arrays.asList("path_slab.json", "path_slab_top.json")) {
+            String model = read("src/main/resources/assets/skysgrassslabs/models/block/" +
+                    modelName);
+            assertTrue(model.contains("minecraft:block/dirt_path_top"), modelName);
+            assertTrue(model.contains("minecraft:block/dirt_path_side"), modelName);
+            assertFalse(model.contains("minecraft:block/grass_path"), modelName);
+        }
 
         for (String name : Arrays.asList("dirt_slab_snow.json", "dirt_slab_top_snow.json",
                 "grass_slab_snow.json", "grass_slab_top_snow.json")) {
@@ -114,20 +127,39 @@ class ProjectContractTest {
     @Test
     void legacyFlatteningHookIsStrictlyScopedAndPreservesTheSnapshot() throws Exception {
         String coremod = read("src/main/resources/coremods/skysgrassslabs_legacy_world.js");
-        assertTrue(coremod.contains("net.minecraft.world.chunk.storage.ChunkLoader"));
-        assertEquals(1, occurrences(coremod, "'type': 'CLASS'"));
+        assertTrue(coremod.contains("net.minecraft.util.datafix.fixes.BlockStateData"));
+        assertTrue(coremod.contains("net.minecraft.world.level.chunk.storage.ChunkStorage"));
+        assertEquals(2, occurrences(coremod, "'type': 'CLASS'"));
+        assertTrue(coremod.contains("65536"));
+        assertTrue(coremod.contains("4096"));
         assertTrue(coremod.contains("throw new Error"));
         String bridge = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook.java");
         assertTrue(bridge.contains("skysgrassslabs_legacy_registry.dat"));
-        assertTrue(bridge.contains("BlockStateFlatteningMap"));
+        assertTrue(bridge.contains("BlockStateData"));
         assertTrue(bridge.contains("indexLegacyChunks"));
         assertTrue(bridge.contains("SUPPORTED_BUILDINGBRICKS_IDS"));
-        assertTrue(bridge.contains("Field.class.getDeclaredField(\"modifiers\")"));
         assertTrue(bridge.contains("WorldPersistenceHooks.addHook"));
-        assertTrue(bridge.contains("func_199194_a"));
         assertFalse(bridge.contains("import sun.misc"));
         assertFalse(bridge.contains("Unsafe.class"));
+        assertFalse(bridge.contains("Field.class.getDeclaredField(\"modifiers\")"));
+        assertTrue(coremod.contains("return new LdcInsnNode(size)"));
+    }
+
+    @Test
+    void renamedVanillaPathAndSoundIdsAreRecoveredOnUpgrade() throws Exception {
+        String handler = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyMigrationHandler.java");
+        assertTrue(handler.contains("new ResourceLocation(\"minecraft\", \"grass_path\")"));
+        assertTrue(handler.contains("new ResourceLocation(\"minecraft\", \"dirt_path\")"));
+        assertTrue(handler.contains("item.sweet_berries.pick_from_bush"));
+        assertTrue(handler.contains("block.sweet_berry_bush.pick_berries"));
+        String subscriber = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/MissingMappingHandler.java");
+        assertTrue(subscriber.contains("Bus.FORGE"));
+        assertTrue(subscriber.contains("remapMissingBlocks"));
+        assertTrue(subscriber.contains("remapMissingItems"));
+        assertTrue(subscriber.contains("remapMissingSounds"));
     }
 
     @Test
@@ -139,7 +171,7 @@ class ProjectContractTest {
     }
 
     @Test
-    void clientHandlersUseForgeThirtySixModBusAndRenderLayers() throws Exception {
+    void clientHandlersUseForgeThirtySevenModBusAndRenderLayers() throws Exception {
         String events = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ClientRegistryEvents.java");
         assertTrue(events.contains("bus = Mod.EventBusSubscriber.Bus.MOD"));
@@ -149,8 +181,8 @@ class ProjectContractTest {
         assertTrue(events.contains("FMLClientSetupEvent"));
         String client = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/proxy/ClientProxy.java");
-        assertTrue(client.contains("RenderTypeLookup.setRenderLayer(ModBlocks.GRASS_SLAB"));
-        assertTrue(client.contains("RenderTypeLookup.setRenderLayer(ModBlocks.TURF"));
+        assertTrue(client.contains("ItemBlockRenderTypes.setRenderLayer(ModBlocks.GRASS_SLAB"));
+        assertTrue(client.contains("ItemBlockRenderTypes.setRenderLayer(ModBlocks.TURF"));
         assertTrue(client.contains("RenderType.cutoutMipped()"));
     }
 
@@ -171,6 +203,23 @@ class ProjectContractTest {
     }
 
     @Test
+    void shovelFlatteningUsesTheForgeThirtySevenNativeHook() throws Exception {
+        String slab = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/block/LegacySlabBlock.java");
+        assertTrue(slab.contains("getToolModifiedState"));
+        assertTrue(slab.contains("ToolActions.SHOVEL_FLATTEN"));
+        assertTrue(slab.contains("stack.canPerformAction(action)"));
+        assertFalse(slab.contains("RightClickBlock"));
+        String events = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/event/CommonEvents.java");
+        assertFalse(events.contains("RightClickBlock"));
+        JsonObject shovelTag = json(
+                "src/main/resources/data/minecraft/tags/blocks/mineable/shovel.json");
+        assertFalse(shovelTag.get("replace").getAsBoolean());
+        assertEquals(3, shovelTag.getAsJsonArray("values").size());
+    }
+
+    @Test
     void smoothingUsesTheForgeFeatureRegistryAndOwningChunk() throws Exception {
         String registry = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ModRegistryEvents.java");
@@ -178,11 +227,10 @@ class ProjectContractTest {
         assertTrue(registry.contains("register(GrassSlabSmoothingFeature.FEATURE)"));
         String feature = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/world/GrassSlabSmoothingFeature.java");
-        assertTrue(feature.contains("extends Feature<NoFeatureConfig>"));
+        assertTrue(feature.contains("extends Feature<NoneFeatureConfiguration>"));
         assertTrue(feature.contains("\"grass_slab_smoothing\""));
-        assertTrue(feature.contains("region.getCenterX()"));
-        assertTrue(feature.contains("region.getCenterZ()"));
-        assertTrue(feature.contains("WorldGenRegistries.CONFIGURED_FEATURE"));
+        assertTrue(feature.contains("region.getCenter()"));
+        assertTrue(feature.contains("BuiltinRegistries.CONFIGURED_FEATURE"));
         assertTrue(feature.contains("features.add(0, () -> configuredFeature)"));
         assertTrue(feature.contains("world.hasChunk(chunkX, chunkZ)"));
         assertFalse(new File(
@@ -209,16 +257,16 @@ class ProjectContractTest {
     }
 
     @Test
-    void adjacentForwardFixtureIsLockedToTheAcceptedOneFifteenJar() throws Exception {
+    void adjacentForwardFixtureIsLockedToTheAcceptedOneSixteenJar() throws Exception {
         String manifest = read(
-                "src/test/resources/fixtures/skysgrassslabs-1.15.2-forward-world.manifest");
+                "src/test/resources/fixtures/skysgrassslabs-1.16.5-forward-world.manifest");
         assertTrue(manifest.contains("fixture_sha256="));
         assertTrue(manifest.contains(
-                "source_jar_sha256=9AE28332EA21700C5DE8D3597FC40F5B06D85E8A7FB3C0DE650A2F8BC5E0895C"));
+                "source_jar_sha256=54388D358581579723EFBEF6B06DDEF775CEB6FF8DD9289DFDDE82B951A9A2D7"));
         String build = read("build.gradle");
-        assertTrue(build.contains("oneFifteenForwardUpgradeTest"));
-        assertTrue(build.contains("upgrade-115-first"));
-        assertTrue(build.contains("upgrade-115-reload"));
+        assertTrue(build.contains("oneSixteenForwardUpgradeTest"));
+        assertTrue(build.contains("upgrade-116-first"));
+        assertTrue(build.contains("upgrade-116-reload"));
     }
 
     @Test
@@ -239,14 +287,23 @@ class ProjectContractTest {
         for (String name : Arrays.asList("ci.yml", "codeql-analysis.yml",
                 "validate-gradle-build.yml")) {
             String workflow = read(".github/workflows/" + name);
-            assertTrue(workflow.contains("master-1.16.5"), name);
-            assertFalse(workflow.contains("master-1.15.2"), name);
+            assertTrue(workflow.contains("master-1.17.1"), name);
+            assertFalse(workflow.contains("master-1.16.5"), name);
         }
         String ci = read(".github/workflows/ci.yml");
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.116051.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.116051-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.116051-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.117011.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.117011-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.117011-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
+        assertTrue(ci.contains("java-version: '8.0.502+7'"));
+        assertTrue(ci.contains("JAVA_HOME_8_X64"));
+        assertTrue(ci.contains("java-version: '25.0.3+9'"));
+        assertTrue(ci.contains("JAVA_HOME_25_X64"));
+        String codeql = read(".github/workflows/codeql-analysis.yml");
+        assertTrue(codeql.contains("java-version: '8.0.502+7'"));
+        assertTrue(codeql.contains("JAVA_HOME_8_X64"));
+        assertTrue(codeql.contains("java-version: '25.0.3+9'"));
+        assertTrue(codeql.contains("JAVA_HOME_25_X64"));
     }
 
     @Test

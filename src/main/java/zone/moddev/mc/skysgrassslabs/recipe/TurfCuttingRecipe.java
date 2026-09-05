@@ -3,30 +3,29 @@ package zone.moddev.mc.skysgrassslabs.recipe;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import net.minecraft.block.Blocks;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.ICraftingRecipe;
-import net.minecraft.item.crafting.IRecipeSerializer;
-import net.minecraft.item.crafting.IRecipeType;
-import net.minecraft.item.crafting.Ingredient;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
-import net.minecraftforge.common.ToolType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.core.NonNullList;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraftforge.common.ToolActions;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.ForgeRegistryEntry;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-public final class TurfCuttingRecipe implements ICraftingRecipe {
+public final class TurfCuttingRecipe implements CraftingRecipe {
     public static final ResourceLocation SERIALIZER_ID =
             new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf_cutting");
-    public static final IRecipeSerializer<TurfCuttingRecipe> SERIALIZER = createSerializer();
+    public static final RecipeSerializer<TurfCuttingRecipe> SERIALIZER = createSerializer();
 
     private final ResourceLocation id;
     private final NonNullList<Ingredient> ingredients;
@@ -37,7 +36,7 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     }
 
     @Override
-    public boolean matches(CraftingInventory inventory, World world) {
+    public boolean matches(CraftingContainer inventory, Level world) {
         int grassInputs = 0;
         int shovels = 0;
         for (int slot = 0; slot < inventory.getContainerSize(); ++slot) {
@@ -55,7 +54,7 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInventory inventory) {
+    public ItemStack assemble(CraftingContainer inventory) {
         return matches(inventory, null) ? new ItemStack(ModBlocks.TURF) : ItemStack.EMPTY;
     }
 
@@ -75,7 +74,7 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     }
 
     @Override
-    public NonNullList<ItemStack> getRemainingItems(CraftingInventory inventory) {
+    public NonNullList<ItemStack> getRemainingItems(CraftingContainer inventory) {
         NonNullList<ItemStack> remaining = NonNullList.withSize(
                 inventory.getContainerSize(), ItemStack.EMPTY);
         for (int slot = 0; slot < inventory.getContainerSize(); ++slot) {
@@ -104,21 +103,20 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     }
 
     @Override
-    public IRecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<?> getSerializer() {
         return SERIALIZER;
     }
 
     @Override
-    public IRecipeType<?> getType() {
-        return IRecipeType.CRAFTING;
+    public RecipeType<?> getType() {
+        return RecipeType.CRAFTING;
     }
 
     private static boolean isShovel(ItemStack stack) {
-        Set<ToolType> types = stack.getItem().getToolTypes(stack);
-        return types != null && types.contains(ToolType.SHOVEL);
+        return stack.canPerformAction(ToolActions.SHOVEL_FLATTEN);
     }
 
-    private static IRecipeSerializer<TurfCuttingRecipe> createSerializer() {
+    private static RecipeSerializer<TurfCuttingRecipe> createSerializer() {
         Serializer serializer = new Serializer();
         serializer.setRegistryName(SERIALIZER_ID);
         return serializer;
@@ -149,20 +147,20 @@ public final class TurfCuttingRecipe implements ICraftingRecipe {
     }
 
     private static final class Serializer
-            extends ForgeRegistryEntry<IRecipeSerializer<?>>
-            implements IRecipeSerializer<TurfCuttingRecipe> {
+            extends ForgeRegistryEntry<RecipeSerializer<?>>
+            implements RecipeSerializer<TurfCuttingRecipe> {
         @Override
         public TurfCuttingRecipe fromJson(ResourceLocation recipeId, JsonObject json) {
             return new TurfCuttingRecipe(recipeId);
         }
 
         @Override
-        public TurfCuttingRecipe fromNetwork(ResourceLocation recipeId, PacketBuffer buffer) {
+        public TurfCuttingRecipe fromNetwork(ResourceLocation recipeId, FriendlyByteBuf buffer) {
             return new TurfCuttingRecipe(recipeId);
         }
 
         @Override
-        public void toNetwork(PacketBuffer buffer, TurfCuttingRecipe recipe) {
+        public void toNetwork(FriendlyByteBuf buffer, TurfCuttingRecipe recipe) {
             // The JSON and network forms contain no variable recipe data.
         }
     }

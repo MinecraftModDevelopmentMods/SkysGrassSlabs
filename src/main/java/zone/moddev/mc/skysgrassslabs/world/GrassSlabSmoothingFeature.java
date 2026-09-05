@@ -2,30 +2,27 @@ package zone.moddev.mc.skysgrassslabs.world;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.function.Supplier;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SnowyDirtBlock;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.WorldGenRegistries;
-import net.minecraft.world.ISeedReader;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.gen.ChunkGenerator;
-import net.minecraft.world.gen.GenerationStage;
-import net.minecraft.world.gen.Heightmap;
-import net.minecraft.world.gen.WorldGenRegion;
-import net.minecraft.world.gen.feature.ConfiguredFeature;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.NoFeatureConfig;
-import net.minecraft.world.gen.placement.NoPlacementConfig;
-import net.minecraft.world.gen.placement.Placement;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.data.BuiltinRegistries;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraftforge.event.world.BiomeLoadingEvent;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
@@ -33,7 +30,7 @@ import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Deterministic two-pass slope smoothing for newly generated Overworld chunks. */
-public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
+public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
     public static final String FEATURE_ID = "skysgrassslabs:grass_slab_smoothing";
     public static final GrassSlabSmoothingFeature FEATURE = configureFeature();
     private static final ThreadLocal<boolean[]> DECISIONS =
@@ -42,7 +39,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
     private static boolean installed;
 
     public GrassSlabSmoothingFeature() {
-        super(NoFeatureConfig.CODEC);
+        super(NoneFeatureConfiguration.CODEC);
     }
 
     private static GrassSlabSmoothingFeature configureFeature() {
@@ -56,19 +53,18 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
         if (installed) return;
         ResourceLocation id = new ResourceLocation(SkysGrassSlabs.MOD_ID,
                 "grass_slab_smoothing");
-        configuredFeature = Registry.register(WorldGenRegistries.CONFIGURED_FEATURE, id,
-                FEATURE.configured(NoFeatureConfig.INSTANCE)
-                        .decorated(Placement.NOPE.configured(NoPlacementConfig.INSTANCE)));
+        configuredFeature = Registry.register(BuiltinRegistries.CONFIGURED_FEATURE, id,
+                FEATURE.configured(NoneFeatureConfiguration.INSTANCE));
         installed = true;
     }
 
     public static void onBiomeLoading(BiomeLoadingEvent event) {
-        if (configuredFeature == null || event.getCategory() == Biome.Category.NETHER ||
-                event.getCategory() == Biome.Category.THEEND) {
+        if (configuredFeature == null || event.getCategory() == Biome.BiomeCategory.NETHER ||
+                event.getCategory() == Biome.BiomeCategory.THEEND) {
             return;
         }
         List<Supplier<ConfiguredFeature<?, ?>>> features = event.getGeneration().getFeatures(
-                GenerationStage.Decoration.VEGETAL_DECORATION);
+                GenerationStep.Decoration.VEGETAL_DECORATION);
         for (Supplier<ConfiguredFeature<?, ?>> feature : features) {
             if (feature.get() == configuredFeature) return;
         }
@@ -76,10 +72,11 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
     }
 
     @Override
-    public boolean place(ISeedReader world, ChunkGenerator generator,
-            Random random, BlockPos origin, NoFeatureConfig config) {
+    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        WorldGenLevel world = context.level();
+        BlockPos origin = context.origin();
         if (!SkysGrassSlabsConfig.isSmoothingActive() ||
-                world.getLevel().dimension() != World.OVERWORLD) {
+                world.getLevel().dimension() != Level.OVERWORLD) {
             return false;
         }
 
@@ -87,19 +84,19 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
         int ownerZ = origin.getZ() >> 4;
         if (world instanceof WorldGenRegion) {
             WorldGenRegion region = (WorldGenRegion) world;
-            ownerX = region.getCenterX();
-            ownerZ = region.getCenterZ();
+            ownerX = region.getCenter().x;
+            ownerZ = region.getCenter().z;
         }
         if (LegacyWorldDataHook.isLegacyChunk(ownerX, ownerZ) ||
                 !chunkAvailable(world, ownerX, ownerZ)) {
             return false;
         }
-        IChunk owner = world.getChunk(ownerX, ownerZ);
+        ChunkAccess owner = world.getChunk(ownerX, ownerZ);
         boolean[] decisions = DECISIONS.get();
         Arrays.fill(decisions, false);
         int startX = ownerX << 4;
         int startZ = ownerZ << 4;
-        BlockPos.Mutable cursor = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
         for (int localZ = 0; localZ < 16; ++localZ) {
             for (int localX = 0; localX < 16; ++localX) {
@@ -143,20 +140,20 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
         return changed;
     }
 
-    private static boolean hasHigherGrassNeighbour(ISeedReader world, int ownerX, int ownerZ,
-            int localX, int localZ, int lowerY, BlockPos.Mutable cursor) {
+    private static boolean hasHigherGrassNeighbour(WorldGenLevel world, int ownerX, int ownerZ,
+            int localX, int localZ, int lowerY, BlockPos.MutableBlockPos cursor) {
         return isHigherGrass(world, ownerX, ownerZ, localX - 1, localZ, lowerY, cursor) ||
                 isHigherGrass(world, ownerX, ownerZ, localX + 1, localZ, lowerY, cursor) ||
                 isHigherGrass(world, ownerX, ownerZ, localX, localZ - 1, lowerY, cursor) ||
                 isHigherGrass(world, ownerX, ownerZ, localX, localZ + 1, lowerY, cursor);
     }
 
-    private static boolean isHigherGrass(ISeedReader world, int ownerX, int ownerZ,
-            int localX, int localZ, int lowerY, BlockPos.Mutable cursor) {
+    private static boolean isHigherGrass(WorldGenLevel world, int ownerX, int ownerZ,
+            int localX, int localZ, int lowerY, BlockPos.MutableBlockPos cursor) {
         int chunkX = ownerX + Math.floorDiv(localX, 16);
         int chunkZ = ownerZ + Math.floorDiv(localZ, 16);
         if (!chunkAvailable(world, chunkX, chunkZ)) return false;
-        IChunk chunk = world.getChunk(chunkX, chunkZ);
+        ChunkAccess chunk = world.getChunk(chunkX, chunkZ);
         int x = Math.floorMod(localX, 16);
         int z = Math.floorMod(localZ, 16);
         int higherY = surfaceY(chunk, x, z, cursor);
@@ -165,16 +162,16 @@ public final class GrassSlabSmoothingFeature extends Feature<NoFeatureConfig> {
                 chunk.getBlockState(cursor).getBlock() == Blocks.GRASS_BLOCK);
     }
 
-    private static int surfaceY(IChunk chunk, int localX, int localZ,
-            BlockPos.Mutable cursor) {
-        int y = chunk.getHeight(Heightmap.Type.WORLD_SURFACE_WG, localX, localZ);
+    private static int surfaceY(ChunkAccess chunk, int localX, int localZ,
+            BlockPos.MutableBlockPos cursor) {
+        int y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, localX, localZ);
         int x = chunk.getPos().getMinBlockX() + localX;
         int z = chunk.getPos().getMinBlockZ() + localZ;
         while (y >= 0 && chunk.getBlockState(cursor.set(x, y, z)).isAir()) --y;
         return y;
     }
 
-    private static boolean chunkAvailable(ISeedReader world, int chunkX, int chunkZ) {
+    private static boolean chunkAvailable(WorldGenLevel world, int chunkX, int chunkZ) {
         return world.hasChunk(chunkX, chunkZ);
     }
 }

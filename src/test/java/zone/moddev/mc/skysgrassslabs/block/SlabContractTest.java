@@ -4,14 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SnowyDirtBlock;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.world.EmptyBlockReader;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.level.EmptyBlockGetter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import zone.moddev.mc.skysgrassslabs.MinecraftTestBootstrap;
@@ -54,7 +54,7 @@ class SlabContractTest {
                 turf.getCollisionShape(null, BlockPos.ZERO).bounds().maxY);
         for (Direction direction : Direction.Plane.HORIZONTAL) {
             assertFalse(turf.isFaceSturdy(
-                    EmptyBlockReader.INSTANCE, BlockPos.ZERO, direction));
+                    EmptyBlockGetter.INSTANCE, BlockPos.ZERO, direction));
         }
     }
 

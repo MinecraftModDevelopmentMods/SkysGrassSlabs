@@ -6,36 +6,33 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SnowyDirtBlock;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.NBTUtil;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.datafix.fixes.BlockStateFlatteningMap;
-import net.minecraft.world.storage.FolderName;
-import net.minecraft.world.storage.IServerConfiguration;
-import net.minecraft.world.storage.SaveFormat;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.datafix.fixes.BlockStateData;
+import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.world.level.storage.WorldData;
+import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.WorldPersistenceHooks;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
-import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
+import net.minecraftforge.fmllegacy.WorldPersistenceHooks;
+import net.minecraftforge.fmlserverevents.FMLServerAboutToStartEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
@@ -51,7 +48,7 @@ public final class LegacyWorldDataHook {
             new LinkedHashSet<ResourceLocation>();
     private static final String PRESERVE_CHUNK_MARKER = "SkysGrassSlabsLegacyPreserveChunk";
     private static final String SIDECAR_NAME = "skysgrassslabs_legacy_registry.dat";
-    private static CompoundNBT legacyFmlData = new CompoundNBT();
+    private static CompoundTag legacyFmlData = new CompoundTag();
     private static volatile boolean legacyWorldActive;
     private static boolean registered;
 
@@ -74,14 +71,14 @@ public final class LegacyWorldDataHook {
                 }
 
                 @Override
-                public CompoundNBT getDataForWriting(SaveFormat.LevelSave levelSave,
-                        IServerConfiguration serverInfo) {
+                public CompoundTag getDataForWriting(LevelStorageSource.LevelStorageAccess levelSave,
+                        WorldData serverInfo) {
                     return legacyFmlData.copy();
                 }
 
                 @Override
-                public void readData(SaveFormat.LevelSave levelSave,
-                        IServerConfiguration serverInfo, CompoundNBT fmlData) {
+                public void readData(LevelStorageSource.LevelStorageAccess levelSave,
+                        WorldData serverInfo, CompoundTag fmlData) {
                     prepareLegacyWorld(levelSave.getWorldDir().toFile(), fmlData);
                 }
             });
@@ -91,24 +88,24 @@ public final class LegacyWorldDataHook {
     }
 
     public static void onServerAboutToStart(FMLServerAboutToStartEvent event) {
-        File levelDat = event.getServer().getWorldPath(FolderName.LEVEL_DATA_FILE).toFile();
+        File levelDat = event.getServer().getWorldPath(LevelResource.LEVEL_DATA_FILE).toFile();
         prepareLegacyWorld(levelDat);
     }
 
     static synchronized void prepareLegacyWorld(File levelDat) {
         legacyWorldActive = false;
-        legacyFmlData = new CompoundNBT();
+        legacyFmlData = new CompoundTag();
         LEGACY_CHUNKS.clear();
         if (!levelDat.isFile()) return;
 
         try (FileInputStream input = new FileInputStream(levelDat)) {
-            CompoundNBT root = CompressedStreamTools.readCompressed(input);
+            CompoundTag root = NbtIo.readCompressed(input);
             if (root.contains("FML", 10)) {
-                CompoundNBT fml = root.getCompound("FML");
-                CompoundNBT registries = fml.getCompound("Registries");
+                CompoundTag fml = root.getCompound("FML");
+                CompoundTag registries = fml.getCompound("Registries");
                 if (registries.contains("minecraft:blocks", 10)) {
                     legacyFmlData = fml.copy();
-                    CompoundNBT blocks = registries.getCompound("minecraft:blocks");
+                    CompoundTag blocks = registries.getCompound("minecraft:blocks");
                     install(levelDat.getParentFile(), blocks);
                     writeSidecar(levelDat.getParentFile(), blocks);
                     return;
@@ -124,7 +121,7 @@ public final class LegacyWorldDataHook {
         if (sidecar.isFile()) {
             try (FileInputStream input = new FileInputStream(sidecar)) {
                 install(levelDat.getParentFile(),
-                        CompressedStreamTools.readCompressed(input).getCompound("Blocks"));
+                        NbtIo.readCompressed(input).getCompound("Blocks"));
             } catch (IOException exception) {
                 LOGGER.warn("Could not read legacy Sky's Grass Slabs registry sidecar '{}'",
                         sidecar, exception);
@@ -133,14 +130,14 @@ public final class LegacyWorldDataHook {
     }
 
     private static synchronized void prepareLegacyWorld(File worldDirectory,
-            CompoundNBT fmlData) {
+            CompoundTag fmlData) {
         legacyWorldActive = false;
         LEGACY_CHUNKS.clear();
-        legacyFmlData = new CompoundNBT();
+        legacyFmlData = new CompoundTag();
         if (fmlData.contains("Registries", 10)) {
-            CompoundNBT registries = fmlData.getCompound("Registries");
+            CompoundTag registries = fmlData.getCompound("Registries");
             if (registries.contains("minecraft:blocks", 10)) {
-                CompoundNBT blocks = registries.getCompound("minecraft:blocks");
+                CompoundTag blocks = registries.getCompound("minecraft:blocks");
                 legacyFmlData = fmlData.copy();
                 install(worldDirectory, blocks);
                 writeSidecar(worldDirectory, blocks);
@@ -152,7 +149,7 @@ public final class LegacyWorldDataHook {
         if (sidecar.isFile()) {
             try (FileInputStream input = new FileInputStream(sidecar)) {
                 install(worldDirectory,
-                        CompressedStreamTools.readCompressed(input).getCompound("Blocks"));
+                        NbtIo.readCompressed(input).getCompound("Blocks"));
             } catch (IOException exception) {
                 LOGGER.warn("Could not read legacy Sky's Grass Slabs registry sidecar '{}'",
                         sidecar, exception);
@@ -160,7 +157,7 @@ public final class LegacyWorldDataHook {
         }
     }
 
-    private static void install(File worldDirectory, CompoundNBT blockSnapshot) {
+    private static void install(File worldDirectory, CompoundTag blockSnapshot) {
         int mapped = installLegacyBlockStates(blockSnapshot);
         legacyWorldActive = mapped > 0;
         if (legacyWorldActive) {
@@ -170,17 +167,17 @@ public final class LegacyWorldDataHook {
         }
     }
 
-    private static void writeSidecar(File worldDirectory, CompoundNBT blockSnapshot) {
+    private static void writeSidecar(File worldDirectory, CompoundTag blockSnapshot) {
         File sidecar = sidecar(worldDirectory);
         if (sidecar.isFile()) return;
         File parent = sidecar.getParentFile();
         File temporary = new File(parent, SIDECAR_NAME + ".tmp");
         try {
             Files.createDirectories(parent.toPath());
-            CompoundNBT root = new CompoundNBT();
+            CompoundTag root = new CompoundTag();
             root.put("Blocks", blockSnapshot.copy());
             try (FileOutputStream output = new FileOutputStream(temporary)) {
-                CompressedStreamTools.writeCompressed(root, output);
+                NbtIo.writeCompressed(root, output);
             }
             try {
                 Files.move(temporary.toPath(), sidecar.toPath(),
@@ -200,9 +197,9 @@ public final class LegacyWorldDataHook {
     }
 
     /** Called by the chunk-loader coremod immediately before vanilla data fixing. */
-    public static void prepareLegacyChunk(CompoundNBT root) {
+    public static void prepareLegacyChunk(CompoundTag root) {
         if (!legacyWorldActive || root == null || !root.contains("Level", 10)) return;
-        CompoundNBT level = root.getCompound("Level");
+        CompoundTag level = root.getCompound("Level");
         if (!containsSupportedBlock(level)) return;
         level.putBoolean("TerrainPopulated", true);
         level.putBoolean("LightPopulated", true);
@@ -210,9 +207,9 @@ public final class LegacyWorldDataHook {
     }
 
     /** Called by the chunk-loader coremod after vanilla data fixing. */
-    public static CompoundNBT finalizeLegacyChunk(CompoundNBT root) {
+    public static CompoundTag finalizeLegacyChunk(CompoundTag root) {
         if (root == null || !root.contains("Level", 10)) return root;
-        CompoundNBT level = root.getCompound("Level");
+        CompoundTag level = root.getCompound("Level");
         if (level.getBoolean(PRESERVE_CHUNK_MARKER)) {
             level.putString("Status", "full");
             level.remove(PRESERVE_CHUNK_MARKER);
@@ -225,14 +222,14 @@ public final class LegacyWorldDataHook {
         return legacyWorldActive && LEGACY_CHUNKS.contains(chunkKey(chunkX, chunkZ));
     }
 
-    private static int installLegacyBlockStates(CompoundNBT blockSnapshot) {
+    private static int installLegacyBlockStates(CompoundTag blockSnapshot) {
         SUPPORTED_BLOCK_IDS.clear();
         Map<ResourceLocation, Integer> supported = new LinkedHashMap<ResourceLocation, Integer>();
         Set<ResourceLocation> unsupported = new LinkedHashSet<ResourceLocation>();
-        ListNBT savedIds = blockSnapshot.getList("ids", 10);
+        ListTag savedIds = blockSnapshot.getList("ids", 10);
         int highestStateId = 0;
         for (int index = 0; index < savedIds.size(); ++index) {
-            CompoundNBT savedId = savedIds.getCompound(index);
+            CompoundTag savedId = savedIds.getCompound(index);
             ResourceLocation id;
             try {
                 id = new ResourceLocation(savedId.getString("K"));
@@ -255,8 +252,7 @@ public final class LegacyWorldDataHook {
         if (supported.isEmpty()) return 0;
 
         expandFlatteningTable(highestStateId + 1);
-        Method addEntry = ObfuscationReflectionHelper.findMethod(BlockStateFlatteningMap.class,
-                "func_199194_a", int.class, String.class, String[].class);
+        Method addEntry = findLegacyStateRegistrationMethod();
         int mapped = 0;
         for (Map.Entry<ResourceLocation, Integer> entry : supported.entrySet()) {
             SUPPORTED_BLOCK_IDS.set(entry.getValue());
@@ -264,7 +260,7 @@ public final class LegacyWorldDataHook {
                 BlockState state = legacyState(entry.getKey(), metadata);
                 int stateId = (entry.getValue() << 4) | metadata;
                 try {
-                    addEntry.invoke(null, stateId, NBTUtil.writeBlockState(state).toString(),
+                    addEntry.invoke(null, stateId, NbtUtils.writeBlockState(state).toString(),
                             new String[0]);
                 } catch (ReflectiveOperationException exception) {
                     throw new IllegalStateException("Could not register legacy block state " +
@@ -297,10 +293,10 @@ public final class LegacyWorldDataHook {
         return state;
     }
 
-    private static boolean containsSupportedBlock(CompoundNBT level) {
-        ListNBT sections = level.getList("Sections", 10);
+    private static boolean containsSupportedBlock(CompoundTag level) {
+        ListTag sections = level.getList("Sections", 10);
         for (int sectionIndex = 0; sectionIndex < sections.size(); ++sectionIndex) {
-            CompoundNBT section = sections.getCompound(sectionIndex);
+            CompoundTag section = sections.getCompound(sectionIndex);
             byte[] blocks = section.getByteArray("Blocks");
             if (blocks.length != 4096) continue;
             byte[] add = section.getByteArray("Add");
@@ -355,34 +351,41 @@ public final class LegacyWorldDataHook {
         return LEGACY_CHUNKS.size();
     }
 
-    @SuppressWarnings("unchecked")
     static int expandFlatteningTable(int requiredLength) {
-        try {
-            int requiredBlocks = (requiredLength + 15) >> 4;
-            int largestLength = 0;
-            for (Field valuesField : BlockStateFlatteningMap.class.getDeclaredFields()) {
-                if (!valuesField.getType().isArray() ||
-                        valuesField.getType().getComponentType() != Dynamic.class) {
-                    continue;
+        int largestLength = 0;
+        for (java.lang.reflect.Field valuesField : BlockStateData.class.getDeclaredFields()) {
+            if (Modifier.isStatic(valuesField.getModifiers()) && valuesField.getType().isArray() &&
+                    valuesField.getType().getComponentType() == Dynamic.class) {
+                try {
+                    valuesField.setAccessible(true);
+                    Dynamic<?>[] current = (Dynamic<?>[]) valuesField.get(null);
+                    if (current != null) largestLength = Math.max(largestLength, current.length);
+                } catch (ReflectiveOperationException exception) {
+                    throw new IllegalStateException(
+                            "Could not inspect Minecraft's legacy block state tables", exception);
                 }
-                valuesField.setAccessible(true);
-                Field modifiersField = Field.class.getDeclaredField("modifiers");
-                modifiersField.setAccessible(true);
-                modifiersField.setInt(valuesField,
-                        valuesField.getModifiers() & ~Modifier.FINAL);
-                Dynamic<?>[] current = (Dynamic<?>[]) valuesField.get(null);
-                int targetLength = current.length >= 4096 ? requiredLength : requiredBlocks;
-                if (current.length < targetLength) {
-                    valuesField.set(null, Arrays.copyOf(current, targetLength));
-                    current = (Dynamic<?>[]) valuesField.get(null);
-                }
-                largestLength = Math.max(largestLength, current.length);
             }
-            return largestLength;
-        } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException(
-                    "Could not expand Minecraft's legacy block-state flattening table", exception);
         }
+        if (largestLength < requiredLength) {
+            throw new IllegalStateException("The legacy block state table has length " +
+                    largestLength + ", but conversion requires " + requiredLength +
+                    "; the Forge 37 coremod did not expand it");
+        }
+        return largestLength;
+    }
+
+    private static Method findLegacyStateRegistrationMethod() {
+        for (Method method : BlockStateData.class.getDeclaredMethods()) {
+            Class<?>[] parameters = method.getParameterTypes();
+            if (Modifier.isStatic(method.getModifiers()) &&
+                    Modifier.isPublic(method.getModifiers()) && method.getReturnType() == void.class &&
+                    parameters.length == 3 && parameters[0] == int.class &&
+                    parameters[1] == String.class && parameters[2] == String[].class) {
+                return method;
+            }
+        }
+        throw new IllegalStateException("Could not find the public Forge 37 legacy block state " +
+                "registration method; the coremod was not applied");
     }
 
     private static long chunkKey(int chunkX, int chunkZ) {

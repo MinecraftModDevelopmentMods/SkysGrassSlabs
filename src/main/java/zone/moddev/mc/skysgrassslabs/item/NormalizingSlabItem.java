@@ -1,21 +1,21 @@
 package zone.moddev.mc.skysgrassslabs.item;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SoundType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 
 public final class NormalizingSlabItem extends BlockItem {
     private final SlabBlock slab;
@@ -28,12 +28,12 @@ public final class NormalizingSlabItem extends BlockItem {
     }
 
     @Override
-    public ActionResultType useOn(ItemUseContext context) {
-        PlayerEntity player = context.getPlayer();
+    public InteractionResult useOn(UseOnContext context) {
+        Player player = context.getPlayer();
         if (player == null || context.getItemInHand().isEmpty()) {
-            return ActionResultType.FAIL;
+            return InteractionResult.FAIL;
         }
-        World world = context.getLevel();
+        Level world = context.getLevel();
         BlockPos clicked = context.getClickedPos();
         BlockState state = world.getBlockState(clicked);
         if (state.getBlock() == slab) {
@@ -44,31 +44,31 @@ public final class NormalizingSlabItem extends BlockItem {
             }
         }
 
-        BlockPos placement = new BlockItemUseContext(context).getClickedPos();
+        BlockPos placement = new BlockPlaceContext(context).getClickedPos();
         if (world.getBlockState(placement).getBlock() == slab) {
             return combine(context, placement);
         }
         return super.useOn(context);
     }
 
-    private ActionResultType combine(ItemUseContext context, BlockPos pos) {
-        PlayerEntity player = context.getPlayer();
-        World world = context.getLevel();
+    private InteractionResult combine(UseOnContext context, BlockPos pos) {
+        Player player = context.getPlayer();
+        Level world = context.getLevel();
         ItemStack stack = context.getItemInHand();
         if (player == null || !player.mayUseItemAt(pos, context.getClickedFace(), stack)) {
-            return ActionResultType.FAIL;
+            return InteractionResult.FAIL;
         }
         BlockState combined = combinedBlock.defaultBlockState();
         if (!combined.isFaceSturdy(world, pos, Direction.UP) ||
                 !world.setBlock(pos, combined, 11)) {
-            return ActionResultType.FAIL;
+            return InteractionResult.FAIL;
         }
         SoundType sound = combined.getSoundType(world, pos, player);
-        world.playSound(player, pos, sound.getPlaceSound(), SoundCategory.BLOCKS,
+        world.playSound(player, pos, sound.getPlaceSound(), SoundSource.BLOCKS,
                 (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
-        if (!player.abilities.instabuild) {
+        if (!player.getAbilities().instabuild) {
             stack.shrink(1);
         }
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 }

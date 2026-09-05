@@ -1,19 +1,19 @@
 package zone.moddev.mc.skysgrassslabs.entity.ai;
 
 import java.util.EnumSet;
-import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.passive.SheepEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.event.ForgeEventFactory;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 public final class TurfEatingAI extends Goal {
-    private final SheepEntity sheep;
-    private final World world;
+    private final Sheep sheep;
+    private final Level world;
     private int eatingTimer;
 
-    public TurfEatingAI(SheepEntity sheep) {
+    public TurfEatingAI(Sheep sheep) {
         this.sheep = sheep;
         world = sheep.level;
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));

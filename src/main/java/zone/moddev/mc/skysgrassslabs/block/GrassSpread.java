@@ -1,32 +1,32 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.Random;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.state.properties.SlabType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 public final class GrassSpread {
     private static final int SPREAD_ATTEMPTS = 4;
 
-    public static boolean canRemainGrass(World world, BlockPos pos) {
+    public static boolean canRemainGrass(Level world, BlockPos pos) {
         BlockPos above = pos.above();
         return world.getMaxLocalRawBrightness(above) >= 4 ||
                 world.getBlockState(above).getLightBlock(world, above) < world.getMaxLightLevel();
     }
 
-    public static boolean hasSpreadLight(World world, BlockPos pos) {
+    public static boolean hasSpreadLight(Level world, BlockPos pos) {
         BlockPos above = pos.above();
         return world.getMaxLocalRawBrightness(above) >= 4 &&
                 world.getBlockState(above).getLightBlock(world, above) < world.getMaxLightLevel() &&
                 !world.getFluidState(above).is(FluidTags.WATER);
     }
 
-    public static void spreadFrom(World world, BlockPos source, Random random,
+    public static void spreadFrom(Level world, BlockPos source, Random random,
             BlockPos excludedTarget) {
         if (!world.isAreaLoaded(source, 3) || !hasSpreadLight(world, source)) {
             return;
@@ -44,7 +44,7 @@ public final class GrassSpread {
         }
     }
 
-    public static void tickDirtSlab(World world, BlockPos target, BlockState state,
+    public static void tickDirtSlab(Level world, BlockPos target, BlockState state,
             Random random) {
         if (!world.isAreaLoaded(target, 3) || !targetIsViable(world, target)) {
             return;
@@ -62,7 +62,7 @@ public final class GrassSpread {
         }
     }
 
-    public static boolean growTarget(World world, BlockPos target) {
+    public static boolean growTarget(Level world, BlockPos target) {
         if (!targetIsViable(world, target)) {
             return false;
         }
@@ -79,7 +79,7 @@ public final class GrassSpread {
         return false;
     }
 
-    public static boolean isViableSource(World world, BlockPos pos) {
+    public static boolean isViableSource(Level world, BlockPos pos) {
         BlockState state = world.getBlockState(pos);
         if (!canRemainGrass(world, pos) || !hasSpreadLight(world, pos)) {
             return false;
@@ -94,7 +94,7 @@ public final class GrassSpread {
                 world.getBlockState(pos.below()).getBlock() == Blocks.DIRT;
     }
 
-    private static boolean targetIsViable(World world, BlockPos target) {
+    private static boolean targetIsViable(Level world, BlockPos target) {
         BlockState state = world.getBlockState(target);
         boolean dirt = state.getBlock() == Blocks.DIRT ||
                 state.getBlock() == ModBlocks.DIRT_SLAB && !state.getValue(SlabBlock.WATERLOGGED);

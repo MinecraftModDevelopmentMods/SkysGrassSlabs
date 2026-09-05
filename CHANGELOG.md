@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1.117011 - Minecraft 1.17.1
+
+- Ported dirt, grass and dirt path slabs, turf and terrain smoothing to
+  Minecraft 1.17.1.
+- Kept both slab orientations, waterlogging, snowy caps, path alignment,
+  grass spreading, turf recipes and sheep interaction.
+- Preserved Sky blocks, items, block states, custom item data and saved world
+  state when upgrading worlds from earlier supported versions.
+- Retained all 18 translations and the existing configuration keys.
+
 ## 1.0.1.116051 - Minecraft 1.16.5
 
 - Ported dirt, grass and path slabs, turf and terrain smoothing to Minecraft
