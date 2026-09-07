@@ -6,7 +6,7 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.0.1.118021.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.1.0.118021.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -34,6 +34,33 @@ part of this migration. Forge may report them as missing and may remove them
 after offering its normal backup and confirmation screen. Do not continue
 unless losing those unsupported blocks is acceptable for that copy of the
 world.
+
+## Grass Slabs, Carpets & Stairs
+
+Minecraft 1.18 worlds that used Grass Slabs, Carpets & Stairs can recover these
+four IDs after that mod is removed:
+
+- `grassslabs:grass_slab` becomes `skysgrassslabs:grass_slab`;
+- `grassslabs:dirt_slab` becomes `skysgrassslabs:dirt_slab`;
+- `grassslabs:dirt_path_slab` becomes `skysgrassslabs:path_slab`;
+- `grassslabs:grass_carpet` becomes `skysgrassslabs:turf` when it is on vanilla
+  dirt.
+
+Top and bottom slabs retain their orientation and waterlogging. Double slabs
+become the related vanilla full block. Stack counts and custom item data are
+retained.
+
+Grass carpet placed on another block is kept under its original ID so the
+decoration does not break under turf's stricter support rules. Breaking that
+carpet produces an item which is converted to turf.
+
+Stairs, dirt carpet, dirt path carpet, mycelium variants and podzol variants do
+not have matching blocks in Sky's Grass Slabs. They are not converted. Read
+Forge's complete missing content warning before continuing without the older
+mod.
+
+When both mods remain installed, their content is left alone by default. See
+[Configuration](CONFIGURATION.md) for the optional replacement setting.
 
 ## Modpack checklist
 

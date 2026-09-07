@@ -16,6 +16,8 @@ import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 public final class SkysGrassSlabsConfig {
     public static final String FORCE_REPLACE_BUILDINGBRICKS_SLABS =
             "forceReplaceBuildingBricksSlabs";
+    public static final String FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT =
+            "forceReplaceGrassSlabsModContent";
     public static final String GENERATE_GRASS_SLABS = "generateGrassSlabs";
     public static final String FILE_NAME = "skysgrassslabs-common.toml";
 
@@ -45,10 +47,13 @@ public final class SkysGrassSlabsConfig {
         }
         boolean forceReplace = readLegacyBoolean(oldFile,
                 FORCE_REPLACE_BUILDINGBRICKS_SLABS, false);
+        boolean forceReplaceGrassSlabs = readLegacyBoolean(oldFile,
+                FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false);
         boolean worldgen = readLegacyBoolean(oldFile, GENERATE_GRASS_SLABS, true);
         List<String> toml = List.of(
                 "[compat]",
                 FORCE_REPLACE_BUILDINGBRICKS_SLABS + " = " + forceReplace,
+                FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT + " = " + forceReplaceGrassSlabs,
                 "",
                 "[worldgen]",
                 GENERATE_GRASS_SLABS + " = " + worldgen);
@@ -96,6 +101,10 @@ public final class SkysGrassSlabsConfig {
         return COMMON.forceReplaceBuildingBricksSlabs.get();
     }
 
+    public static boolean forceReplaceGrassSlabsModContent() {
+        return COMMON.forceReplaceGrassSlabsModContent.get();
+    }
+
     public static boolean isSmoothingActive() {
         return generateGrassSlabs() && !compatibilitySuppressed;
     }
@@ -110,6 +119,7 @@ public final class SkysGrassSlabsConfig {
 
     private static final class Common {
         private final ForgeConfigSpec.BooleanValue forceReplaceBuildingBricksSlabs;
+        private final ForgeConfigSpec.BooleanValue forceReplaceGrassSlabsModContent;
         private final ForgeConfigSpec.BooleanValue generateGrassSlabs;
 
         private Common(ForgeConfigSpec.Builder builder) {
@@ -118,6 +128,10 @@ public final class SkysGrassSlabsConfig {
                     "Replace supported historical grass and dirt slabs when their original mod "
                             + "is installed. A restart is required.")
                     .worldRestart().define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false);
+            forceReplaceGrassSlabsModContent = builder.comment(
+                    "Replace supported Grass Slabs, Carpets & Stairs content when that mod is "
+                            + "installed. A restart is required.")
+                    .worldRestart().define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false);
             builder.pop();
             builder.comment("World generation settings.").push("worldgen");
             generateGrassSlabs = builder.comment(

@@ -5,7 +5,7 @@ thin layer of turf. Grass spreads naturally between full blocks and slabs,
 while new Overworld terrain uses grass slabs to soften suitable one block
 steps.
 
-This branch is for Minecraft 1.18.2. Version `1.0.1.118021` requires Forge
+This branch is for Minecraft 1.18.2. Version `1.1.0.118021` requires Forge
 40.3.0 or a compatible Forge 40 build and Java 17.
 
 ## Installation
@@ -26,13 +26,15 @@ or updating world changing mods.
 - Display biome colours and snowy edges that match the surrounding terrain.
 - Use standard Minecraft waterlogging behaviour on slabs.
 - Use translated names in 18 supported language variants.
+- Recover selected grass slabs and grass carpet when replacing a compatible
+  older mod.
 
 ## Guides
 
 - [Gameplay and recipes](docs/GAMEPLAY.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Upgrading an older world](docs/WORLD-UPGRADES.md)
-- [Release notes](docs/RELEASE-1.0.1.118021.md)
+- [Release notes](docs/RELEASE-1.1.0.118021.md)
 
 ## License
 

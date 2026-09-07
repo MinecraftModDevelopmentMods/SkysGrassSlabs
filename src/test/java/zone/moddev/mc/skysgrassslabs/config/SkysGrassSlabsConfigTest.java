@@ -20,7 +20,8 @@ public class SkysGrassSlabsConfigTest {
         Path directory = temporary.getRoot().toPath();
         Files.write(directory.resolve("skysgrassslabs.cfg"), java.util.List.of(
                 "# retained legacy file", "B:generateGrassSlabs=false",
-                "B:forceReplaceBuildingBricksSlabs=true"), StandardCharsets.UTF_8);
+                "B:forceReplaceBuildingBricksSlabs=true",
+                "B:forceReplaceGrassSlabsModContent=true"), StandardCharsets.UTF_8);
 
         assertTrue(SkysGrassSlabsConfig.migrateLegacyConfig(directory));
 
@@ -30,6 +31,7 @@ public class SkysGrassSlabsConfigTest {
         assertTrue(toml.contains("generateGrassSlabs = false"));
         assertTrue(toml.contains("[compat]"));
         assertTrue(toml.contains("forceReplaceBuildingBricksSlabs = true"));
+        assertTrue(toml.contains("forceReplaceGrassSlabsModContent = true"));
         assertTrue(Files.isRegularFile(directory.resolve("skysgrassslabs.cfg")));
     }
 
@@ -48,12 +50,14 @@ public class SkysGrassSlabsConfigTest {
         Path malformedDirectory = temporary.newFolder("malformed").toPath();
         Files.write(malformedDirectory.resolve("skysgrassslabs.cfg"), java.util.List.of(
                 "B:generateGrassSlabs=perhaps",
-                "B:forceReplaceBuildingBricksSlabs=not-a-boolean"), StandardCharsets.UTF_8);
+                "B:forceReplaceBuildingBricksSlabs=not-a-boolean",
+                "B:forceReplaceGrassSlabsModContent=not-a-boolean"), StandardCharsets.UTF_8);
         assertTrue(SkysGrassSlabsConfig.migrateLegacyConfig(malformedDirectory));
         String migrated = Files.readString(
                 malformedDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME),
                 StandardCharsets.UTF_8);
         assertTrue(migrated.contains("generateGrassSlabs = true"));
         assertTrue(migrated.contains("forceReplaceBuildingBricksSlabs = false"));
+        assertTrue(migrated.contains("forceReplaceGrassSlabsModContent = false"));
     }
 }

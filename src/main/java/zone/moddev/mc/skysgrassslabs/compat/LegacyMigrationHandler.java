@@ -231,7 +231,8 @@ public final class LegacyMigrationHandler {
                     if (kind == null) {
                         continue;
                     }
-                    chunk.setBlockState(cursor, replacement(oldState, kind), false);
+                    ChunkMigrationAccess.setBlockState(chunk, cursor,
+                            replacement(oldState, kind));
                     if (kind == LegacySlabKind.GRASS) {
                         ++grass;
                     } else {

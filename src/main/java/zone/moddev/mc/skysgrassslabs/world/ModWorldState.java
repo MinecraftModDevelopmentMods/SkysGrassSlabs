@@ -25,6 +25,16 @@ public final class ModWorldState extends SavedData {
     private long migratedDirtBlocksBottom;
     private long migratedGrassItems;
     private long migratedDirtItems;
+    private long grassSlabsMigratedChunks;
+    private long grassSlabsMigratedGrassSlabBlocks;
+    private long grassSlabsMigratedDirtSlabBlocks;
+    private long grassSlabsMigratedPathSlabBlocks;
+    private long grassSlabsMigratedTurfBlocks;
+    private long grassSlabsMigratedGrassSlabItems;
+    private long grassSlabsMigratedDirtSlabItems;
+    private long grassSlabsMigratedPathSlabItems;
+    private long grassSlabsMigratedTurfItems;
+    private long grassSlabsRetainedGrassCarpets;
     private final Map<String, Long> unsupported = new TreeMap<>();
 
     public ModWorldState() {
@@ -105,6 +115,46 @@ public final class ModWorldState extends SavedData {
         }
     }
 
+    public void recordGrassSlabsChunk() {
+        ++grassSlabsMigratedChunks;
+        setDirty();
+    }
+
+    public void recordGrassSlabsBlock(String kind, long count) {
+        if (count <= 0L) {
+            return;
+        }
+        switch (kind) {
+            case "grass_slab" -> grassSlabsMigratedGrassSlabBlocks += count;
+            case "dirt_slab" -> grassSlabsMigratedDirtSlabBlocks += count;
+            case "path_slab" -> grassSlabsMigratedPathSlabBlocks += count;
+            case "turf" -> grassSlabsMigratedTurfBlocks += count;
+            default -> throw new IllegalArgumentException("Unknown migrated block kind: " + kind);
+        }
+        setDirty();
+    }
+
+    public void recordGrassSlabsItem(String kind, long count) {
+        if (count <= 0L) {
+            return;
+        }
+        switch (kind) {
+            case "grass_slab" -> grassSlabsMigratedGrassSlabItems += count;
+            case "dirt_slab" -> grassSlabsMigratedDirtSlabItems += count;
+            case "path_slab" -> grassSlabsMigratedPathSlabItems += count;
+            case "turf" -> grassSlabsMigratedTurfItems += count;
+            default -> throw new IllegalArgumentException("Unknown migrated item kind: " + kind);
+        }
+        setDirty();
+    }
+
+    public void recordRetainedGrassCarpets(long count) {
+        if (count > 0L) {
+            grassSlabsRetainedGrassCarpets += count;
+            setDirty();
+        }
+    }
+
     public void recordUnsupported(String id, long count) {
         if (count > 0) {
             unsupported.merge(id, count, Long::sum);
@@ -152,6 +202,46 @@ public final class ModWorldState extends SavedData {
         return migratedDirtItems;
     }
 
+    public long grassSlabsMigratedChunks() {
+        return grassSlabsMigratedChunks;
+    }
+
+    public long grassSlabsMigratedGrassSlabBlocks() {
+        return grassSlabsMigratedGrassSlabBlocks;
+    }
+
+    public long grassSlabsMigratedDirtSlabBlocks() {
+        return grassSlabsMigratedDirtSlabBlocks;
+    }
+
+    public long grassSlabsMigratedPathSlabBlocks() {
+        return grassSlabsMigratedPathSlabBlocks;
+    }
+
+    public long grassSlabsMigratedTurfBlocks() {
+        return grassSlabsMigratedTurfBlocks;
+    }
+
+    public long grassSlabsMigratedGrassSlabItems() {
+        return grassSlabsMigratedGrassSlabItems;
+    }
+
+    public long grassSlabsMigratedDirtSlabItems() {
+        return grassSlabsMigratedDirtSlabItems;
+    }
+
+    public long grassSlabsMigratedPathSlabItems() {
+        return grassSlabsMigratedPathSlabItems;
+    }
+
+    public long grassSlabsMigratedTurfItems() {
+        return grassSlabsMigratedTurfItems;
+    }
+
+    public long grassSlabsRetainedGrassCarpets() {
+        return grassSlabsRetainedGrassCarpets;
+    }
+
     public Map<String, Long> unsupported() {
         return Collections.unmodifiableMap(unsupported);
     }
@@ -166,6 +256,23 @@ public final class ModWorldState extends SavedData {
         migratedDirtBlocksBottom = tag.getLong("migrated_dirt_blocks_bottom");
         migratedGrassItems = tag.getLong("migrated_grass_items");
         migratedDirtItems = tag.getLong("migrated_dirt_items");
+        grassSlabsMigratedChunks = tag.getLong("grassslabs_migrated_chunks");
+        grassSlabsMigratedGrassSlabBlocks =
+                tag.getLong("grassslabs_migrated_grass_slab_blocks");
+        grassSlabsMigratedDirtSlabBlocks =
+                tag.getLong("grassslabs_migrated_dirt_slab_blocks");
+        grassSlabsMigratedPathSlabBlocks =
+                tag.getLong("grassslabs_migrated_path_slab_blocks");
+        grassSlabsMigratedTurfBlocks = tag.getLong("grassslabs_migrated_turf_blocks");
+        grassSlabsMigratedGrassSlabItems =
+                tag.getLong("grassslabs_migrated_grass_slab_items");
+        grassSlabsMigratedDirtSlabItems =
+                tag.getLong("grassslabs_migrated_dirt_slab_items");
+        grassSlabsMigratedPathSlabItems =
+                tag.getLong("grassslabs_migrated_path_slab_items");
+        grassSlabsMigratedTurfItems = tag.getLong("grassslabs_migrated_turf_items");
+        grassSlabsRetainedGrassCarpets =
+                tag.getLong("grassslabs_retained_grass_carpet_blocks");
         unsupported.clear();
         ListTag list = tag.getList("unsupported", Tag.TAG_COMPOUND);
         for (int index = 0; index < list.size(); ++index) {
@@ -178,6 +285,7 @@ public final class ModWorldState extends SavedData {
     public CompoundTag save(CompoundTag tag) {
         tag.putInt("schema_version", SCHEMA_VERSION);
         tag.putInt("buildingbricks_migration_version", MIGRATION_VERSION);
+        tag.putInt("grassslabs_migration_version", MIGRATION_VERSION);
         tag.putLong("migrated_chunks", migratedChunks);
         tag.putLong("migrated_grass_blocks", migratedGrassBlocks);
         tag.putLong("migrated_grass_blocks_top", migratedGrassBlocksTop);
@@ -187,6 +295,23 @@ public final class ModWorldState extends SavedData {
         tag.putLong("migrated_dirt_blocks_bottom", migratedDirtBlocksBottom);
         tag.putLong("migrated_grass_items", migratedGrassItems);
         tag.putLong("migrated_dirt_items", migratedDirtItems);
+        tag.putLong("grassslabs_migrated_chunks", grassSlabsMigratedChunks);
+        tag.putLong("grassslabs_migrated_grass_slab_blocks",
+                grassSlabsMigratedGrassSlabBlocks);
+        tag.putLong("grassslabs_migrated_dirt_slab_blocks",
+                grassSlabsMigratedDirtSlabBlocks);
+        tag.putLong("grassslabs_migrated_path_slab_blocks",
+                grassSlabsMigratedPathSlabBlocks);
+        tag.putLong("grassslabs_migrated_turf_blocks", grassSlabsMigratedTurfBlocks);
+        tag.putLong("grassslabs_migrated_grass_slab_items",
+                grassSlabsMigratedGrassSlabItems);
+        tag.putLong("grassslabs_migrated_dirt_slab_items",
+                grassSlabsMigratedDirtSlabItems);
+        tag.putLong("grassslabs_migrated_path_slab_items",
+                grassSlabsMigratedPathSlabItems);
+        tag.putLong("grassslabs_migrated_turf_items", grassSlabsMigratedTurfItems);
+        tag.putLong("grassslabs_retained_grass_carpet_blocks",
+                grassSlabsRetainedGrassCarpets);
         ListTag list = new ListTag();
         unsupported.forEach((id, count) -> {
             CompoundTag entry = new CompoundTag();

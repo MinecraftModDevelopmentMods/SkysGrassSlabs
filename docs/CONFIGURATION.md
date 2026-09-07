@@ -31,6 +31,19 @@ automatic and does not require this option. See
 [Upgrading an older world](WORLD-UPGRADES.md) before opening an old modded
 world.
 
+`compat.forceReplaceGrassSlabsModContent=false`
+
+This separate setting controls supported content from Grass Slabs, Carpets &
+Stairs while that mod is still installed. Leave it disabled for normal side by
+side use. When enabled, supported slabs, item stacks and safely supported grass
+carpet are changed to the matching Sky versions as they load.
+
+If the older mod is removed, recovery of its supported IDs is automatic and
+does not require this setting. Grass carpet placed anywhere other than vanilla
+dirt is kept under its old ID because changing it to turf would cause the
+placement to break later. The setting is independent of world smoothing and
+the other legacy replacement option.
+
 ## Related game rules
 
 Turf and grass behaviour use Minecraft random ticks. Setting `randomTickSpeed`

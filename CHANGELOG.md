@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0.118021 - Minecraft 1.18.2
+
+- Added an automatic upgrade path for matching grass, dirt and dirt path slabs
+  and grass carpet from an older grass slab mod.
+- Preserved slab orientation, waterlogging, item counts and custom item data.
+- Added an optional setting for converting supported content while both mods
+  remain installed.
+- Kept decorative grass carpet in place when converting it to turf would make
+  it lose its existing support.
+
 ## 1.0.1.118021 - Minecraft 1.18.2
 
 - Brought the accepted dirt, grass and dirt path slabs, turf and terrain

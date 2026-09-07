@@ -279,8 +279,16 @@ tasks.register('verifyReleaseArtifacts') {
              'coremods/skysgrassslabs_legacy_world.js',
              'assets/skysgrassslabs/lang/en_us.json',
              'assets/skysgrassslabs/lang/zh_cn.json',
+             'assets/grassslabs/blockstates/grass_slab.json',
+             'assets/grassslabs/blockstates/dirt_slab.json',
+             'assets/grassslabs/blockstates/dirt_path_slab.json',
+             'assets/grassslabs/blockstates/grass_carpet.json',
+             'data/grassslabs/loot_tables/blocks/grass_carpet.json',
              'data/forge/tags/items/seeds.json',
-             'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class'].each { required ->
+             'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class',
+             'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsCompat.class',
+             'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsMigrationHandler.class',
+             'zone/moddev/mc/skysgrassslabs/compat/LegacyCarpetAliasBlock.class'].each { required ->
                 if (!names.contains(required)) {
                     throw new GradleException("Release jar is missing ${required}")
                 }

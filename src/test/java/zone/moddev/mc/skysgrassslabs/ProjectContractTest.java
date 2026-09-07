@@ -32,14 +32,14 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
         assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.0.1.118021.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.0.118021.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void releaseIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.0.1.118021"));
+        assertTrue(properties.contains("mod_version=1.1.0.118021"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -95,7 +95,8 @@ public class ProjectContractTest {
         assertTrue(config.contains("define(GENERATE_GRASS_SLABS, true)"));
         assertTrue(config.contains("push(\"compat\")"));
         assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
-        assertTrue(main.contains("VERSION = \"1.0.1.118021\""));
+        assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
+        assertTrue(main.contains("VERSION = \"1.1.0.118021\""));
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
         assertTrue(state.contains("schema_version"));
@@ -123,6 +124,14 @@ public class ProjectContractTest {
         for (String path : paths) {
             assertTrue(path, Files.isRegularFile(Path.of(path)));
         }
+        assertTrue(Files.isRegularFile(Path.of(
+                "src/main/resources/assets/grassslabs/blockstates/grass_slab.json")));
+        assertTrue(Files.isRegularFile(Path.of(
+                "src/main/resources/assets/grassslabs/blockstates/dirt_slab.json")));
+        assertTrue(Files.isRegularFile(Path.of(
+                "src/main/resources/assets/grassslabs/blockstates/dirt_path_slab.json")));
+        assertTrue(Files.isRegularFile(Path.of(
+                "src/main/resources/assets/grassslabs/blockstates/grass_carpet.json")));
     }
 
     @Test
@@ -175,9 +184,9 @@ public class ProjectContractTest {
         }
         String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
                 StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.118021.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.118021-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.0.1.118021-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.118021.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.118021-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.118021-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
         assertTrue(ci.contains("java-version: '25.0.3+9.0.LTS'"));
         assertTrue(ci.contains("JAVA_HOME_25_X64"));
@@ -192,5 +201,9 @@ public class ProjectContractTest {
                 + "skysgrassslabs-1.17.1-forward-world.zip")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
                 + "skysgrassslabs-1.17.1-forward-world.manifest")));
+        assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
+                + "grassslabs-1.18.2-migration-world.zip")));
+        assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
+                + "grassslabs-1.18.2-migration-world.manifest")));
     }
 }
