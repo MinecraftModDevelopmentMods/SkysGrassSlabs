@@ -6,7 +6,7 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.1.0.119041.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.1.0.120011.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -15,7 +15,7 @@ when their chunks are first opened. Old top and bottom slab orientations are
 retained and begin dry. Keep the mod installed during the first upgraded start
 so unopened chunks can be converted when they are later visited.
 
-Minecraft 1.13.2 through 1.18.2 worlds already use named block states. Their
+Minecraft 1.13.2 through 1.19.4 worlds already use named block states. Their
 orientation, snowy and waterlogged states load through Minecraft's normal
 upgrade process.
 
@@ -65,8 +65,8 @@ When both mods remain installed, their content is left alone by default. See
 ## Modpack checklist
 
 1. Back up the complete instance and world.
-2. Update Forge and every required mod to a matching Minecraft 1.19.4 build.
-3. Install the 1.19.4 Sky's Grass Slabs jar before the first upgraded start.
+2. Update Forge and every required mod to a matching Minecraft 1.20.1 build.
+3. Install the 1.20.1 Sky's Grass Slabs jar before the first upgraded start.
 4. Read the complete Forge missing content list before confirming it.
 5. Check representative slabs, turf, paths, inventories and old terrain.
 6. Stop and start the upgraded copy once more, then repeat the checks.

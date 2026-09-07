@@ -85,7 +85,7 @@ public final class GrassSlabsMigrationHandler {
             return;
         }
         Player player = event.getEntity();
-        ModWorldState state = ModWorldState.get(player.level);
+        ModWorldState state = ModWorldState.get(player.level());
         migrateInventory(player.getInventory(), state);
         migrateInventory(player.getEnderChestInventory(), state);
     }

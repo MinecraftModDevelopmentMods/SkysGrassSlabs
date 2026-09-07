@@ -25,15 +25,15 @@ public final class SkysGrassSlabs {
     /** Stable Forge mod identifier and resource namespace. */
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.1.0.119041";
+    public static final String VERSION = "1.1.0.120011";
     public static final Logger LOGGER = LogManager.getLogger();
 
     /** Registers content, configuration, world generation, and persistent state. */
-    public SkysGrassSlabs() {
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+    public SkysGrassSlabs(FMLJavaModLoadingContext context) {
+        IEventBus modBus = context.getModEventBus();
 
         SkysGrassSlabsConfig.migrateLegacyConfig();
-        SkysGrassSlabsConfig.register();
+        SkysGrassSlabsConfig.register(context);
         ModBlocks.register(modBus);
         ModRecipes.register(modBus);
         WorldgenBootstrap.register(modBus);

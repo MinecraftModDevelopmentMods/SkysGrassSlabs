@@ -373,7 +373,7 @@ public final class LegacyWorldDataHook {
         if (largestLength < requiredLength) {
             throw new IllegalStateException("The legacy block state table has length "
                     + largestLength + ", but conversion requires " + requiredLength
-                    + "; the Forge 45 coremod did not expand it");
+                    + "; the Forge 47 coremod did not expand it");
         }
         return largestLength;
     }
@@ -388,7 +388,7 @@ public final class LegacyWorldDataHook {
                 return method;
             }
         }
-        throw new IllegalStateException("Could not find the public Forge 45 legacy block-state "
+        throw new IllegalStateException("Could not find the public Forge 47 legacy block-state "
                 + "registration method; the coremod was not applied");
     }
 

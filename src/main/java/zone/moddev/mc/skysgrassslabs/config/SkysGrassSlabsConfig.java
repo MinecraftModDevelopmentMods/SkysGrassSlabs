@@ -7,9 +7,9 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 
 /** Common configuration and one-time migration from the 1.10 configuration file. */
@@ -31,8 +31,8 @@ public final class SkysGrassSlabsConfig {
         SPEC = pair.getRight();
     }
 
-    public static void register() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+    public static void register(FMLJavaModLoadingContext context) {
+        context.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
     }
 
     public static void migrateLegacyConfig() {

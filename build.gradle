@@ -33,15 +33,15 @@ def mavenizerLicense = mavenizerToolsDirectory.file('LICENSE-MAVENIZER.txt')
 def mavenizerReadme = mavenizerToolsDirectory.file('README.md')
 def mavenizerFixtureChecksums = [
         (mavenizerCompatibilityJar.asFile):
-                '341B3FB10ABA6EA7DC612FBE519DC290A1C81867AED5DD320ACD783688AC49DE',
+                '416DCA4797BC55826F0DDCF03FDC405F1990FC15C2133FA27A1F143BF7976177',
         (mavenizerRuleManifest.asFile):
-                '33A3217261EBB8F37D45F50BD2F8CE70B221C014A5C15F4C5F8F9091AD6D1EC8',
+                '8945511DFF53B8F1A91EE44B14AF9EC7DB34C373617EA37A608C6958BFEEB22E',
         (mavenizerSourcePatch.asFile):
                 'D856190DEF5574716C5E4F4379912C451B1F5952B0B111576651A98EECF58544',
         (mavenizerLicense.asFile):
                 '20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331',
         (mavenizerReadme.asFile):
-                '88806D79B0FD4479FA07CCFF30A44A6D90F1BF822665EFBFCCCBD5C99F65FBB3'
+                '177C1DDEDEF9704B9FDC8EA24B8DCDF4DDCC826DD0E253E7872A00DB2EA34518'
 ]
 
 // ForgeGradle invokes Mavenizer while configuring the project. Verify the
@@ -191,7 +191,7 @@ dependencies {
 
 def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompatibilityFixture') {
     group = 'verification'
-    description = 'Verifies the checksum-sealed Forge 1.19.4 Mavenizer compatibility fixture.'
+    description = 'Verifies the checksum-sealed Forge 1.20.1 Mavenizer compatibility fixture.'
     inputs.files mavenizerFixtureChecksums.keySet()
     doLast {
         mavenizerFixtureChecksums.each { File fixture, String expected ->
@@ -284,12 +284,12 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.19.4' || project.forge_version != '45.4.0' ||
-                project.mapping_channel != 'official' || project.mapping_version != '1.19.4' ||
+        if (project.minecraft_version != '1.20.1' || project.forge_version != '47.4.10' ||
+                project.mapping_channel != 'official' || project.mapping_version != '1.20.1' ||
                 project.loader_name != 'forge' || project.loader_code != '1' ||
                 project.java_version != '17' || project.java_toolchain_version != '17.0.1+12' ||
                 project.gradle_java_version != '17' || project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 1.19.4 release metadata')
+            throw new GradleException('Unexpected 1.20.1 release metadata')
         }
     }
 }
@@ -541,9 +541,9 @@ eclipse {
     synchronizationTasks 'isolateEclipseProductionRuns'
 }
 
-def syncForge45EclipseLaunches = tasks.register('syncForge45EclipseLaunches') {
+def syncForge47EclipseLaunches = tasks.register('syncForge47EclipseLaunches') {
     group = 'ide'
-    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 45.'
+    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 47.'
     doLast {
         String mainOutput = new File(projectDir, 'bin/main').absolutePath
         String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
@@ -581,14 +581,14 @@ def syncForge45EclipseLaunches = tasks.register('syncForge45EclipseLaunches') {
 }
 
 tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
-    finalizedBy syncForge45EclipseLaunches
+    finalizedBy syncForge47EclipseLaunches
 }
 
 def isolateEclipseProductionRuns = tasks.register('isolateEclipseProductionRuns') {
     group = 'ide'
     description = 'Prepares the complete ForgeGradle 7 Eclipse project configuration.'
     dependsOn tasks.named('genEclipseRuns')
-    dependsOn syncForge45EclipseLaunches
+    dependsOn syncForge47EclipseLaunches
     dependsOn configureEclipseBuildship
     dependsOn prepareEclipseResources
 }

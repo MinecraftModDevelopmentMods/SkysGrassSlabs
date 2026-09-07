@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.event.CreativeModeTabEvent;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -82,8 +82,8 @@ public final class ModBlocks {
                 new Item.Properties()));
     }
 
-    private static void buildCreativeTab(CreativeModeTabEvent.BuildContents event) {
-        if (event.getTab() == CreativeModeTabs.BUILDING_BLOCKS) {
+    private static void buildCreativeTab(BuildCreativeModeTabContentsEvent event) {
+        if (CreativeModeTabs.BUILDING_BLOCKS.equals(event.getTabKey())) {
             event.accept(DIRT_SLAB_ITEM);
             event.accept(GRASS_SLAB_ITEM);
             event.accept(PATH_SLAB_ITEM);

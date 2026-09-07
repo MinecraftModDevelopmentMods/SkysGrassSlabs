@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowLayerBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Vanilla light and water rules adapted for slab identities. */
@@ -38,7 +38,7 @@ final class SoilLifecycle {
         BlockState lightState = state.is(ModBlocks.GRASS_SLAB.get())
                 || state.is(ModBlocks.TURF.get())
                 ? Blocks.AIR.defaultBlockState() : state;
-        int blocked = LayerLightEngine.getLightBlockInto(level, lightState, pos, cover, above,
+        int blocked = LightEngine.getLightBlockInto(level, lightState, pos, cover, above,
                 Direction.UP, cover.getLightBlock(level, above));
 
         return blocked < level.getMaxLightLevel();

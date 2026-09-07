@@ -20,6 +20,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.level.block.Block;
@@ -239,7 +240,7 @@ public final class SlabGameTests {
         CraftingRecipe seedRecipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
                 .byKey(new ResourceLocation(SkysGrassSlabs.MOD_ID, "grass_slab_from_seeds"))
                 .orElseThrow();
-        CraftingContainer grid = new CraftingContainer(new AbstractContainerMenu(null, -1) {
+        CraftingContainer grid = new TransientCraftingContainer(new AbstractContainerMenu(null, -1) {
             @Override
             public boolean stillValid(Player player) {
                 return true;
@@ -693,7 +694,7 @@ public final class SlabGameTests {
     }
 
     private static CraftingContainer craftingGrid(int width, int height) {
-        return new CraftingContainer(new AbstractContainerMenu(null, -1) {
+        return new TransientCraftingContainer(new AbstractContainerMenu(null, -1) {
             @Override
             public boolean stillValid(Player player) {
                 return true;

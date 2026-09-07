@@ -16,7 +16,7 @@ public final class TurfEatingGoal extends Goal {
 
     public TurfEatingGoal(Sheep sheep) {
         this.sheep = sheep;
-        level = sheep.level;
+        level = sheep.level();
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
     }
 

@@ -1,0 +1,8 @@
+fixture=skysgrassslabs-1.19.4-forward-world.zip
+fixture_sha256=C2CAE48BEDE24EF2ED7F06987C22A007404E0FA44FD43BF0AA4EE05690E9C798
+fixture_bytes=79937
+fixture_entries=7
+source_minecraft=1.19.4
+source_mod_version=1.1.0.119041
+source_jar_sha256=8F6E6B505F830D2785A76A2982A4AEA9B4CA82431150E73AB87388BA42BAA138
+generator=Normal packaged server upgrade and reload using the accepted 1.19.4 jar

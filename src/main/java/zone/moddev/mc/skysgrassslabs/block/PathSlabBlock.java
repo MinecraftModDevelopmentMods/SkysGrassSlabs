@@ -94,7 +94,7 @@ public final class PathSlabBlock extends SlabBlock {
 
         BlockState above = level.getBlockState(pos.above());
 
-        return !above.getMaterial().isSolid() || above.getBlock() instanceof FenceGateBlock;
+        return !above.isSolid() || above.getBlock() instanceof FenceGateBlock;
     }
 
     @Override

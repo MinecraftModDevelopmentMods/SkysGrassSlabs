@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0.120011 - Minecraft 1.20.1
+
+- Ported the complete feature set to Minecraft 1.20.1.
+- Preserved permanent content IDs, saved world data, configuration options and
+  support for upgrading older worlds.
+- Kept all 18 translations and recipe book support for turf cutting.
+
 ## 1.1.0.119041 - Minecraft 1.19.4
 
 - Ported slabs, turf, recipes, sheep interaction and terrain smoothing to
