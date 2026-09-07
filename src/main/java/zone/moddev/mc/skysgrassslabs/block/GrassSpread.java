@@ -1,6 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
-import java.util.Random;
+import net.minecraft.util.RandomSource;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -30,7 +30,7 @@ public final class GrassSpread {
                 && !level.getFluidState(above).is(FluidTags.WATER);
     }
 
-    public static void spreadFrom(ServerLevel level, BlockPos source, Random random,
+    public static void spreadFrom(ServerLevel level, BlockPos source, RandomSource random,
             @Nullable BlockPos excludedTarget) {
         if (!level.isAreaLoaded(source, 3) || !hasSpreadLight(level, source)) {
             return;
@@ -47,7 +47,7 @@ public final class GrassSpread {
     }
 
     public static void tickDirtSlab(ServerLevel level, BlockPos target, BlockState state,
-            Random random) {
+            RandomSource random) {
         if (!level.isAreaLoaded(target, 3) || !targetIsViable(level, target)) {
             return;
         }

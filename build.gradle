@@ -11,14 +11,53 @@ plugins {
     id 'net.minecraftforge.gradle' version '7.0.34'
 }
 
-def mavenizerCompatibilityJar = layout.projectDirectory.file(
-        'ci-fixtures/tools/minecraft-mavenizer-0.5.21-forge-1.18.jar')
-def mavenizerCompatibilitySha256 =
-        '28A6697BDF6D9500EC0AF9C1C949B9F3ED7DDFDA649CB5CAC4BEEA2E9567570A'
+def sha256Of = { File inputFile ->
+    MessageDigest digest = MessageDigest.getInstance('SHA-256')
+    inputFile.withInputStream { input ->
+        byte[] buffer = new byte[8192]
+        for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
+            if (read > 0) digest.update(buffer, 0, read)
+        }
+    }
+    digest.digest().encodeHex().toString().toUpperCase()
+}
 
-// ForgeGradle 7's Mavenizer recompilation rejects a redundant accessor emitted
-// by Forge 40's 1.18.2 decompiler. This checksum-sealed build-only variant
-// removes that accessor; the mod and every shipped class remain Java 17.
+def mavenizerToolsDirectory = layout.projectDirectory.dir('ci-fixtures/tools')
+def mavenizerCompatibilityJar = mavenizerToolsDirectory.file(
+        'minecraft-mavenizer-0.5.21-orespawn-compat.jar')
+def mavenizerRuleManifest = mavenizerToolsDirectory.file(
+        'minecraft-source-compatibility.json')
+def mavenizerSourcePatch = mavenizerToolsDirectory.file(
+        'minecraft-mavenizer-0.5.21-orespawn-compat.patch')
+def mavenizerLicense = mavenizerToolsDirectory.file('LICENSE-MAVENIZER.txt')
+def mavenizerReadme = mavenizerToolsDirectory.file('README.md')
+def mavenizerFixtureChecksums = [
+        (mavenizerCompatibilityJar.asFile):
+                '341B3FB10ABA6EA7DC612FBE519DC290A1C81867AED5DD320ACD783688AC49DE',
+        (mavenizerRuleManifest.asFile):
+                '33A3217261EBB8F37D45F50BD2F8CE70B221C014A5C15F4C5F8F9091AD6D1EC8',
+        (mavenizerSourcePatch.asFile):
+                'D856190DEF5574716C5E4F4379912C451B1F5952B0B111576651A98EECF58544',
+        (mavenizerLicense.asFile):
+                '20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331',
+        (mavenizerReadme.asFile):
+                '88806D79B0FD4479FA07CCFF30A44A6D90F1BF822665EFBFCCCBD5C99F65FBB3'
+]
+
+// ForgeGradle invokes Mavenizer while configuring the project. Verify the
+// executable and its target rules before any Mavenizer code is allowed to run.
+[mavenizerCompatibilityJar.asFile, mavenizerRuleManifest.asFile].each { fixture ->
+    if (!fixture.isFile()) {
+        throw new GradleException("Missing Mavenizer compatibility fixture: ${fixture}")
+    }
+    String actual = sha256Of(fixture)
+    String expected = mavenizerFixtureChecksums[fixture]
+    if (actual != expected) {
+        throw new GradleException("Mavenizer compatibility fixture checksum mismatch for " +
+                "${fixture.name}: expected ${expected}, found ${actual}")
+    }
+}
+
 fgtools.configure('mavenizer') {
     classpath.from(mavenizerCompatibilityJar)
     mainClass.set('net.minecraftforge.mcmaven.cli.Main')
@@ -35,9 +74,11 @@ base {
     archivesName = 'SkysGrassSlabs'
 }
 
-// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+        vendor = JvmVendorSpec.ADOPTIUM
+    }
     withSourcesJar()
     withJavadocJar()
 }
@@ -150,23 +191,18 @@ dependencies {
 
 def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompatibilityFixture') {
     group = 'verification'
-    description = 'Verifies the checksum-sealed Forge 1.18 Mavenizer compatibility tool.'
-    inputs.file mavenizerCompatibilityJar
+    description = 'Verifies the checksum-sealed Forge 1.19.4 Mavenizer compatibility fixture.'
+    inputs.files mavenizerFixtureChecksums.keySet()
     doLast {
-        File fixture = mavenizerCompatibilityJar.asFile
-        if (!fixture.isFile()) {
-            throw new GradleException("Missing Mavenizer compatibility fixture: ${fixture}")
-        }
-        MessageDigest digest = MessageDigest.getInstance('SHA-256')
-        fixture.withInputStream { input ->
-            byte[] buffer = new byte[8192]
-            for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
-                if (read > 0) digest.update(buffer, 0, read)
+        mavenizerFixtureChecksums.each { File fixture, String expected ->
+            if (!fixture.isFile()) {
+                throw new GradleException("Missing Mavenizer compatibility fixture: ${fixture}")
             }
-        }
-        String actual = digest.digest().encodeHex().toString().toUpperCase()
-        if (actual != mavenizerCompatibilitySha256) {
-            throw new GradleException("Mavenizer compatibility fixture checksum mismatch: ${actual}")
+            String actual = sha256Of(fixture)
+            if (actual != expected) {
+                throw new GradleException("Mavenizer compatibility fixture checksum mismatch for " +
+                        "${fixture.name}: expected ${expected}, found ${actual}")
+            }
         }
     }
 }
@@ -248,12 +284,12 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.18.2' || project.forge_version != '40.3.0' ||
-                project.mapping_channel != 'official' || project.mapping_version != '1.18.2' ||
+        if (project.minecraft_version != '1.19.4' || project.forge_version != '45.4.0' ||
+                project.mapping_channel != 'official' || project.mapping_version != '1.19.4' ||
                 project.loader_name != 'forge' || project.loader_code != '1' ||
                 project.java_version != '17' || project.java_toolchain_version != '17.0.1+12' ||
                 project.gradle_java_version != '17' || project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 1.18.2 release metadata')
+            throw new GradleException('Unexpected 1.19.4 release metadata')
         }
     }
 }
@@ -285,10 +321,12 @@ tasks.register('verifyReleaseArtifacts') {
              'assets/grassslabs/blockstates/grass_carpet.json',
              'data/grassslabs/loot_tables/blocks/grass_carpet.json',
              'data/forge/tags/items/seeds.json',
+             'data/skysgrassslabs/forge/biome_modifier/grass_slab_smoothing.json',
              'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class',
              'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsCompat.class',
              'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsMigrationHandler.class',
-             'zone/moddev/mc/skysgrassslabs/compat/LegacyCarpetAliasBlock.class'].each { required ->
+             'zone/moddev/mc/skysgrassslabs/compat/LegacyCarpetAliasBlock.class',
+             'zone/moddev/mc/skysgrassslabs/world/SmoothingBiomeModifier.class'].each { required ->
                 if (!names.contains(required)) {
                     throw new GradleException("Release jar is missing ${required}")
                 }
@@ -503,9 +541,9 @@ eclipse {
     synchronizationTasks 'isolateEclipseProductionRuns'
 }
 
-def syncForge40EclipseLaunches = tasks.register('syncForge40EclipseLaunches') {
+def syncForge45EclipseLaunches = tasks.register('syncForge45EclipseLaunches') {
     group = 'ide'
-    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 40.'
+    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 45.'
     doLast {
         String mainOutput = new File(projectDir, 'bin/main').absolutePath
         String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
@@ -543,14 +581,14 @@ def syncForge40EclipseLaunches = tasks.register('syncForge40EclipseLaunches') {
 }
 
 tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
-    finalizedBy syncForge40EclipseLaunches
+    finalizedBy syncForge45EclipseLaunches
 }
 
 def isolateEclipseProductionRuns = tasks.register('isolateEclipseProductionRuns') {
     group = 'ide'
     description = 'Prepares the complete ForgeGradle 7 Eclipse project configuration.'
     dependsOn tasks.named('genEclipseRuns')
-    dependsOn syncForge40EclipseLaunches
+    dependsOn syncForge45EclipseLaunches
     dependsOn configureEclipseBuildship
     dependsOn prepareEclipseResources
 }

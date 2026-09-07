@@ -6,7 +6,7 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.level.GrassColor;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ColorHandlerEvent;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -34,7 +34,7 @@ public final class ClientEvents {
     }
 
     @SubscribeEvent
-    public static void registerBlockColors(ColorHandlerEvent.Block event) {
+    public static void registerBlockColors(RegisterColorHandlersEvent.Block event) {
         event.getBlockColors().register((state, level, pos, tintIndex) -> {
             if (tintIndex != 0) {
                 return -1;
@@ -58,7 +58,7 @@ public final class ClientEvents {
     }
 
     @SubscribeEvent
-    public static void registerItemColors(ColorHandlerEvent.Item event) {
+    public static void registerItemColors(RegisterColorHandlersEvent.Item event) {
         BlockColors colors = event.getBlockColors();
         event.getItemColors().register((stack, tintIndex) ->
                 colors.getColor(ModBlocks.GRASS_SLAB.get().defaultBlockState(), null, null, tintIndex),

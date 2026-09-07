@@ -1,14 +1,15 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegisterEvent;
 
 /** Narrow compatibility boundary for supported historical slab IDs. */
 public final class BuildingBricksCompat {
@@ -26,8 +27,7 @@ public final class BuildingBricksCompat {
     private static boolean legacyAliasesRegistered;
 
     public static void register(IEventBus modBus) {
-        modBus.addGenericListener(Block.class, BuildingBricksCompat::registerAliasBlocks);
-        modBus.addGenericListener(Item.class, BuildingBricksCompat::registerAliasItems);
+        modBus.addListener(BuildingBricksCompat::registerAliases);
     }
 
     public static boolean isInstalled() {
@@ -65,31 +65,32 @@ public final class BuildingBricksCompat {
         return stack != null && !stack.isEmpty() && dirt != null && stack.is(dirt.asItem());
     }
 
-    private static void registerAliasBlocks(RegistryEvent.Register<Block> event) {
+    private static void registerAliases(RegisterEvent event) {
         if (isInstalled()) {
             return;
         }
-        grassSlab = alias(GRASS_SLAB_ID, true);
-        dirtSlab = alias(DIRT_SLAB_ID, false);
-        historicalGrassSlab = alias(HISTORICAL_GRASS_SLAB_ID, true);
-        event.getRegistry().registerAll(grassSlab, dirtSlab, historicalGrassSlab);
-        legacyAliasesRegistered = true;
-    }
-
-    private static void registerAliasItems(RegistryEvent.Register<Item> event) {
-        if (!legacyAliasesRegistered) {
-            return;
+        if (event.getRegistryKey().equals(Registries.BLOCK)) {
+            event.register(Registries.BLOCK, GRASS_SLAB_ID,
+                    () -> grassSlab = alias(true));
+            event.register(Registries.BLOCK, DIRT_SLAB_ID,
+                    () -> dirtSlab = alias(false));
+            event.register(Registries.BLOCK, HISTORICAL_GRASS_SLAB_ID,
+                    () -> historicalGrassSlab = alias(true));
+            legacyAliasesRegistered = true;
+        } else if (event.getRegistryKey().equals(Registries.ITEM) && legacyAliasesRegistered) {
+            event.register(Registries.ITEM, GRASS_SLAB_ID, () -> aliasItem(grassSlab));
+            event.register(Registries.ITEM, DIRT_SLAB_ID, () -> aliasItem(dirtSlab));
+            event.register(Registries.ITEM, HISTORICAL_GRASS_SLAB_ID,
+                    () -> aliasItem(historicalGrassSlab));
         }
-        event.getRegistry().registerAll(aliasItem(grassSlab), aliasItem(dirtSlab),
-                aliasItem(historicalGrassSlab));
     }
 
-    private static Block alias(ResourceLocation id, boolean grass) {
-        return new LegacySlabAliasBlock(grass).setRegistryName(id);
+    private static Block alias(boolean grass) {
+        return new LegacySlabAliasBlock(grass);
     }
 
     private static Item aliasItem(Block block) {
-        return new BlockItem(block, new Item.Properties()).setRegistryName(block.getRegistryName());
+        return new BlockItem(block, new Item.Properties());
     }
 
     private static Block resolve(Block cached, ResourceLocation id) {

@@ -1,0 +1,8 @@
+fixture=skysgrassslabs-1.18.2-forward-world.zip
+fixture_sha256=AEAAD4453D0C32DF515605D68BF2E0DCA8CCA16B9964C52D6D5B8B82EC1D77F5
+fixture_bytes=74730
+fixture_entries=7
+source_minecraft=1.18.2
+source_mod_version=1.1.0.118021
+source_jar_sha256=BA0FE456768BD3DBE7974714F255100C9D40C69DC16FCA59227C8F9C9ACEF1FB
+generator=Normal packaged server world populated and reloaded with the accepted 1.18.2 jar

@@ -64,6 +64,6 @@ public final class TurfEatingGoal extends Goal {
     }
 
     private BlockPos position() {
-        return new BlockPos(sheep.getX(), sheep.getY(), sheep.getZ());
+        return sheep.blockPosition();
     }
 }

@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
@@ -39,7 +40,9 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 || level.getLevel().dimension() != Level.OVERWORLD) {
             return false;
         }
-        ChunkAccess owner = level.getChunk(context.origin());
+        ChunkAccess owner = level instanceof WorldGenRegion region
+                ? level.getChunk(region.getCenter().x, region.getCenter().z)
+                : level.getChunk(context.origin());
         ChunkPos ownerPos = owner.getPos();
         if (LegacyWorldDataHook.isLegacyChunk(ownerPos.x, ownerPos.z)) {
             return false;

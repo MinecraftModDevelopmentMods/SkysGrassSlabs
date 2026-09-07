@@ -1,18 +1,18 @@
-name: Sky's Grass Slabs 1.18.2 CI
+name: Sky's Grass Slabs 1.19.4 CI
 
 on:
   push:
     branches:
-      - master-1.18.2
+      - master-1.19.4
   pull_request:
     branches:
-      - master-1.18.2
+      - master-1.19.4
 
 permissions:
   contents: read
 
 concurrency:
-  group: skysgrassslabs-1.18-${{ github.workflow }}-${{ github.ref }}
+  group: skysgrassslabs-1.19-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -130,13 +130,13 @@ jobs:
       - name: Upload audited release candidate
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: SkysGrassSlabs-1.18.2-${{ github.sha }}
+          name: SkysGrassSlabs-1.19.4-${{ github.sha }}
           if-no-files-found: error
           retention-days: 30
           path: |
-            build/libs/SkysGrassSlabs-1.1.0.118021.jar
-            build/libs/SkysGrassSlabs-1.1.0.118021-sources.jar
-            build/libs/SkysGrassSlabs-1.1.0.118021-javadoc.jar
+            build/libs/SkysGrassSlabs-1.1.0.119041.jar
+            build/libs/SkysGrassSlabs-1.1.0.119041-sources.jar
+            build/libs/SkysGrassSlabs-1.1.0.119041-javadoc.jar
             build/release/SHA256SUMS
             CHANGELOG.md
 
@@ -144,7 +144,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: SkysGrassSlabs-1.18.2-diagnostics-${{ github.sha }}
+          name: SkysGrassSlabs-1.19.4-diagnostics-${{ github.sha }}
           if-no-files-found: ignore
           retention-days: 14
           path: |

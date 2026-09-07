@@ -26,12 +26,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.event.world.BlockEvent;
-import net.minecraftforge.event.world.ChunkDataEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.event.level.ChunkDataEvent;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
@@ -58,7 +58,7 @@ public final class GrassSlabsMigrationHandler {
     }
 
     public static void loadChunk(ChunkDataEvent.Load event) {
-        if (!(event.getWorld() instanceof Level level)
+        if (!(event.getLevel() instanceof Level level)
                 || !(event.getChunk() instanceof LevelChunk chunk)
                 || level.isClientSide || !replacementEnabled()) {
             return;
@@ -84,18 +84,18 @@ public final class GrassSlabsMigrationHandler {
         if (!replacementEnabled()) {
             return;
         }
-        Player player = event.getPlayer();
+        Player player = event.getEntity();
         ModWorldState state = ModWorldState.get(player.level);
         migrateInventory(player.getInventory(), state);
         migrateInventory(player.getEnderChestInventory(), state);
     }
 
-    public static void entityJoin(EntityJoinWorldEvent event) {
-        if (event.getWorld().isClientSide() || event.getEntity() instanceof Player
+    public static void entityJoin(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide() || event.getEntity() instanceof Player
                 || !replacementEnabled()) {
             return;
         }
-        Level level = event.getWorld();
+        Level level = event.getLevel();
         Entity entity = event.getEntity();
         CompoundTag serialized = entity.saveWithoutId(new CompoundTag());
         if (migrateStacksInNbt(serialized, ModWorldState.get(level))) {
@@ -104,7 +104,7 @@ public final class GrassSlabsMigrationHandler {
     }
 
     public static void blockPlaced(BlockEvent.EntityPlaceEvent event) {
-        if (!(event.getWorld() instanceof Level level) || level.isClientSide
+        if (!(event.getLevel() instanceof Level level) || level.isClientSide
                 || !GrassSlabsCompat.isInstalled()
                 || !SkysGrassSlabsConfig.forceReplaceGrassSlabsModContent()) {
             return;
@@ -197,7 +197,8 @@ public final class GrassSlabsMigrationHandler {
                     && compound.contains("Count", Tag.TAG_ANY_NUMERIC)) {
                 LegacyKind kind = legacyKind(ResourceLocation.tryParse(compound.getString("id")));
                 if (kind != null) {
-                    compound.putString("id", kind.item().getRegistryName().toString());
+                    compound.putString("id",
+                            kind.item().builtInRegistryHolder().key().location().toString());
                     int count = compound.getByte("Count") & 255;
                     recordItems(state, kind, count);
                     changed = true;

@@ -2,7 +2,6 @@ package zone.moddev.mc.skysgrassslabs;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -26,7 +25,7 @@ public final class SkysGrassSlabs {
     /** Stable Forge mod identifier and resource namespace. */
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.1.0.118021";
+    public static final String VERSION = "1.1.0.119041";
     public static final Logger LOGGER = LogManager.getLogger();
 
     /** Registers content, configuration, world generation, and persistent state. */
@@ -45,8 +44,6 @@ public final class SkysGrassSlabs {
         GrassSlabsMigrationHandler.register();
         CommonEvents.register();
 
-        MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST,
-                WorldgenBootstrap::onBiomeLoading);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStarted);
     }
 

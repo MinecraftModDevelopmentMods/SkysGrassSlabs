@@ -1,7 +1,7 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.world.item.crafting.RecipeSerializer;
-import net.minecraft.world.item.crafting.SimpleRecipeSerializer;
+import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -16,7 +16,7 @@ public final class ModRecipes {
 
     public static final RegistryObject<RecipeSerializer<TurfCuttingRecipe>> TURF_CUTTING =
             SERIALIZERS.register("turf_cutting",
-                    () -> new SimpleRecipeSerializer<>(TurfCuttingRecipe::new));
+                    () -> new SimpleCraftingRecipeSerializer<>(TurfCuttingRecipe::new));
 
     private ModRecipes() {
     }

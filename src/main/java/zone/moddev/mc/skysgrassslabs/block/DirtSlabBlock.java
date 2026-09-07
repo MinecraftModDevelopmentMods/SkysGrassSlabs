@@ -1,6 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
-import java.util.Random;
+import net.minecraft.util.RandomSource;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -45,7 +45,7 @@ public final class DirtSlabBlock extends SlabBlock {
     }
 
     @Override
-    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
+    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         BlockState repaired = state.setValue(SnowyDirtBlock.SNOWY,
                 SnowySlabAppearance.hasNearbySnow(level, pos));
         if (repaired != state) {

@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import net.minecraft.world.entity.animal.Sheep;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import zone.moddev.mc.skysgrassslabs.entity.ai.TurfEatingGoal;
 
 /** Server gameplay event registrations. */
@@ -17,8 +17,8 @@ public final class CommonEvents {
         MinecraftForge.EVENT_BUS.addListener(CommonEvents::addTurfEatingGoal);
     }
 
-    public static void addTurfEatingGoal(EntityJoinWorldEvent event) {
-        if (event.getWorld().isClientSide() || !(event.getEntity() instanceof Sheep sheep)) {
+    public static void addTurfEatingGoal(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Sheep sheep)) {
             return;
         }
         if (TURF_GOAL_SHEEP.add(sheep)) {

@@ -1,16 +1,17 @@
 package zone.moddev.mc.skysgrassslabs.gametest;
 
 import java.util.Optional;
-import java.util.Random;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
@@ -22,6 +23,18 @@ import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingFeature;
 @GameTestHolder(SkysGrassSlabs.MOD_ID)
 public final class WorldgenGameTests {
     private WorldgenGameTests() {
+    }
+
+    @GameTest(template = "empty", batch = "worldgen000", timeoutTicks = 100)
+    public static void smoothingIsFirstVegetationFeature(GameTestHelper helper) {
+        var vegetation = helper.getLevel().getBiome(helper.absolutePos(BlockPos.ZERO)).value()
+                .getGenerationSettings().features()
+                .get(GenerationStep.Decoration.VEGETAL_DECORATION.ordinal());
+        require(helper, vegetation.size() > 0, "biome has no vegetation features");
+        PlacedFeature first = vegetation.get(0).value();
+        require(helper, first.feature().value().feature() instanceof GrassSlabSmoothingFeature,
+                "smoother is not the first vegetation feature");
+        helper.succeed();
     }
 
     @GameTest(template = "empty", batch = "worldgen001", timeoutTicks = 300)
@@ -53,7 +66,8 @@ public final class WorldgenGameTests {
                     NoneFeatureConfiguration.CODEC);
             FeaturePlaceContext<NoneFeatureConfiguration> context = new FeaturePlaceContext<>(
                     Optional.empty(), helper.getLevel(),
-                    helper.getLevel().getChunkSource().getGenerator(), new Random(19780401L),
+                    helper.getLevel().getChunkSource().getGenerator(),
+                    RandomSource.create(19780401L),
                     center, NoneFeatureConfiguration.INSTANCE);
             require(helper, feature.place(context), "controlled feature pass made no changes");
             require(helper, helper.getLevel().getBlockState(center.above())

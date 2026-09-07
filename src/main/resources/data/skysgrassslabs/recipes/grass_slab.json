@@ -1,5 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "building",
   "pattern": ["###"],
   "key": { "#": { "item": "minecraft:grass_block" } },
   "result": { "item": "skysgrassslabs:grass_slab", "count": 6 }

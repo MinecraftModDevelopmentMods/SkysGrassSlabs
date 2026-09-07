@@ -32,6 +32,7 @@ import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import org.apache.logging.log4j.LogManager;
@@ -70,10 +71,12 @@ public final class LegacyWorldDataHook {
     }
 
     /** Called from Forge's raw additional-level-data reader before legacy FML data is discarded. */
-    public static void captureLegacyLevelData(CompoundTag root, Path levelPath) {
-        if (root == null || levelPath == null) {
+    public static void captureLegacyLevelData(CompoundTag root,
+            LevelStorageSource.LevelDirectory levelDirectory) {
+        if (root == null || levelDirectory == null) {
             return;
         }
+        Path levelPath = levelDirectory.path();
         if (root.contains("FML", Tag.TAG_COMPOUND)) {
             prepareLegacyWorld(levelPath.toFile(), root.getCompound("FML"));
         } else {
@@ -370,7 +373,7 @@ public final class LegacyWorldDataHook {
         if (largestLength < requiredLength) {
             throw new IllegalStateException("The legacy block state table has length "
                     + largestLength + ", but conversion requires " + requiredLength
-                    + "; the Forge 40 coremod did not expand it");
+                    + "; the Forge 45 coremod did not expand it");
         }
         return largestLength;
     }
@@ -385,7 +388,7 @@ public final class LegacyWorldDataHook {
                 return method;
             }
         }
-        throw new IllegalStateException("Could not find the public Forge 40 legacy block-state "
+        throw new IllegalStateException("Could not find the public Forge 45 legacy block-state "
                 + "registration method; the coremod was not applied");
     }
 

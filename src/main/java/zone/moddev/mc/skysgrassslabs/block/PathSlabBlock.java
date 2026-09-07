@@ -1,6 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
-import java.util.Random;
+import net.minecraft.util.RandomSource;
 
 import javax.annotation.Nullable;
 
@@ -98,7 +98,7 @@ public final class PathSlabBlock extends SlabBlock {
     }
 
     @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!canSurvive(state, level, pos)) {
             BlockState dirt = SlabTransitions.dirtFor(state);
 

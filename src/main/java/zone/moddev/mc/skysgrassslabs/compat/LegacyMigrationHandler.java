@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -23,13 +24,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.world.BlockEvent;
-import net.minecraftforge.event.world.ChunkDataEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.event.level.ChunkDataEvent;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistryEntry;
+import net.minecraftforge.registries.MissingMappingsEvent;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
@@ -57,7 +57,7 @@ public final class LegacyMigrationHandler {
     }
 
     public static void loadChunk(ChunkDataEvent.Load event) {
-        if (!(event.getWorld() instanceof Level level)
+        if (!(event.getLevel() instanceof Level level)
                 || !(event.getChunk() instanceof LevelChunk chunk)
                 || level.isClientSide || !replacementEnabled()) {
             return;
@@ -81,18 +81,18 @@ public final class LegacyMigrationHandler {
         if (!replacementEnabled()) {
             return;
         }
-        Player player = event.getPlayer();
+        Player player = event.getEntity();
         ModWorldState state = ModWorldState.get(player.level);
         migrateInventory(player.getInventory(), state);
         migrateInventory(player.getEnderChestInventory(), state);
     }
 
-    public static void entityJoin(EntityJoinWorldEvent event) {
-        if (event.getWorld().isClientSide() || event.getEntity() instanceof Player
+    public static void entityJoin(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide() || event.getEntity() instanceof Player
                 || !replacementEnabled()) {
             return;
         }
-        Level level = event.getWorld();
+        Level level = event.getLevel();
         Entity entity = event.getEntity();
         CompoundTag serialized = entity.saveWithoutId(new CompoundTag());
         if (migrateStacksInNbt(serialized, ModWorldState.get(level))) {
@@ -101,7 +101,7 @@ public final class LegacyMigrationHandler {
     }
 
     public static void blockPlaced(BlockEvent.EntityPlaceEvent event) {
-        if (!(event.getWorld() instanceof Level level) || level.isClientSide
+        if (!(event.getLevel() instanceof Level level) || level.isClientSide
                 || !BuildingBricksCompat.isInstalled()
                 || !SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs()) {
             return;
@@ -113,50 +113,46 @@ public final class LegacyMigrationHandler {
         }
     }
 
-    public static void remapMissingBlocks(RegistryEvent.MissingMappings<Block> event) {
-        for (RegistryEvent.MissingMappings.Mapping<Block> mapping : event.getAllMappings()) {
-            if (GRASS_PATH.equals(mapping.key)) {
+    public static void remapMissingContent(MissingMappingsEvent event) {
+        for (MissingMappingsEvent.Mapping<Block> mapping
+                : event.getAllMappings(Registries.BLOCK)) {
+            if (GRASS_PATH.equals(mapping.getKey())) {
                 remap(mapping, ForgeRegistries.BLOCKS.getValue(DIRT_PATH));
                 continue;
             }
             if (BuildingBricksCompat.hasLegacyAliases()) {
                 continue;
             }
-            LegacySlabKind kind = legacySlabKind(mapping.key);
+            LegacySlabKind kind = legacySlabKind(mapping.getKey());
             if (kind != null) {
                 mapping.remap(kind == LegacySlabKind.GRASS
                         ? ModBlocks.GRASS_SLAB.get() : ModBlocks.DIRT_SLAB.get());
             }
         }
-    }
-
-    public static void remapMissingItems(RegistryEvent.MissingMappings<Item> event) {
-        for (RegistryEvent.MissingMappings.Mapping<Item> mapping : event.getAllMappings()) {
-            if (GRASS_PATH.equals(mapping.key)) {
+        for (MissingMappingsEvent.Mapping<Item> mapping
+                : event.getAllMappings(Registries.ITEM)) {
+            if (GRASS_PATH.equals(mapping.getKey())) {
                 remap(mapping, ForgeRegistries.ITEMS.getValue(DIRT_PATH));
                 continue;
             }
             if (BuildingBricksCompat.hasLegacyAliases()) {
                 continue;
             }
-            LegacySlabKind kind = legacySlabKind(mapping.key);
+            LegacySlabKind kind = legacySlabKind(mapping.getKey());
             if (kind != null) {
                 mapping.remap(kind == LegacySlabKind.GRASS
                         ? ModBlocks.GRASS_SLAB_ITEM.get() : ModBlocks.DIRT_SLAB_ITEM.get());
             }
         }
-    }
-
-    public static void remapMissingSounds(RegistryEvent.MissingMappings<SoundEvent> event) {
-        for (RegistryEvent.MissingMappings.Mapping<SoundEvent> mapping : event.getAllMappings()) {
-            if (SWEET_BERRIES_PICK.equals(mapping.key)) {
+        for (MissingMappingsEvent.Mapping<SoundEvent> mapping
+                : event.getAllMappings(Registries.SOUND_EVENT)) {
+            if (SWEET_BERRIES_PICK.equals(mapping.getKey())) {
                 remap(mapping, ForgeRegistries.SOUND_EVENTS.getValue(SWEET_BERRY_BUSH_PICK));
             }
         }
     }
 
-    private static <T extends IForgeRegistryEntry<T>> void remap(
-            RegistryEvent.MissingMappings.Mapping<T> mapping, T replacement) {
+    private static <T> void remap(MissingMappingsEvent.Mapping<T> mapping, T replacement) {
         if (replacement != null) {
             mapping.remap(replacement);
         } else {
@@ -188,7 +184,7 @@ public final class LegacyMigrationHandler {
                 if (kind != null) {
                     compound.putString("id", (kind == LegacySlabKind.GRASS
                             ? ModBlocks.GRASS_SLAB_ITEM.get() : ModBlocks.DIRT_SLAB_ITEM.get())
-                            .getRegistryName().toString());
+                            .builtInRegistryHolder().key().location().toString());
                     int count = compound.getByte("Count") & 255;
                     if (state != null && kind == LegacySlabKind.GRASS) {
                         state.recordGrassItems(count);

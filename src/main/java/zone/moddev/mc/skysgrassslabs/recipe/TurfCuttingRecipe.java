@@ -3,11 +3,13 @@ package zone.moddev.mc.skysgrassslabs.recipe;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
@@ -19,12 +21,11 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 
 /** Cuts turf while returning the matching dirt and an unchanged shovel. */
-public final class TurfCuttingRecipe implements CraftingRecipe {
-    private final ResourceLocation id;
+public final class TurfCuttingRecipe extends CustomRecipe {
     private final NonNullList<Ingredient> ingredients;
 
-    public TurfCuttingRecipe(ResourceLocation id) {
-        this.id = id;
+    public TurfCuttingRecipe(ResourceLocation id, CraftingBookCategory category) {
+        super(id, category);
         ingredients = createIngredients();
     }
 
@@ -49,7 +50,7 @@ public final class TurfCuttingRecipe implements CraftingRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer container) {
+    public ItemStack assemble(CraftingContainer container, RegistryAccess registryAccess) {
         return new ItemStack(ModBlocks.TURF_ITEM.get());
     }
 
@@ -59,7 +60,7 @@ public final class TurfCuttingRecipe implements CraftingRecipe {
     }
 
     @Override
-    public ItemStack getResultItem() {
+    public ItemStack getResultItem(RegistryAccess registryAccess) {
         return new ItemStack(ModBlocks.TURF_ITEM.get());
     }
 
@@ -92,11 +93,6 @@ public final class TurfCuttingRecipe implements CraftingRecipe {
     @Override
     public boolean isSpecial() {
         return false;
-    }
-
-    @Override
-    public ResourceLocation getId() {
-        return id;
     }
 
     @Override

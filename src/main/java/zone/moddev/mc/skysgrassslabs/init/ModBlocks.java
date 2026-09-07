@@ -1,13 +1,14 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.event.CreativeModeTabEvent;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -42,8 +43,7 @@ public final class ModBlocks {
     public static final RegistryObject<Item> PATH_SLAB_ITEM = slabItem(
             "path_slab", PATH_SLAB, Blocks.DIRT_PATH);
     public static final RegistryObject<Item> TURF_ITEM = ITEMS.register("turf",
-            () -> new TurfBlockItem(TURF.get(),
-                    new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)));
+            () -> new TurfBlockItem(TURF.get(), new Item.Properties()));
 
     private ModBlocks() {
     }
@@ -51,6 +51,7 @@ public final class ModBlocks {
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
         ITEMS.register(eventBus);
+        eventBus.addListener(ModBlocks::buildCreativeTab);
     }
 
     public static BlockState dirtStateLike(BlockState source) {
@@ -78,6 +79,15 @@ public final class ModBlocks {
     private static RegistryObject<Item> slabItem(String name, RegistryObject<Block> block,
             Block combinedBlock) {
         return ITEMS.register(name, () -> new NormalizingSlabItem(block.get(), combinedBlock,
-                new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)));
+                new Item.Properties()));
+    }
+
+    private static void buildCreativeTab(CreativeModeTabEvent.BuildContents event) {
+        if (event.getTab() == CreativeModeTabs.BUILDING_BLOCKS) {
+            event.accept(DIRT_SLAB_ITEM);
+            event.accept(GRASS_SLAB_ITEM);
+            event.accept(PATH_SLAB_ITEM);
+            event.accept(TURF_ITEM);
+        }
     }
 }

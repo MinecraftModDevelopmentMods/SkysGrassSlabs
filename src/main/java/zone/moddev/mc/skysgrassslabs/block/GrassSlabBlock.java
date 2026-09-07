@@ -1,13 +1,14 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.List;
-import java.util.Random;
+import net.minecraft.util.RandomSource;
 
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.placement.VegetationPlacements;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -16,6 +17,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BonemealableBlock;
@@ -80,7 +82,7 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     @Override
-    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
+    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         dirtifyGrassSupport(level, pos);
         if (!SoilLifecycle.canRemainGrass(state, level, pos)) {
             if (level.isAreaLoaded(pos, 1)) {
@@ -117,19 +119,19 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     @Override
-    public boolean isValidBonemealTarget(BlockGetter level, BlockPos pos, BlockState state,
+    public boolean isValidBonemealTarget(LevelReader level, BlockPos pos, BlockState state,
             boolean clientSide) {
         return state.getValue(TYPE) == SlabType.TOP && !state.getValue(WATERLOGGED)
                 && level.getBlockState(pos.above()).isAir();
     }
 
     @Override
-    public boolean isBonemealSuccess(Level level, Random random, BlockPos pos, BlockState state) {
+    public boolean isBonemealSuccess(Level level, RandomSource random, BlockPos pos, BlockState state) {
         return state.getValue(TYPE) == SlabType.TOP && !state.getValue(WATERLOGGED);
     }
 
     @Override
-    public void performBonemeal(ServerLevel level, Random random, BlockPos pos, BlockState state) {
+    public void performBonemeal(ServerLevel level, RandomSource random, BlockPos pos, BlockState state) {
         if (!isBonemealSuccess(level, random, pos, state)) {
             return;
         }
@@ -176,7 +178,8 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
 
                     feature = ((RandomPatchConfiguration) flowers.get(0).config()).feature();
                 } else {
-                    feature = VegetationPlacements.GRASS_BONEMEAL;
+                    feature = level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE)
+                            .getHolderOrThrow(VegetationPlacements.GRASS_BONEMEAL);
                 }
 
                 feature.value().place(level, level.getChunkSource().getGenerator(), random, target);

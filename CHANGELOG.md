@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0.119041 - Minecraft 1.19.4
+
+- Ported slabs, turf, recipes, sheep interaction and terrain smoothing to
+  Minecraft 1.19.4.
+- Preserved all permanent content IDs, saved world data and configuration
+  options.
+- Retained the optional upgrade path for supported content from older grass
+  slab mods.
+- Kept all 18 translations and recipe book support for turf cutting.
+
 ## 1.1.0.118021 - Minecraft 1.18.2
 
 - Added an automatic upgrade path for matching grass, dirt and dirt path slabs
