@@ -1,0 +1,8 @@
+fixture=skysgrassslabs-1.16.5-forward-world.zip
+fixture_sha256=1A8DC264AFBEF2683C2D30963853B8E3D84329782D98347CB4CA44B78DE816C3
+fixture_bytes=63914
+fixture_entries=6
+source_minecraft=1.16.5
+source_mod_version=1.0.1.116051
+source_jar_sha256=54388D358581579723EFBEF6B06DDEF775CEB6FF8DD9289DFDDE82B951A9A2D7
+generator_source=accepted 1.16.5 jar at 44ff5ae

@@ -42,7 +42,7 @@ public final class TurfBlockItem extends BlockItem {
 
         if (grass.hasProperty(GrassSlabBlock.SNOWY)) {
             grass = grass.setValue(GrassSlabBlock.SNOWY,
-                    level.getBlockState(pos.above()).is(BlockTags.SNOW));
+                    SnowySlabAppearance.hasNearbySnow(level, pos));
         }
 
         if (!level.setBlock(pos, grass, 11)) {

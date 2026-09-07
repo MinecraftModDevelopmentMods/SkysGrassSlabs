@@ -6,6 +6,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CarpetBlock;
@@ -22,6 +24,22 @@ public final class TurfBlock extends CarpetBlock {
         BlockPos supportPos = pos.below();
 
         return level.getBlockState(supportPos).isCollisionShapeFullBlock(level, supportPos);
+    }
+
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState,
+            boolean moving) {
+        super.onPlace(state, level, pos, oldState, moving);
+        dirtifyGrassSupport(level, pos);
+    }
+
+    @Override
+    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
+            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
+        if (level instanceof Level concreteLevel) {
+            dirtifyGrassSupport(concreteLevel, pos);
+        }
+        return super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
     }
 
     @Override
@@ -42,6 +60,12 @@ public final class TurfBlock extends CarpetBlock {
 
     static boolean hasDirtSupport(LevelReader level, BlockPos supportPos) {
         return level.getBlockState(supportPos).is(Blocks.DIRT);
+    }
+
+    private static void dirtifyGrassSupport(Level level, BlockPos pos) {
+        if (!level.isClientSide && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
+            level.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), 2);
+        }
     }
 
     @Override

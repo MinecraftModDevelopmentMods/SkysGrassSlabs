@@ -1,0 +1,8 @@
+fixture=skysgrassslabs-1.10.2-forward-world.zip
+fixture_sha256=D6923BFFE062C1F0C454190AB11F031825949DF8080D8000133A723DEC2770BF
+fixture_bytes=30337
+fixture_entries=6
+source_minecraft=1.10.2
+source_mod_version=1.0.0.110021
+source_jar_sha256=2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861
+generator_source=src/fixtureGenerator/java/zone/moddev/mc/skysgrassslabs/fixture/ForwardUpgradeFixtureMod.java

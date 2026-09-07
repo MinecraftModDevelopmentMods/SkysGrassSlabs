@@ -1,0 +1,9 @@
+fixture=skysgrassslabs-1.17.1-forward-world.zip
+fixture_sha256=434BADF94D16E9DAE1C5C9ED0D49E067FE6E9669E3EEED32A078D57B0DF403EE
+fixture_bytes=72827
+fixture_entries=7
+source_minecraft=1.17.1
+source_mod_version=1.0.1.117011
+source_jar_sha256=EA0705D70D95E4897449E53DBB91BE2EF7F2B500F731D4B137818942B42CC19B
+source_fixture_sha256=1A8DC264AFBEF2683C2D30963853B8E3D84329782D98347CB4CA44B78DE816C3
+generator=Normal 1.16.5 fixture upgrade and reload through the accepted 1.17.1 packaged server
