@@ -188,6 +188,12 @@ public class ProjectContractTest {
         assertTrue(ci.contains("SkysGrassSlabs-1.1.0.118021-sources.jar"));
         assertTrue(ci.contains("SkysGrassSlabs-1.1.0.118021-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
+        assertEquals(2, ci.lines()
+                .filter(line -> line.contains("java-version: '8.0.502+7'"))
+                .count());
+        assertEquals(4, ci.lines()
+                .filter(line -> line.contains("JAVA_HOME_8_X64"))
+                .count());
         assertTrue(ci.contains("java-version: '25.0.3+9.0.LTS'"));
         assertTrue(ci.contains("JAVA_HOME_25_X64"));
         assertTrue(ci.contains("runGameTestServer"));
