@@ -51,7 +51,7 @@ public class RepositoryHygieneTest {
                 continue;
             }
             assertFalse("Local-only file is tracked: " + file, isLocalOnlyPath(file));
-            if (isTextFile(file)) {
+            if (isTextFile(file) && Files.isRegularFile(Path.of(file))) {
                 String text = Files.readString(Path.of(file), StandardCharsets.UTF_8);
                 assertFalse("Windows absolute path in tracked file: " + file,
                         WINDOWS_ABSOLUTE_PATH.matcher(text).find());

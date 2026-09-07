@@ -57,7 +57,14 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
         BlockState placed = super.getStateForPlacement(context);
 
         return placed == null ? null : placed.setValue(SNOWY,
-                context.getLevel().getBlockState(context.getClickedPos().above()).is(BlockTags.SNOW));
+                SnowySlabAppearance.hasNearbySnow(context.getLevel(), context.getClickedPos()));
+    }
+
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState,
+            boolean moving) {
+        super.onPlace(state, level, pos, oldState, moving);
+        dirtifyGrassSupport(level, pos);
     }
 
     @Override
@@ -65,13 +72,16 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
             LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
 
         BlockState updated = super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
-
-        return direction == Direction.UP && updated.is(this)
-                ? updated.setValue(SNOWY, neighbour.is(BlockTags.SNOW)) : updated;
+        if (level instanceof Level concreteLevel) {
+            dirtifyGrassSupport(concreteLevel, pos);
+        }
+        return updated.is(this) ? updated.setValue(SNOWY,
+                SnowySlabAppearance.hasNearbySnow(level, pos, direction, neighbour)) : updated;
     }
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, Random random) {
+        dirtifyGrassSupport(level, pos);
         if (!SoilLifecycle.canRemainGrass(state, level, pos)) {
             if (level.isAreaLoaded(pos, 1)) {
                 level.setBlockAndUpdate(pos, SlabTransitions.dirtFor(state));
@@ -80,7 +90,12 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
             return;
         }
 
-        GrassSpread.spreadFrom(level, pos, random, null);
+        BlockState repaired = state.setValue(SNOWY,
+                SnowySlabAppearance.hasNearbySnow(level, pos));
+        if (repaired != state) {
+            level.setBlock(pos, repaired, Block.UPDATE_CLIENTS);
+        }
+        GrassSpread.spreadFrom(level, pos, random, pos.below());
     }
 
     @Override
@@ -95,7 +110,8 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     public boolean canSustainPlant(BlockState state, BlockGetter level, BlockPos pos,
             Direction direction, IPlantable plantable) {
 
-        return state.getValue(TYPE) == SlabType.TOP && direction == Direction.UP
+        return state.getValue(TYPE) == SlabType.TOP && !state.getValue(WATERLOGGED)
+                && direction == Direction.UP
                 && Blocks.GRASS_BLOCK.canSustainPlant(Blocks.GRASS_BLOCK.defaultBlockState(),
                         level, pos, direction, plantable);
     }
@@ -103,17 +119,18 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     @Override
     public boolean isValidBonemealTarget(BlockGetter level, BlockPos pos, BlockState state,
             boolean clientSide) {
-        return state.getValue(TYPE) == SlabType.TOP && level.getBlockState(pos.above()).isAir();
+        return state.getValue(TYPE) == SlabType.TOP && !state.getValue(WATERLOGGED)
+                && level.getBlockState(pos.above()).isAir();
     }
 
     @Override
     public boolean isBonemealSuccess(Level level, Random random, BlockPos pos, BlockState state) {
-        return true;
+        return state.getValue(TYPE) == SlabType.TOP && !state.getValue(WATERLOGGED);
     }
 
     @Override
     public void performBonemeal(ServerLevel level, Random random, BlockPos pos, BlockState state) {
-        if (state.getValue(TYPE) != SlabType.TOP) {
+        if (!isBonemealSuccess(level, random, pos, state)) {
             return;
         }
 
@@ -164,6 +181,12 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
 
                 feature.value().place(level, level.getChunkSource().getGenerator(), random, target);
             }
+        }
+    }
+
+    private static void dirtifyGrassSupport(Level level, BlockPos pos) {
+        if (!level.isClientSide && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
+            level.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_CLIENTS);
         }
     }
 }

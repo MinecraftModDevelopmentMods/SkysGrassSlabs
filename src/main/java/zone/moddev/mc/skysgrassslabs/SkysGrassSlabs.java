@@ -5,10 +5,16 @@ import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.ModLoadingContext;
-import zone.moddev.mc.skysgrassslabs.config.BetaConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
+import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsCompat;
+import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsMigrationHandler;
+import zone.moddev.mc.skysgrassslabs.compat.LegacyMigrationHandler;
+import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
+import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
+import zone.moddev.mc.skysgrassslabs.event.CommonEvents;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
@@ -19,15 +25,25 @@ import zone.moddev.mc.skysgrassslabs.world.WorldgenBootstrap;
 public final class SkysGrassSlabs {
     /** Stable Forge mod identifier and resource namespace. */
     public static final String MOD_ID = "skysgrassslabs";
+    public static final String NAME = "Sky's Grass Slabs";
+    public static final String VERSION = "1.1.0.118021";
+    public static final Logger LOGGER = LogManager.getLogger();
 
     /** Registers content, configuration, world generation, and persistent state. */
     public SkysGrassSlabs() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        SkysGrassSlabsConfig.migrateLegacyConfig();
+        SkysGrassSlabsConfig.register();
         ModBlocks.register(modBus);
         ModRecipes.register(modBus);
         WorldgenBootstrap.register(modBus);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, BetaConfig.SPEC);
+        BuildingBricksCompat.register(modBus);
+        GrassSlabsCompat.register(modBus);
+        LegacyWorldDataHook.register();
+        LegacyMigrationHandler.register();
+        GrassSlabsMigrationHandler.register();
+        CommonEvents.register();
 
         MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST,
                 WorldgenBootstrap::onBiomeLoading);

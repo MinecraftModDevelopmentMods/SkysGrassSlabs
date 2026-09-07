@@ -1,0 +1,8 @@
+fixture=skysgrassslabs-1.11.2-forward-world.zip
+fixture_sha256=E6ABAECBC818C4EB28D3324ACC27DCCCD30247B4268879D7A789F0E1F55028F5
+fixture_bytes=113482
+fixture_entries=6
+source_minecraft=1.11.2
+source_mod_version=1.0.1.111021
+source_jar_sha256=56D8B8C1FA7F2289C9F9A3BCF2BEB2D15F0F880373D0647BB9BDBFA7E1D5FE54
+generator_source=src/fixtureGenerator111/java/zone/moddev/mc/skysgrassslabs/fixture/AdjacentUpgradeFixtureMod.java

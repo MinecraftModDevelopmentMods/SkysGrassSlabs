@@ -1,30 +1,42 @@
 # Sky's Grass Slabs
 
-Sky's Grass Slabs is a standalone Minecraft mod providing dirt, grass, and path
-slabs, cuttable turf, natural grass spreading between full blocks and slabs,
-and smooth grass slab transitions on newly generated terrain.
+Sky's Grass Slabs adds dirt, grass and lowered dirt path slabs, along with a
+thin layer of turf. Grass spreads naturally between full blocks and slabs,
+while new Overworld terrain uses grass slabs to soften suitable one block
+steps.
 
-The first target is Minecraft 1.18.2 with Forge 40.3.0, ForgeGradle 7.0.34,
-and Java 17. The stable mod ID is `skysgrassslabs`, the Java package root is
-`zone.moddev.mc.skysgrassslabs`, and the current beta version is
-`0.2.0.118021`.
+This branch is for Minecraft 1.18.2. Version `1.1.0.118021` requires Forge
+40.3.0 or a compatible Forge 40 build and Java 17.
 
-## Beta features
+## Installation
 
-- Top, bottom, double, and waterlogged dirt and grass slabs.
-- Biome tinted and snowy grass rendering with vanilla style decay and spreading.
-- Top grass slab snow, plant, and bonemeal behaviour.
-- Shovel flattening of dirt and grass slabs into lowered path slabs.
-- Biome tinted, carpet height turf that spreads grass while it remains on dirt.
-- Craft turf from grass plus any Forge compatible shovel; the unchanged shovel
-  and the matching dirt block or slab remain in the crafting grid.
-- Use turf on a dry dirt slab to turn it directly into the matching grass slab.
-- Dirt, grass, and seed helper recipes; path slabs remain creative/tool created.
-- Chunk owned smoothing of one block grass transitions during
-  new Overworld generation.
-- A permanent world schema marker for future save migrations.
+Place the mod jar in the `mods` folder. It must be installed on both the client
+and server for multiplayer. Back up an existing world before adding, removing
+or updating world changing mods.
 
-## Licensing status
+## Highlights
+
+- Place dirt, grass and dirt path slabs in either half of a block.
+- Combine two matching slabs into the corresponding vanilla block.
+- Let grass spread between full blocks, slabs and turf.
+- Use a shovel on dirt or grass slabs to create lowered dirt path slabs.
+- Cut turf from grass without consuming the shovel.
+- Let sheep eat turf and regrow their wool.
+- Add grass slabs to suitable slopes in newly generated Overworld chunks.
+- Display biome colours and snowy edges that match the surrounding terrain.
+- Use standard Minecraft waterlogging behaviour on slabs.
+- Use translated names in 18 supported language variants.
+- Recover selected grass slabs and grass carpet when replacing a compatible
+  older mod.
+
+## Guides
+
+- [Gameplay and recipes](docs/GAMEPLAY.md)
+- [Configuration](docs/CONFIGURATION.md)
+- [Upgrading an older world](docs/WORLD-UPGRADES.md)
+- [Release notes](docs/RELEASE-1.1.0.118021.md)
+
+## License
 
 Sky's Grass Slabs is licensed under `LGPL-2.1-only`; see `LICENSE`,
 `LICENSE.spdx`, and `NOTICE`. Copyright is held by SkyBlade1978.

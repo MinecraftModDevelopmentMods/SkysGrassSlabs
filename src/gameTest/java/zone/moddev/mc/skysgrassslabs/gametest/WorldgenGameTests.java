@@ -101,6 +101,8 @@ public final class WorldgenGameTests {
     }
 
     private static void makeOneBlockRise(GameTestHelper helper, BlockPos lower, BlockPos higher) {
+        clearColumnAbove(helper, lower, 2);
+        clearColumnAbove(helper, higher, 2);
         solidRing(helper, lower);
         helper.getLevel().setBlock(lower, Blocks.GRASS_BLOCK.defaultBlockState(), Block.UPDATE_ALL);
         helper.getLevel().setBlock(higher, Blocks.DIRT.defaultBlockState(), Block.UPDATE_ALL);
@@ -109,6 +111,8 @@ public final class WorldgenGameTests {
     }
 
     private static void makeFlat(GameTestHelper helper, BlockPos center) {
+        clearColumnAbove(helper, center, 2);
+        clearColumnAbove(helper, center.east(), 2);
         solidRing(helper, center);
         helper.getLevel().setBlock(center, Blocks.GRASS_BLOCK.defaultBlockState(), Block.UPDATE_ALL);
         helper.getLevel().setBlock(center.east(), Blocks.GRASS_BLOCK.defaultBlockState(),
@@ -116,12 +120,21 @@ public final class WorldgenGameTests {
     }
 
     private static void makeTwoBlockRise(GameTestHelper helper, BlockPos lower, BlockPos higher) {
+        clearColumnAbove(helper, lower, 3);
+        clearColumnAbove(helper, higher, 3);
         solidRing(helper, lower);
         helper.getLevel().setBlock(lower, Blocks.GRASS_BLOCK.defaultBlockState(), Block.UPDATE_ALL);
         helper.getLevel().setBlock(higher, Blocks.DIRT.defaultBlockState(), Block.UPDATE_ALL);
         helper.getLevel().setBlock(higher.above(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_ALL);
         helper.getLevel().setBlock(higher.above(2), Blocks.GRASS_BLOCK.defaultBlockState(),
                 Block.UPDATE_ALL);
+    }
+
+    private static void clearColumnAbove(GameTestHelper helper, BlockPos base, int height) {
+        for (int offset = 1; offset <= height; ++offset) {
+            helper.getLevel().setBlock(base.above(offset), Blocks.AIR.defaultBlockState(),
+                    Block.UPDATE_ALL);
+        }
     }
 
     private static void solidRing(GameTestHelper helper, BlockPos center) {

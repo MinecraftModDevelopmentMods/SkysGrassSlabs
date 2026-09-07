@@ -50,6 +50,8 @@ sourceSets {
 }
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+def developmentRunDirectory = providers.gradleProperty('skysGrassSlabsRunDirectory')
+        .getOrElse('run')
 def gameTestRunDirectory = providers.gradleProperty('skysGrassSlabsGameTestRunDirectory')
         .getOrElse('run-gametest')
 minecraft {
@@ -90,7 +92,7 @@ minecraft {
     // These can be tweaked, removed, or duplicated as needed.
     runs {
         configureEach {
-            workingDir.convention layout.projectDirectory.dir('run')
+            workingDir.convention layout.projectDirectory.dir(developmentRunDirectory)
             jvmArgs '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED'
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             systemProperty 'forge.logging.console.level', 'debug'
@@ -273,7 +275,20 @@ tasks.register('verifyReleaseArtifacts') {
             Set<String> names = zip.entries().collect { it.name } as Set<String>
             ['META-INF/mods.toml', 'META-INF/LICENSE', 'META-INF/LICENSE.spdx',
              'META-INF/NOTICE',
-             'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class'].each { required ->
+             'META-INF/coremods.json',
+             'coremods/skysgrassslabs_legacy_world.js',
+             'assets/skysgrassslabs/lang/en_us.json',
+             'assets/skysgrassslabs/lang/zh_cn.json',
+             'assets/grassslabs/blockstates/grass_slab.json',
+             'assets/grassslabs/blockstates/dirt_slab.json',
+             'assets/grassslabs/blockstates/dirt_path_slab.json',
+             'assets/grassslabs/blockstates/grass_carpet.json',
+             'data/grassslabs/loot_tables/blocks/grass_carpet.json',
+             'data/forge/tags/items/seeds.json',
+             'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class',
+             'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsCompat.class',
+             'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsMigrationHandler.class',
+             'zone/moddev/mc/skysgrassslabs/compat/LegacyCarpetAliasBlock.class'].each { required ->
                 if (!names.contains(required)) {
                     throw new GradleException("Release jar is missing ${required}")
                 }
@@ -615,6 +630,11 @@ tasks.named('eclipse').configure {
 def prepareGameTestStructures = tasks.register('prepareGameTestStructures', Copy) {
     from 'src/gameTest/resources/gameteststructures'
     into "${gameTestRunDirectory}/gameteststructures"
+    doLast {
+        File properties = file("${gameTestRunDirectory}/server.properties")
+        properties.parentFile.mkdirs()
+        properties.setText('online-mode=false\nserver-port=0\n', 'UTF-8')
+    }
 }
 
 tasks.matching { it.name == 'prepareRunGameTestServer' || it.name == 'runGameTestServer' }.configureEach {

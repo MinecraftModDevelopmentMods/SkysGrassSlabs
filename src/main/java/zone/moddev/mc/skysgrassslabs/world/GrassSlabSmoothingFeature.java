@@ -1,13 +1,15 @@
 package zone.moddev.mc.skysgrassslabs.world;
 
 import com.mojang.serialization.Codec;
-
+import java.util.Arrays;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -15,13 +17,16 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import zone.moddev.mc.skysgrassslabs.config.BetaConfig;
+import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
+import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-/** Deterministic smoother owned by each chunk for natural grass transitions one block high. */
+/** Deterministic two-pass slope smoothing for newly generated Overworld chunks. */
 public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
     private static final int HALO_WIDTH = 18;
-    private static final int HALO_COLUMNS = HALO_WIDTH * HALO_WIDTH;
+    private static final int MISSING = Integer.MIN_VALUE;
+    private static final ThreadLocal<DecisionBuffer> BUFFERS =
+            ThreadLocal.withInitial(DecisionBuffer::new);
 
     public GrassSlabSmoothingFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -30,140 +35,121 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         WorldGenLevel level = context.level();
-        if (!BetaConfig.GENERATE_GRASS_SLABS.get()
+        if (!SkysGrassSlabsConfig.isSmoothingActive()
                 || level.getLevel().dimension() != Level.OVERWORLD) {
             return false;
         }
+        ChunkAccess owner = level.getChunk(context.origin());
+        ChunkPos ownerPos = owner.getPos();
+        if (LegacyWorldDataHook.isLegacyChunk(ownerPos.x, ownerPos.z)) {
+            return false;
+        }
 
-        ChunkAccess chunk = level.getChunk(context.origin());
-        ChunkPos owner = chunk.getPos();
-        int minX = owner.getMinBlockX();
-        int minZ = owner.getMinBlockZ();
+        DecisionBuffer buffer = BUFFERS.get();
+        Arrays.fill(buffer.heights, MISSING);
+        Arrays.fill(buffer.grass, false);
+        Arrays.fill(buffer.candidates, false);
+        BlockPos.MutableBlockPos cursor = buffer.cursor;
 
-        int[] heights = new int[HALO_COLUMNS];
-        long[] grass = new long[(HALO_COLUMNS + 63) >>> 6];
-        long[] candidates = new long[4];
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-
-        for (int haloX = 0; haloX < HALO_WIDTH; haloX++) {
-            for (int haloZ = 0; haloZ < HALO_WIDTH; haloZ++) {
-                int x = minX + haloX - 1;
-                int z = minZ + haloZ - 1;
+        for (int haloZ = 0; haloZ < HALO_WIDTH; ++haloZ) {
+            for (int haloX = 0; haloX < HALO_WIDTH; ++haloX) {
+                int localX = haloX - 1;
+                int localZ = haloZ - 1;
+                int chunkX = ownerPos.x + Math.floorDiv(localX, 16);
+                int chunkZ = ownerPos.z + Math.floorDiv(localZ, 16);
+                if (!level.hasChunk(chunkX, chunkZ)) {
+                    continue;
+                }
+                ChunkAccess chunk = level.getChunk(chunkX, chunkZ);
+                int x = Math.floorMod(localX, 16);
+                int z = Math.floorMod(localZ, 16);
                 int index = haloIndex(haloX, haloZ);
-                int surfaceY = grassSurfaceY(level, cursor, x, z);
-
-                heights[index] = surfaceY;
-
-                if (surfaceY != Integer.MIN_VALUE) {
-                    set(grass, index);
+                int surfaceY = surfaceY(chunk, x, z, cursor);
+                buffer.heights[index] = surfaceY;
+                if (surfaceY != MISSING) {
+                    cursor.set(chunk.getPos().getMinBlockX() + x, surfaceY,
+                            chunk.getPos().getMinBlockZ() + z);
+                    buffer.grass[index] = chunk.getBlockState(cursor).is(Blocks.GRASS_BLOCK);
                 }
             }
         }
 
-        for (int localX = 0; localX < 16; localX++) {
-            for (int localZ = 0; localZ < 16; localZ++) {
-                int haloX = localX + 1;
-                int haloZ = localZ + 1;
-                int center = haloIndex(haloX, haloZ);
-                int y = heights[center];
-
-                if (y == Integer.MIN_VALUE) {
+        int minX = ownerPos.getMinBlockX();
+        int minZ = ownerPos.getMinBlockZ();
+        for (int localZ = 0; localZ < 16; ++localZ) {
+            for (int localX = 0; localX < 16; ++localX) {
+                int center = haloIndex(localX + 1, localZ + 1);
+                int y = buffer.heights[center];
+                if (y == MISSING || y + 1 >= owner.getMaxBuildHeight()) {
                     continue;
                 }
-
-                int x = minX + localX;
-                int z = minZ + localZ;
-
-                cursor.set(x, y + 1, z);
-
-                BlockState target = level.getBlockState(cursor);
-                boolean clear = target.isAir() && level.getBlockEntity(cursor) == null;
+                cursor.set(minX + localX, y + 1, minZ + localZ);
+                BlockState target = owner.getBlockState(cursor);
+                boolean clear = target.isAir() && owner.getBlockEntityNbt(cursor) == null;
                 boolean dry = target.getFluidState().isEmpty();
-                boolean supported = supportedOnAllSides(level, cursor, x, y, z);
-
-                int north = haloIndex(haloX, haloZ - 1);
-                int south = haloIndex(haloX, haloZ + 1);
-                int west = haloIndex(haloX - 1, haloZ);
-                int east = haloIndex(haloX + 1, haloZ);
-
-                if (SmoothingDecision.shouldPlace(y, heights[north], heights[south],
-                        heights[west], heights[east], true, get(grass, north),
-                        get(grass, south), get(grass, west), get(grass, east), clear,
-                        dry, supported)) {
-                    set(candidates, localX * 16 + localZ);
-                }
+                cursor.setY(y);
+                BlockState support = owner.getBlockState(cursor);
+                boolean supported = support.isCollisionShapeFullBlock(level, cursor);
+                int north = haloIndex(localX + 1, localZ);
+                int south = haloIndex(localX + 1, localZ + 2);
+                int west = haloIndex(localX, localZ + 1);
+                int east = haloIndex(localX + 2, localZ + 1);
+                buffer.candidates[localZ << 4 | localX] = SmoothingDecision.shouldPlace(
+                        y, buffer.heights[north], buffer.heights[south],
+                        buffer.heights[west], buffer.heights[east], buffer.grass[center],
+                        buffer.grass[north], buffer.grass[south], buffer.grass[west],
+                        buffer.grass[east], clear, dry, supported);
             }
         }
 
         BlockState slab = ModBlocks.GRASS_SLAB.get().defaultBlockState()
                 .setValue(SlabBlock.TYPE, SlabType.BOTTOM)
-                .setValue(SlabBlock.WATERLOGGED, false);
+                .setValue(SlabBlock.WATERLOGGED, false)
+                .setValue(SnowyDirtBlock.SNOWY, false);
         boolean changed = false;
-
-        for (int localX = 0; localX < 16; localX++) {
-            for (int localZ = 0; localZ < 16; localZ++) {
-                int candidate = localX * 16 + localZ;
-
-                if (!get(candidates, candidate)) {
-                    continue;
-                }
-
-                int y = heights[haloIndex(localX + 1, localZ + 1)];
-
-                cursor.set(minX + localX, y + 1, minZ + localZ);
-
-                if (level.ensureCanWrite(cursor) && level.getBlockState(cursor).isAir()
-                        && level.getFluidState(cursor).isEmpty()
-                        && level.getBlockEntity(cursor) == null) {
-                    chunk.setBlockState(cursor, slab, false);
-                    changed = true;
-                }
+        for (int index = 0; index < buffer.candidates.length; ++index) {
+            if (!buffer.candidates[index]) {
+                continue;
             }
+            int localX = index & 15;
+            int localZ = index >>> 4;
+            int y = buffer.heights[haloIndex(localX + 1, localZ + 1)];
+            cursor.set(minX + localX, y + 1, minZ + localZ);
+            if (!level.ensureCanWrite(cursor) || !owner.getBlockState(cursor).isAir()
+                    || !owner.getFluidState(cursor).isEmpty()
+                    || owner.getBlockEntityNbt(cursor) != null) {
+                continue;
+            }
+            owner.setBlockState(cursor, slab, false);
+            cursor.setY(y);
+            if (owner.getBlockState(cursor).is(Blocks.GRASS_BLOCK)) {
+                owner.setBlockState(cursor, Blocks.DIRT.defaultBlockState(), false);
+            }
+            changed = true;
         }
-
         return changed;
     }
 
-    private static int grassSurfaceY(WorldGenLevel level, BlockPos.MutableBlockPos cursor,
-            int x, int z) {
-        int height = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
-
-        cursor.set(x, height, z);
-
-        if (level.getBlockState(cursor).is(Blocks.GRASS_BLOCK)) {
-            return height;
+    private static int surfaceY(ChunkAccess chunk, int localX, int localZ,
+            BlockPos.MutableBlockPos cursor) {
+        int y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, localX, localZ);
+        int minY = chunk.getMinBuildHeight();
+        int x = chunk.getPos().getMinBlockX() + localX;
+        int z = chunk.getPos().getMinBlockZ() + localZ;
+        while (y >= minY && chunk.getBlockState(cursor.set(x, y, z)).isAir()) {
+            --y;
         }
-
-        cursor.setY(height - 1);
-
-        return level.getBlockState(cursor).is(Blocks.GRASS_BLOCK)
-                ? height - 1 : Integer.MIN_VALUE;
-    }
-
-    private static boolean supportedOnAllSides(WorldGenLevel level,
-            BlockPos.MutableBlockPos cursor, int x, int y, int z) {
-        return solid(level, cursor.set(x - 1, y, z))
-                && solid(level, cursor.set(x + 1, y, z))
-                && solid(level, cursor.set(x, y, z - 1))
-                && solid(level, cursor.set(x, y, z + 1));
-    }
-
-    private static boolean solid(WorldGenLevel level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-
-        return state.getFluidState().isEmpty()
-                && state.isCollisionShapeFullBlock(level, pos);
+        return y >= minY ? y : MISSING;
     }
 
     private static int haloIndex(int x, int z) {
-        return x * HALO_WIDTH + z;
+        return z * HALO_WIDTH + x;
     }
 
-    private static boolean get(long[] bits, int index) {
-        return (bits[index >>> 6] & 1L << (index & 63)) != 0L;
-    }
-
-    private static void set(long[] bits, int index) {
-        bits[index >>> 6] |= 1L << (index & 63);
+    private static final class DecisionBuffer {
+        private final int[] heights = new int[HALO_WIDTH * HALO_WIDTH];
+        private final boolean[] grass = new boolean[HALO_WIDTH * HALO_WIDTH];
+        private final boolean[] candidates = new boolean[256];
+        private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
     }
 }

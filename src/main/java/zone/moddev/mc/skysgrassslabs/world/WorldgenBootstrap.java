@@ -7,6 +7,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.data.BuiltinRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
@@ -50,7 +51,8 @@ public final class WorldgenBootstrap {
     }
 
     public static void onBiomeLoading(BiomeLoadingEvent event) {
-        if (placedFeature == null) {
+        if (placedFeature == null || event.getCategory() == Biome.BiomeCategory.NETHER
+                || event.getCategory() == Biome.BiomeCategory.THEEND) {
             return;
         }
 

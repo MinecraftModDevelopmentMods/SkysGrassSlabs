@@ -1,33 +1,78 @@
 # Changelog
 
+## 1.1.0.118021 - Minecraft 1.18.2
+
+- Added an automatic upgrade path for matching grass, dirt and dirt path slabs
+  and grass carpet from an older grass slab mod.
+- Preserved slab orientation, waterlogging, item counts and custom item data.
+- Added an optional setting for converting supported content while both mods
+  remain installed.
+- Kept decorative grass carpet in place when converting it to turf would make
+  it lose its existing support.
+
+## 1.0.1.118021 - Minecraft 1.18.2
+
+- Brought the accepted dirt, grass and dirt path slabs, turf and terrain
+  smoothing forward to Minecraft 1.18.2.
+- Kept both slab orientations, waterlogging, snowy caps, path alignment,
+  grass spreading, turf recipes and sheep interaction.
+- Preserved the established block, item, recipe, configuration and saved world
+  identities.
+- Retained recovery for supported older grass and dirt slabs while leaving
+  unrelated old shapes outside the migration.
+- Retained all 18 translations and the recipe book entry for turf cutting.
+
+## 1.0.1.117011 - Minecraft 1.17.1
+
+- Ported the complete feature set to Minecraft 1.17.1.
+- Updated path references for Minecraft's dirt path name.
+- Preserved older Sky worlds and supported slab recovery from before Minecraft's flattening.
+
+## 1.0.1.116051 - Minecraft 1.16.5
+
+- Ported the complete feature set to Minecraft 1.16.5.
+- Kept waterlogging, snowy caps, path alignment, turf, sheep interaction and
+  terrain smoothing.
+
+## 1.0.1.115021 - Minecraft 1.15.2
+
+- Ported the complete feature set to Minecraft 1.15.2.
+- Preserved saved blocks, items, states and world data from earlier releases.
+
+## 1.0.1.114041 - Minecraft 1.14.4
+
+- Ported the complete feature set to Minecraft 1.14.4.
+- Added the target loot tables and registered terrain smoothing as a feature.
+- Fixed turf cutting in both player and crafting table grids.
+
+## 1.0.1.113021 - Minecraft 1.13.2
+
+- Updated blocks, recipes, translations and configuration for Minecraft's
+  flattened data format.
+- Added native waterlogging and legacy slab recovery for older worlds.
+
+## 1.0.1.112021 - Minecraft 1.12.2
+
+- Ported the complete feature set to Minecraft 1.12.2.
+- Corrected fence connections to turf and made turf cutting discoverable in
+  the recipe book.
+
+## 1.0.1.111021 - Minecraft 1.11.2
+
+- Corrected the side texture alignment on top and bottom path slabs.
+
+## 1.0.0.110021 - Minecraft 1.10.2
+
+- First stable release with dirt, grass and path slabs, turf, sheep
+  interaction, recipes, terrain smoothing and optional legacy slab migration.
+- Added 18 supported language variants.
+
 ## 0.2.0.118021 - Turf beta
 
-- Fixed dark grass-slab sides by using vanilla grass's cutout-mipped render
-  layer for its transparent biome-tinted overlay.
-- Added biome-tinted, carpet-height turf with carpet collision, support,
-  breaking, sound, and flammability behaviour but no wool-carpet integrations.
-- Added grass spreading from dirt-supported turf without a dirt/decay stage;
-  invalid substrates remove and drop the turf on its random tick.
-- Added direct turf conversion for dry dirt slabs, preserving top/bottom
-  orientation and normalizing double slabs to vanilla grass.
-- Added the `turf_cutting` special recipe for grass plus any Forge-compatible
-  shovel, returning matching dirt and the completely unchanged shovel.
-- Shared the target-aware grass spreading implementation between grass slabs
-  and turf, including loaded-area, light, water, orientation, and double-slab
-  rules.
-- Preserved every 0.1.0 registry ID, world-generation rule, configuration key,
-  and world schema version.
+- Fixed the dark texture on grass slab sides.
+- Added biome coloured turf, direct dirt slab conversion and turf cutting.
 
-## 0.1.0.118021 - 1.18.2 beta
+## 0.1.0.118021 - Minecraft 1.18.2 beta
 
-- Added dirt, biome-tinted grass, and lowered path slabs.
-- Added vanilla-style grass spreading, decay, snow, plants, and bonemeal rules.
-- Added shovel flattening while preserving slab orientation and tool behaviour.
-- Added slab recipes and `forge:seeds` grass helper recipes.
-- Added deterministic smoothing of one-block grass transitions in newly
-  generated Overworld chunks, controlled by `worldgen.generateGrassSlabs`.
-- Added world schema marker `skysgrassslabs_world_state` version 1.
-- Added unit/resource tests and Forge GameTests for gameplay and smoothing.
-
-BuildingBricks detection and migration are planned for the Minecraft 1.10.2
-compatibility release and are not included in this beta.
+- Established the permanent slab IDs, recipes, grass behaviour, path
+  flattening, terrain smoothing and saved world state.

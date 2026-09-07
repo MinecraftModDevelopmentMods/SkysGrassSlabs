@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": { "model": "skysgrassslabs:block/grass_slab" },
+    "type=double": { "model": "minecraft:block/grass_block" },
+    "type=top": { "model": "skysgrassslabs:block/grass_slab_top" }
+  }
+}
