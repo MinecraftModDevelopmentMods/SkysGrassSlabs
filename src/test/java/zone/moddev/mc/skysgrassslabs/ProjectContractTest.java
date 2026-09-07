@@ -297,12 +297,12 @@ class ProjectContractTest {
         assertTrue(ci.contains("if-no-files-found: error"));
         assertTrue(ci.contains("java-version: '8.0.502+7'"));
         assertTrue(ci.contains("JAVA_HOME_8_X64"));
-        assertTrue(ci.contains("java-version: '25.0.3+9'"));
+        assertTrue(ci.contains("java-version: '25.0.3+9.0.LTS'"));
         assertTrue(ci.contains("JAVA_HOME_25_X64"));
         String codeql = read(".github/workflows/codeql-analysis.yml");
         assertTrue(codeql.contains("java-version: '8.0.502+7'"));
         assertTrue(codeql.contains("JAVA_HOME_8_X64"));
-        assertTrue(codeql.contains("java-version: '25.0.3+9'"));
+        assertTrue(codeql.contains("java-version: '25.0.3+9.0.LTS'"));
         assertTrue(codeql.contains("JAVA_HOME_25_X64"));
     }
 
