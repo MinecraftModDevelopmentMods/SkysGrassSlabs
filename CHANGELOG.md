@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0.121011 - Minecraft 1.21.1
+
+- Ported the complete feature set to Minecraft 1.21.1 and Forge 52.
+- Preserved existing blocks, items, recipes, settings and world upgrade support.
+
 ## 1.1.0.120061 - Minecraft 1.20.6
 
 - Ported the complete feature set to Minecraft 1.20.6 and Java 21.

@@ -1,5 +1,7 @@
+import groovy.json.JsonSlurper
 import java.security.MessageDigest
 import java.nio.charset.StandardCharsets
+import java.util.jar.Manifest
 import java.util.zip.ZipFile
 
 plugins {
@@ -32,15 +34,15 @@ def mavenizerLicense = mavenizerToolsDirectory.file('LICENSE-MAVENIZER.txt')
 def mavenizerReadme = mavenizerToolsDirectory.file('README.md')
 def mavenizerFixtureChecksums = [
         (mavenizerCompatibilityJar.asFile):
-                '4B14145595E900F178A082F2253A756F63897E6F61C2B8B5E7C819B82CD79E8C',
+                '019032A4A26ECB473D403EF017054D5892CE59A9904E8831B452287CD756397E',
         (mavenizerRuleManifest.asFile):
-                '931DAB31C238D8C9C38239671A61DA0942ADADF80149D6359197EE80A16380A8',
+                '7F669F225520D0382E76991A8A3E5E4020840F0FA975F7DCB86681D7E7C3F766',
         (mavenizerSourcePatch.asFile):
-                'A140C21312C2A5A8AFC56DC0B037B94D222CA68A7B868512B91684CD3754B650',
+                '84FEA234619CC2D1931E609B22B6E5D96F59366F7D6C2783C3BEE0F726F3E876',
         (mavenizerLicense.asFile):
                 '20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331',
         (mavenizerReadme.asFile):
-                '25121D3DF400E3C76D87E39985FEDC43BCDAE82E52B75A53A30DA490FF268F71'
+                'C052261D6B7B4E238D32A5E7F4CBA4D44D48311CE0FA1E673D26806EDCD41E70'
 ]
 
 // ForgeGradle invokes Mavenizer while configuring the project. Verify the
@@ -267,7 +269,7 @@ dependencies {
 
 def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompatibilityFixture') {
     group = 'verification'
-    description = 'Verifies the checksum-sealed Forge 1.20.6 Mavenizer compatibility fixture.'
+    description = 'Verifies the checksum-sealed Forge 1.21.1 Mavenizer compatibility fixture.'
     inputs.files mavenizerFixtureChecksums.keySet()
     doLast {
         mavenizerFixtureChecksums.each { File fixture, String expected ->
@@ -279,6 +281,73 @@ def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompati
                 throw new GradleException("Mavenizer compatibility fixture checksum mismatch for " +
                         "${fixture.name}: expected ${expected}, found ${actual}")
             }
+        }
+
+        def parsed = new JsonSlurper().parse(mavenizerRuleManifest.asFile)
+        String target = 'net.minecraftforge:forge:1.21.1-52.1.0'
+        if (parsed.schema != 1 || parsed.targets.keySet() != [target] as Set) {
+            throw new GradleException('Mavenizer target-rule manifest has unexpected targets or schema')
+        }
+        def forgeRules = parsed.targets[target]
+        if (forgeRules.expectedApplications != 0 || !forgeRules.rules.isEmpty()) {
+            throw new GradleException('Forge 52 Mavenizer target must be an explicit zero-rule qualification')
+        }
+
+        ZipFile fixtureJar = new ZipFile(mavenizerCompatibilityJar.asFile)
+        try {
+            def embeddedEntry = fixtureJar.getEntry(
+                    'META-INF/orespawn/minecraft-source-compatibility.json')
+            if (embeddedEntry == null) {
+                throw new GradleException('Mavenizer fixture is missing its embedded target-rule manifest')
+            }
+            byte[] embedded = fixtureJar.getInputStream(embeddedEntry).withCloseable { it.readAllBytes() }
+            byte[] external = mavenizerRuleManifest.asFile.bytes
+            if (!Arrays.equals(embedded, external)) {
+                throw new GradleException('Embedded and externally audited Mavenizer manifests differ')
+            }
+
+            def patcherEntry = fixtureJar.getEntry(
+                    'net/minecraftforge/mcmaven/impl/util/SourceCompatibilityPatcher.class')
+            if (patcherEntry == null) {
+                throw new GradleException('Mavenizer fixture is missing SourceCompatibilityPatcher')
+            }
+            byte[] classHeader = fixtureJar.getInputStream(patcherEntry).withCloseable {
+                it.readNBytes(8)
+            }
+            if (classHeader.length != 8 || classHeader[0..3] !=
+                    [0xCA, 0xFE, 0xBA, 0xBE].collect { (byte) it }) {
+                throw new GradleException('Mavenizer compatibility class has an invalid class header')
+            }
+            int classMajor = ((classHeader[6] & 0xff) << 8) | (classHeader[7] & 0xff)
+            if (classMajor != 69) {
+                throw new GradleException(
+                        "Mavenizer compatibility tool must use Java 25 bytecode, found ${classMajor}")
+            }
+
+            def jarManifestEntry = fixtureJar.getEntry('META-INF/MANIFEST.MF')
+            Manifest jarManifest = new Manifest(fixtureJar.getInputStream(jarManifestEntry))
+            if (jarManifest.mainAttributes.getValue('Main-Class') !=
+                    'net.minecraftforge.mcmaven.cli.Main') {
+                throw new GradleException('Mavenizer compatibility fixture has an unexpected main class')
+            }
+        } finally {
+            fixtureJar.close()
+        }
+
+        String readme = mavenizerReadme.asFile.getText('UTF-8')
+        String patchText = mavenizerSourcePatch.asFile.getText('UTF-8')
+        String licenseText = mavenizerLicense.asFile.getText('UTF-8')
+        if (!readme.contains('6968241ce7a0a902cdc1c534b976e8373a423091')
+                || !readme.contains('Temurin `25.0.3+9`')
+                || !readme.contains('1.21.1-52.1.0')) {
+            throw new GradleException('Mavenizer provenance, target, or Java 25 build instructions are incomplete')
+        }
+        if (!patchText.contains('SourceCompatibilityPatcher.java')
+                || !patchText.contains('minecraft-source-compatibility.json')) {
+            throw new GradleException('Mavenizer source patch is incomplete')
+        }
+        if (!licenseText.contains('GNU LESSER GENERAL PUBLIC LICENSE')) {
+            throw new GradleException('Mavenizer LGPL-2.1 licence fixture is incomplete')
         }
     }
 }
@@ -346,12 +415,12 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.20.6' || project.forge_version != '50.2.0' ||
-                project.mapping_channel != 'official' || project.mapping_version != '1.20.6' ||
+        if (project.minecraft_version != '1.21.1' || project.forge_version != '52.1.0' ||
+                project.mapping_channel != 'official' || project.mapping_version != '1.21.1' ||
                 project.loader_name != 'forge' || project.loader_code != '1' ||
                 project.java_version != '21' || project.java_toolchain_version != '21.0.7+6' ||
                 project.gradle_java_version != '21' || project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 1.20.6 release metadata')
+            throw new GradleException('Unexpected 1.21.1 release metadata')
         }
     }
 }
@@ -390,8 +459,8 @@ tasks.register('verifyReleaseArtifacts') {
              'assets/grassslabs/blockstates/dirt_slab.json',
              'assets/grassslabs/blockstates/dirt_path_slab.json',
              'assets/grassslabs/blockstates/grass_carpet.json',
-             'data/grassslabs/loot_tables/blocks/grass_carpet.json',
-             'data/forge/tags/items/seeds.json',
+             'data/grassslabs/loot_table/blocks/grass_carpet.json',
+             'data/forge/tags/item/seeds.json',
              'data/skysgrassslabs/forge/biome_modifier/grass_slab_smoothing.json',
              'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class',
              'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsCompat.class',
@@ -429,8 +498,8 @@ tasks.register('verifyReleaseArtifacts') {
 
             String metadata = zip.getInputStream(zip.getEntry('META-INF/mods.toml'))
                     .getText(StandardCharsets.UTF_8.name())
-            if (!metadata.contains('versionRange="[1.20.6,1.20.7)"') ||
-                    !metadata.contains('versionRange="[50,)"')) {
+            if (!metadata.contains('versionRange="[1.21.1,1.21.2)"') ||
+                    !metadata.contains('versionRange="[52,)"')) {
                 throw new GradleException('Packaged Forge metadata targets the wrong version')
             }
 
@@ -629,9 +698,9 @@ eclipse {
     synchronizationTasks 'isolateEclipseProductionRuns'
 }
 
-def syncForge50EclipseLaunches = tasks.register('syncForge50EclipseLaunches') {
+def syncForge52EclipseLaunches = tasks.register('syncForge52EclipseLaunches') {
     group = 'ide'
-    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 50.'
+    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 52.'
     doLast {
         String mainOutput = new File(projectDir, 'bin/main').absolutePath
         String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
@@ -701,14 +770,14 @@ def syncForge50EclipseLaunches = tasks.register('syncForge50EclipseLaunches') {
 }
 
 tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
-    finalizedBy syncForge50EclipseLaunches
+    finalizedBy syncForge52EclipseLaunches
 }
 
 def isolateEclipseProductionRuns = tasks.register('isolateEclipseProductionRuns') {
     group = 'ide'
     description = 'Prepares the complete ForgeGradle 7 Eclipse project configuration.'
     dependsOn tasks.named('genEclipseRuns')
-    dependsOn syncForge50EclipseLaunches
+    dependsOn syncForge52EclipseLaunches
     dependsOn configureEclipseBuildship
     dependsOn prepareEclipseResources
 }

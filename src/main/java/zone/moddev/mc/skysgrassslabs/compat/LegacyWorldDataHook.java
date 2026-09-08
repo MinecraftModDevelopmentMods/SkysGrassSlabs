@@ -376,7 +376,7 @@ public final class LegacyWorldDataHook {
                 return method;
             }
         }
-        throw new IllegalStateException("Could not find the public Forge 50 legacy block-state "
+        throw new IllegalStateException("Could not find the public Forge 52 legacy block-state "
                 + "registration method; the coremod was not applied");
     }
 

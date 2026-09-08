@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -29,10 +29,10 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean matches(CraftingContainer container, Level level) {
+    public boolean matches(CraftingInput container, Level level) {
         int grassInputs = 0;
         int shovels = 0;
-        for (int slot = 0; slot < container.getContainerSize(); ++slot) {
+        for (int slot = 0; slot < container.size(); ++slot) {
             ItemStack stack = container.getItem(slot);
             if (stack.isEmpty()) {
                 continue;
@@ -49,7 +49,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer container, HolderLookup.Provider registries) {
+    public ItemStack assemble(CraftingInput container, HolderLookup.Provider registries) {
         return new ItemStack(ModBlocks.TURF_ITEM.get());
     }
 
@@ -69,10 +69,10 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public NonNullList<ItemStack> getRemainingItems(CraftingContainer container) {
+    public NonNullList<ItemStack> getRemainingItems(CraftingInput container) {
         NonNullList<ItemStack> remaining = NonNullList.withSize(
-                container.getContainerSize(), ItemStack.EMPTY);
-        for (int slot = 0; slot < container.getContainerSize(); ++slot) {
+                container.size(), ItemStack.EMPTY);
+        for (int slot = 0; slot < container.size(); ++slot) {
             ItemStack stack = container.getItem(slot);
             if (stack.isEmpty()) {
                 continue;

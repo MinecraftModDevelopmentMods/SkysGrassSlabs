@@ -54,7 +54,7 @@ function initializeCoreMod() {
                         var sizeInstruction = previousOpcode(instruction);
                         var current = integerValue(sizeInstruction);
                         if (target < 0 || current !== vanilla && current !== target) {
-                            throw new Error("Sky's Grass Slabs found an unexpected Forge 50 "
+                            throw new Error("Sky's Grass Slabs found an unexpected Forge 52 "
                                     + "BlockStateData array layout");
                         }
                         if (current === vanilla) {
@@ -64,7 +64,7 @@ function initializeCoreMod() {
                     }
                 }
                 if (!registerExposed || arraysSeen !== 2) {
-                    throw new Error("Sky's Grass Slabs could not prepare Forge 50 BlockStateData");
+                    throw new Error("Sky's Grass Slabs could not prepare Forge 52 BlockStateData");
                 }
                 return classNode;
             }
@@ -96,7 +96,7 @@ function initializeCoreMod() {
                     patched = true;
                 }
                 if (!patched) {
-                    throw new Error("Sky's Grass Slabs could not patch Forge 50 level data");
+                    throw new Error("Sky's Grass Slabs could not patch Forge 52 level data");
                 }
                 return classNode;
             }
@@ -138,7 +138,7 @@ function initializeCoreMod() {
                     patched = true;
                 }
                 if (!patched) {
-                    throw new Error("Sky's Grass Slabs could not patch Forge 50 ChunkStorage");
+                    throw new Error("Sky's Grass Slabs could not patch Forge 52 ChunkStorage");
                 }
                 return classNode;
             }

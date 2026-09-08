@@ -4,11 +4,11 @@
   "criteria": {
     "has_grass_block": {
       "trigger": "minecraft:inventory_changed",
-      "conditions": { "items": [{ "items": ["minecraft:grass_block"] }] }
+      "conditions": { "items": [{ "items": "minecraft:grass_block" }] }
     },
     "has_grass_slab": {
       "trigger": "minecraft:inventory_changed",
-      "conditions": { "items": [{ "items": ["skysgrassslabs:grass_slab"] }] }
+      "conditions": { "items": [{ "items": "skysgrassslabs:grass_slab" }] }
     },
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
