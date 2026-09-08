@@ -18,11 +18,15 @@ public class ProjectContractTest {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
 
         assertTrue(properties.contains("mod_id=skysgrassslabs"));
-        assertTrue(properties.contains("minecraft_version=1.20.1"));
-        assertTrue(properties.contains("forge_version=47.4.10"));
+        assertTrue(properties.contains("minecraft_version=1.20.6"));
+        assertTrue(properties.contains("forge_version=50.2.0"));
         assertTrue(properties.contains("mapping_channel=official"));
-        assertTrue(properties.contains("mapping_version=1.20.1"));
-        assertTrue(properties.contains("java_toolchain_version=17.0.1+12"));
+        assertTrue(properties.contains("mapping_version=1.20.6"));
+        assertTrue(properties.contains("mcp_version=20240429.135109"));
+        assertTrue(properties.contains("java_toolchain_version=21.0.7+6"));
+        String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
+        assertTrue(build.contains("verifyJava21Toolchain"));
+        assertTrue(build.contains("runtimeVersion == '21.0.7+6'"));
         assertFalse(metadata.contains("modId=\"orespawn\""));
     }
 
@@ -32,14 +36,14 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
         assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.0.120011.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.0.120061.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void releaseIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.1.0.120011"));
+        assertTrue(properties.contains("mod_version=1.1.0.120061"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -96,7 +100,7 @@ public class ProjectContractTest {
         assertTrue(config.contains("push(\"compat\")"));
         assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
         assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
-        assertTrue(main.contains("VERSION = \"1.1.0.120011\""));
+        assertTrue(main.contains("VERSION = \"1.1.0.120061\""));
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
         assertTrue(state.contains("schema_version"));
@@ -147,6 +151,7 @@ public class ProjectContractTest {
         assertTrue(coremod.contains("net.minecraft.world.level.chunk.storage.ChunkStorage"));
         assertTrue(coremod.contains("65536"));
         assertTrue(coremod.contains("4096"));
+        assertTrue(coremod.contains("current !== vanilla && current !== target"));
         assertTrue(coremod.contains("throw new Error"));
         assertTrue(bridge.contains("skysgrassslabs_legacy_registry.dat"));
         assertTrue(bridge.contains("indexLegacyChunks"));
@@ -170,14 +175,21 @@ public class ProjectContractTest {
         assertTrue(turf.contains("extends CarpetBlock"));
         assertTrue(recipe.contains("extends CustomRecipe"));
         assertTrue(recipe.contains("CraftingBookCategory"));
-        assertTrue(recipe.contains("RegistryAccess"));
+        assertTrue(recipe.contains("HolderLookup.Provider"));
         assertTrue(recipe.contains("return false;"));
         assertTrue(recipe.contains("canPerformAction(ToolActions.SHOVEL_FLATTEN)"));
-        assertTrue(client.contains("RenderType.cutoutMipped()"));
+        assertFalse(client.contains("ItemBlockRenderTypes"));
+        for (String modelName : new String[] {"grass_slab", "grass_slab_top",
+                "grass_slab_snow", "grass_slab_top_snow"}) {
+            String model = Files.readString(Path.of(
+                    "src/main/resources/assets/skysgrassslabs/models/block/"
+                            + modelName + ".json"), StandardCharsets.UTF_8);
+            assertTrue(modelName, model.contains("\"render_type\": \"cutout_mipped\""));
+        }
     }
 
     @Test
-    public void forge47LifecycleAndDataPackContractsArePresent() throws Exception {
+    public void forge50LifecycleAndDataPackContractsArePresent() throws Exception {
         String blocks = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ModBlocks.java"),
                 StandardCharsets.UTF_8);
@@ -196,13 +208,15 @@ public class ProjectContractTest {
         assertTrue(blocks.contains("event.getTabKey()"));
         assertTrue(worldgen.contains("ForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS"));
         assertTrue(worldgen.contains("FEATURE_NAME = \"grass_slab_smoothing\""));
+        assertTrue(modifier.contains("phase != Phase.AFTER_EVERYTHING"));
         assertTrue(modifier.contains("features.add(0, smoothing)"));
         assertTrue(modifier.contains("BiomeTags.IS_NETHER"));
         assertTrue(modifier.contains("BiomeTags.IS_END"));
         assertTrue(modifierJson.contains("skysgrassslabs:grass_slab_smoothing"));
-        assertTrue(pack.contains("\"pack_format\": 15"));
-        assertTrue(pack.contains("\"forge:resource_pack_format\": 15"));
-        assertTrue(pack.contains("\"forge:data_pack_format\": 15"));
+        assertTrue(worldgen.contains("DeferredRegister<MapCodec<? extends BiomeModifier>>"));
+        assertTrue(pack.contains("\"pack_format\": 32"));
+        assertTrue(pack.contains("\"min_inclusive\": 32"));
+        assertTrue(pack.contains("\"max_inclusive\": 41"));
 
         for (String recipeName : new String[] {"dirt_slab", "grass_slab",
                 "grass_block_from_seeds", "grass_slab_from_seeds", "turf"}) {
@@ -210,6 +224,10 @@ public class ProjectContractTest {
                     "src/main/resources/data/skysgrassslabs/recipes/" + recipeName + ".json"),
                     StandardCharsets.UTF_8);
             assertTrue(recipeName, recipe.contains("\"category\": \"building\""));
+            if (!recipeName.equals("turf")) {
+                assertTrue(recipeName, recipe.contains("\"id\":"));
+                assertFalse(recipeName, recipe.contains("\"result\": { \"item\":"));
+            }
         }
     }
 
@@ -225,13 +243,13 @@ public class ProjectContractTest {
                 "validate-gradle-build.yml"}) {
             String workflow = Files.readString(Path.of(".github/workflows", name),
                     StandardCharsets.UTF_8);
-            assertTrue(name, workflow.contains("master-1.20.1"));
+            assertTrue(name, workflow.contains("master-1.20.6"));
         }
         String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
                 StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120011.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120011-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120011-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120061.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120061-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120061-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
         assertEquals(2, ci.lines()
                 .filter(line -> line.contains("java-version: '8.0.502+7'"))
@@ -251,9 +269,9 @@ public class ProjectContractTest {
     @Test
     public void adjacentUpgradeFixtureIsTracked() {
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "skysgrassslabs-1.19.4-forward-world.zip")));
+                + "skysgrassslabs-1.20.1-forward-world.zip")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "skysgrassslabs-1.19.4-forward-world.manifest")));
+                + "skysgrassslabs-1.20.1-forward-world.manifest")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
                 + "grassslabs-1.18.2-migration-world.zip")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"

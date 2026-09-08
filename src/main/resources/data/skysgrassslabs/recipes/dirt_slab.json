@@ -3,5 +3,5 @@
   "category": "building",
   "pattern": ["###"],
   "key": { "#": { "item": "minecraft:dirt" } },
-  "result": { "item": "skysgrassslabs:dirt_slab", "count": 6 }
+  "result": { "id": "skysgrassslabs:dirt_slab", "count": 6 }
 }

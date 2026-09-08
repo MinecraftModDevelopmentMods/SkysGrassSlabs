@@ -67,10 +67,21 @@ public class ResourceContractTest {
 
     @Test
     public void grassSlabUsesVanillaGrassCutoutLayer() throws Exception {
-        String client = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/client/ClientEvents.java"));
-        assertTrue(client.contains("RenderType.cutoutMipped()"));
-        assertTrue(client.contains("ModBlocks.GRASS_SLAB.get()"));
+        for (String modelName : new String[] {"grass_slab", "grass_slab_top",
+                "grass_slab_snow", "grass_slab_top_snow"}) {
+            String model = Files.readString(Path.of(
+                    "src/main/resources/assets/skysgrassslabs/models/block/"
+                            + modelName + ".json"));
+            assertTrue(modelName, model.contains("\"render_type\": \"cutout_mipped\""));
+        }
+    }
+
+    @Test
+    public void grassSlabUsesComponentAwareSilkTouchPredicate() throws Exception {
+        String loot = Files.readString(Path.of(
+                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/grass_slab.json"));
+        assertTrue(loot.contains("\"predicates\""));
+        assertTrue(loot.contains("\"minecraft:enchantments\""));
     }
 
     @Test

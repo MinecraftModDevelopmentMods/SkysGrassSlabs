@@ -38,13 +38,13 @@ import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 public final class LegacyMigrationHandler {
     private static final String CHUNK_MARKER = "skysgrassslabs_buildingbricks_migration_version";
     private static final ResourceLocation GRASS_PATH =
-            new ResourceLocation("minecraft", "grass_path");
+            ResourceLocation.fromNamespaceAndPath("minecraft", "grass_path");
     private static final ResourceLocation DIRT_PATH =
-            new ResourceLocation("minecraft", "dirt_path");
+            ResourceLocation.fromNamespaceAndPath("minecraft", "dirt_path");
     private static final ResourceLocation SWEET_BERRIES_PICK =
-            new ResourceLocation("minecraft", "item.sweet_berries.pick_from_bush");
+            ResourceLocation.fromNamespaceAndPath("minecraft", "item.sweet_berries.pick_from_bush");
     private static final ResourceLocation SWEET_BERRY_BUSH_PICK =
-            new ResourceLocation("minecraft", "block.sweet_berry_bush.pick_berries");
+            ResourceLocation.fromNamespaceAndPath("minecraft", "block.sweet_berry_bush.pick_berries");
     private static final Set<LevelChunk> MIGRATED_CHUNKS =
             Collections.newSetFromMap(new WeakHashMap<>());
 
@@ -179,13 +179,13 @@ public final class LegacyMigrationHandler {
     public static boolean migrateStacksInNbt(Tag tag, ModWorldState state) {
         boolean changed = false;
         if (tag instanceof CompoundTag compound) {
-            if (compound.contains("id", Tag.TAG_STRING) && compound.contains("Count", Tag.TAG_ANY_NUMERIC)) {
+            if (compound.contains("id", Tag.TAG_STRING) && hasStackCount(compound)) {
                 LegacySlabKind kind = legacySlabKind(ResourceLocation.tryParse(compound.getString("id")));
                 if (kind != null) {
                     compound.putString("id", (kind == LegacySlabKind.GRASS
                             ? ModBlocks.GRASS_SLAB_ITEM.get() : ModBlocks.DIRT_SLAB_ITEM.get())
                             .builtInRegistryHolder().key().location().toString());
-                    int count = compound.getByte("Count") & 255;
+                    int count = stackCount(compound);
                     if (state != null && kind == LegacySlabKind.GRASS) {
                         state.recordGrassItems(count);
                     } else if (state != null) {
@@ -285,9 +285,10 @@ public final class LegacyMigrationHandler {
     private static boolean migrateChunkInventories(LevelChunk chunk, ModWorldState state) {
         boolean changed = false;
         for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-            CompoundTag serialized = blockEntity.saveWithFullMetadata();
+            CompoundTag serialized = blockEntity.saveWithFullMetadata(
+                    chunk.getLevel().registryAccess());
             if (migrateStacksInNbt(serialized, state)) {
-                blockEntity.load(serialized);
+                blockEntity.loadWithComponents(serialized, chunk.getLevel().registryAccess());
                 blockEntity.setChanged();
                 changed = true;
             }
@@ -317,11 +318,9 @@ public final class LegacyMigrationHandler {
         if (kind == null) {
             return ItemStack.EMPTY;
         }
-        ItemStack migrated = new ItemStack(kind == LegacySlabKind.GRASS
-                ? ModBlocks.GRASS_SLAB_ITEM.get() : ModBlocks.DIRT_SLAB_ITEM.get(), stack.getCount());
-        if (stack.hasTag()) {
-            migrated.setTag(stack.getTag().copy());
-        }
+        ItemStack migrated = stack.transmuteCopy(kind == LegacySlabKind.GRASS
+                ? ModBlocks.GRASS_SLAB_ITEM.get() : ModBlocks.DIRT_SLAB_ITEM.get(),
+                stack.getCount());
         if (state != null && kind == LegacySlabKind.GRASS) {
             state.recordGrassItems(stack.getCount());
         } else if (state != null) {
@@ -334,6 +333,16 @@ public final class LegacyMigrationHandler {
         return BuildingBricksCompat.hasLegacyAliases()
                 || BuildingBricksCompat.isInstalled()
                         && SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs();
+    }
+
+    private static boolean hasStackCount(CompoundTag stack) {
+        return stack.contains("Count", Tag.TAG_ANY_NUMERIC)
+                || stack.contains("count", Tag.TAG_ANY_NUMERIC);
+    }
+
+    private static int stackCount(CompoundTag stack) {
+        return stack.contains("count", Tag.TAG_ANY_NUMERIC)
+                ? stack.getInt("count") : stack.getByte("Count") & 255;
     }
 
     enum LegacySlabKind {

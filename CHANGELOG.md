@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0.120061 - Minecraft 1.20.6
+
+- Ported the complete feature set to Minecraft 1.20.6 and Java 21.
+- Preserved permanent content IDs, saved world data, configuration options and
+  support for upgrading older worlds.
+- Updated crafting and item migration for Minecraft's data component format.
+- Kept all 18 translations and recipe book support for turf cutting.
+
 ## 1.1.0.120011 - Minecraft 1.20.1
 
 - Ported the complete feature set to Minecraft 1.20.1.

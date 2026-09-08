@@ -15,11 +15,11 @@ import net.minecraftforge.registries.RegisterEvent;
 public final class BuildingBricksCompat {
     public static final String MOD_ID = "buildingbricks";
     public static final ResourceLocation GRASS_SLAB_ID =
-            new ResourceLocation(MOD_ID, "grass_slab");
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "grass_slab");
     public static final ResourceLocation DIRT_SLAB_ID =
-            new ResourceLocation(MOD_ID, "dirt_slab");
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "dirt_slab");
     public static final ResourceLocation HISTORICAL_GRASS_SLAB_ID =
-            new ResourceLocation("buildingbrickscompatvanilla", "grass_slab");
+            ResourceLocation.fromNamespaceAndPath("buildingbrickscompatvanilla", "grass_slab");
 
     private static Block grassSlab;
     private static Block dirtSlab;

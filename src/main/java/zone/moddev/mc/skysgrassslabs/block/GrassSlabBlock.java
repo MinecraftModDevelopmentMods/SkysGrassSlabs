@@ -119,8 +119,7 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     @Override
-    public boolean isValidBonemealTarget(LevelReader level, BlockPos pos, BlockState state,
-            boolean clientSide) {
+    public boolean isValidBonemealTarget(LevelReader level, BlockPos pos, BlockState state) {
         return state.getValue(TYPE) == SlabType.TOP && !state.getValue(WATERLOGGED)
                 && level.getBlockState(pos.above()).isAir();
     }
@@ -137,7 +136,7 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
         }
 
         BlockPos start = pos.above();
-        BlockState vanillaGrass = Blocks.GRASS.defaultBlockState();
+        BlockState vanillaGrass = Blocks.SHORT_GRASS.defaultBlockState();
 
         outer:
         for (int attempt = 0; attempt < 128; attempt++) {

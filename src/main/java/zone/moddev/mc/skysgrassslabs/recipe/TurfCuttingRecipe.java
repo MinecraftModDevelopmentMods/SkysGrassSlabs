@@ -3,8 +3,7 @@ package zone.moddev.mc.skysgrassslabs.recipe;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -24,8 +23,8 @@ import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 public final class TurfCuttingRecipe extends CustomRecipe {
     private final NonNullList<Ingredient> ingredients;
 
-    public TurfCuttingRecipe(ResourceLocation id, CraftingBookCategory category) {
-        super(id, category);
+    public TurfCuttingRecipe(CraftingBookCategory category) {
+        super(category);
         ingredients = createIngredients();
     }
 
@@ -50,7 +49,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer container, RegistryAccess registryAccess) {
+    public ItemStack assemble(CraftingContainer container, HolderLookup.Provider registries) {
         return new ItemStack(ModBlocks.TURF_ITEM.get());
     }
 
@@ -60,7 +59,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack getResultItem(RegistryAccess registryAccess) {
+    public ItemStack getResultItem(HolderLookup.Provider registries) {
         return new ItemStack(ModBlocks.TURF_ITEM.get());
     }
 

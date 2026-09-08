@@ -3,12 +3,14 @@ package zone.moddev.mc.skysgrassslabs.world;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.util.datafix.DataFixTypes;
 
 /** Persistent schema and aggregate historical-slab migration totals. */
 public final class ModWorldState extends SavedData {
@@ -54,8 +56,10 @@ public final class ModWorldState extends SavedData {
         if (!(level instanceof ServerLevel serverLevel)) {
             return new ModWorldState();
         }
-        return serverLevel.getDataStorage().computeIfAbsent(
-                ModWorldState::new, ModWorldState::new, DATA_NAME);
+        SavedData.Factory<ModWorldState> factory = new SavedData.Factory<>(
+                ModWorldState::new, (tag, registries) -> new ModWorldState(tag),
+                DataFixTypes.SAVED_DATA_MAP_DATA);
+        return serverLevel.getDataStorage().computeIfAbsent(factory, DATA_NAME);
     }
 
     public void recordChunk() {
@@ -282,7 +286,7 @@ public final class ModWorldState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt("schema_version", SCHEMA_VERSION);
         tag.putInt("buildingbricks_migration_version", MIGRATION_VERSION);
         tag.putInt("grassslabs_migration_version", MIGRATION_VERSION);

@@ -5,5 +5,5 @@
     { "item": "skysgrassslabs:dirt_slab" },
     { "tag": "forge:seeds" }
   ],
-  "result": { "item": "skysgrassslabs:grass_slab" }
+  "result": { "id": "skysgrassslabs:grass_slab" }
 }

@@ -5,5 +5,5 @@
     { "item": "minecraft:dirt" },
     { "tag": "forge:seeds" }
   ],
-  "result": { "item": "minecraft:grass_block" }
+  "result": { "id": "minecraft:grass_block" }
 }

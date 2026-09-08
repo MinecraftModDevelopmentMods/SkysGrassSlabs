@@ -1,6 +1,5 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
-import com.mojang.serialization.Dynamic;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -22,6 +21,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -71,14 +71,29 @@ public final class LegacyWorldDataHook {
     }
 
     /** Called from Forge's raw additional-level-data reader before legacy FML data is discarded. */
-    public static void captureLegacyLevelData(CompoundTag root,
+    public static void captureLegacyLevelData(LevelStorageSource.LevelStorageAccess access,
             LevelStorageSource.LevelDirectory levelDirectory) {
-        if (root == null || levelDirectory == null) {
+        if (access == null || levelDirectory == null) {
             return;
+        }
+        CompoundTag root;
+        try {
+            root = access.getDataTagRaw(false);
+        } catch (IOException primaryFailure) {
+            try {
+                root = access.getDataTagRaw(true);
+            } catch (IOException fallbackFailure) {
+                LOGGER.warn("Could not inspect primary or fallback level data in '{}' for "
+                        + "legacy Sky's Grass Slabs mappings", levelDirectory.path(),
+                        fallbackFailure);
+                return;
+            }
         }
         Path levelPath = levelDirectory.path();
         if (root.contains("FML", Tag.TAG_COMPOUND)) {
             prepareLegacyWorld(levelPath.toFile(), root.getCompound("FML"));
+        } else if (root.contains("fml", Tag.TAG_COMPOUND)) {
+            prepareLegacyWorld(levelPath.toFile(), root.getCompound("fml"));
         } else {
             prepareLegacyWorld(levelPath.resolve("level.dat").toFile());
         }
@@ -96,7 +111,7 @@ public final class LegacyWorldDataHook {
             return;
         }
         try (FileInputStream input = new FileInputStream(levelDat)) {
-            CompoundTag root = NbtIo.readCompressed(input);
+            CompoundTag root = NbtIo.readCompressed(input, NbtAccounter.unlimitedHeap());
             if (root.contains("FML", Tag.TAG_COMPOUND)) {
                 CompoundTag registries = root.getCompound("FML").getCompound("Registries");
                 if (registries.contains("minecraft:blocks", Tag.TAG_COMPOUND)) {
@@ -135,7 +150,8 @@ public final class LegacyWorldDataHook {
             return;
         }
         try (FileInputStream input = new FileInputStream(sidecar)) {
-            install(worldDirectory, NbtIo.readCompressed(input).getCompound("Blocks"));
+            install(worldDirectory, NbtIo.readCompressed(input,
+                    NbtAccounter.unlimitedHeap()).getCompound("Blocks"));
         } catch (IOException exception) {
             LOGGER.warn("Could not read legacy Sky's Grass Slabs registry sidecar '{}'",
                     sidecar, exception);
@@ -223,7 +239,6 @@ public final class LegacyWorldDataHook {
         Map<ResourceLocation, Integer> supported = new LinkedHashMap<>();
         Set<ResourceLocation> unsupported = new LinkedHashSet<>();
         ListTag savedIds = blockSnapshot.getList("ids", Tag.TAG_COMPOUND);
-        int highestStateId = 0;
         for (int index = 0; index < savedIds.size(); ++index) {
             CompoundTag savedId = savedIds.getCompound(index);
             ResourceLocation id = ResourceLocation.tryParse(savedId.getString("K"));
@@ -233,7 +248,6 @@ public final class LegacyWorldDataHook {
             int numericId = savedId.getInt("V");
             if (SKY_IDS.contains(id) || HISTORICAL_IDS.contains(id)) {
                 supported.put(id, numericId);
-                highestStateId = Math.max(highestStateId, numericId << 4 | 15);
             } else if (BuildingBricksCompat.MOD_ID.equals(id.getNamespace())
                     || "buildingbrickscompatvanilla".equals(id.getNamespace())) {
                 unsupported.add(id);
@@ -246,7 +260,6 @@ public final class LegacyWorldDataHook {
         if (supported.isEmpty()) {
             return 0;
         }
-        verifyFlatteningTable(highestStateId + 1);
         Method registerState = findLegacyStateRegistrationMethod();
         int mapped = 0;
         for (Map.Entry<ResourceLocation, Integer> entry : supported.entrySet()) {
@@ -353,31 +366,6 @@ public final class LegacyWorldDataHook {
         return LEGACY_CHUNKS.size();
     }
 
-    private static int verifyFlatteningTable(int requiredLength) {
-        int largestLength = 0;
-        for (java.lang.reflect.Field field : BlockStateData.class.getDeclaredFields()) {
-            if (Modifier.isStatic(field.getModifiers()) && field.getType().isArray()
-                    && field.getType().getComponentType() == Dynamic.class) {
-                try {
-                    field.setAccessible(true);
-                    Dynamic<?>[] current = (Dynamic<?>[]) field.get(null);
-                    if (current != null) {
-                        largestLength = Math.max(largestLength, current.length);
-                    }
-                } catch (ReflectiveOperationException exception) {
-                    throw new IllegalStateException(
-                            "Could not inspect Minecraft's legacy block state tables", exception);
-                }
-            }
-        }
-        if (largestLength < requiredLength) {
-            throw new IllegalStateException("The legacy block state table has length "
-                    + largestLength + ", but conversion requires " + requiredLength
-                    + "; the Forge 47 coremod did not expand it");
-        }
-        return largestLength;
-    }
-
     private static Method findLegacyStateRegistrationMethod() {
         for (Method method : BlockStateData.class.getDeclaredMethods()) {
             Class<?>[] parameters = method.getParameterTypes();
@@ -388,12 +376,12 @@ public final class LegacyWorldDataHook {
                 return method;
             }
         }
-        throw new IllegalStateException("Could not find the public Forge 47 legacy block-state "
+        throw new IllegalStateException("Could not find the public Forge 50 legacy block-state "
                 + "registration method; the coremod was not applied");
     }
 
     private static ResourceLocation id(String path) {
-        return new ResourceLocation(SkysGrassSlabs.MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, path);
     }
 
     private static long chunkKey(int chunkX, int chunkZ) {

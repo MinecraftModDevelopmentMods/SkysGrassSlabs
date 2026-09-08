@@ -2,13 +2,10 @@ package zone.moddev.mc.skysgrassslabs.client;
 
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.renderer.BiomeColors;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.level.GrassColor;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.common.Mod;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsCompat;
@@ -19,18 +16,6 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
         value = Dist.CLIENT)
 public final class ClientEvents {
     private ClientEvents() {
-    }
-
-    @SubscribeEvent
-    public static void clientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            ItemBlockRenderTypes.setRenderLayer(
-                    ModBlocks.GRASS_SLAB.get(), RenderType.cutoutMipped());
-            if (GrassSlabsCompat.grassSlab() != null) {
-                ItemBlockRenderTypes.setRenderLayer(
-                        GrassSlabsCompat.grassSlab(), RenderType.cutoutMipped());
-            }
-        });
     }
 
     @SubscribeEvent

@@ -12,6 +12,6 @@ final class LegacySlabAliasBlock extends SlabBlock {
     }
 
     LegacySlabAliasBlock(Block source) {
-        super(BlockBehaviour.Properties.copy(source).noOcclusion());
+        super(BlockBehaviour.Properties.ofFullCopy(source).noOcclusion());
     }
 }

@@ -28,13 +28,13 @@ public final class ModBlocks {
             DeferredRegister.create(ForgeRegistries.ITEMS, SkysGrassSlabs.MOD_ID);
 
     public static final RegistryObject<Block> DIRT_SLAB = BLOCKS.register("dirt_slab",
-            () -> new DirtSlabBlock(BlockBehaviour.Properties.copy(Blocks.DIRT).randomTicks()));
+            () -> new DirtSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT).randomTicks()));
     public static final RegistryObject<Block> GRASS_SLAB = BLOCKS.register("grass_slab",
-            () -> new GrassSlabBlock(BlockBehaviour.Properties.copy(Blocks.GRASS_BLOCK).randomTicks()));
+            () -> new GrassSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).randomTicks()));
     public static final RegistryObject<Block> PATH_SLAB = BLOCKS.register("path_slab",
-            () -> new PathSlabBlock(BlockBehaviour.Properties.copy(Blocks.DIRT_PATH)));
+            () -> new PathSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH)));
     public static final RegistryObject<Block> TURF = BLOCKS.register("turf",
-            () -> new TurfBlock(BlockBehaviour.Properties.copy(Blocks.GREEN_CARPET).randomTicks()));
+            () -> new TurfBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GREEN_CARPET).randomTicks()));
 
     public static final RegistryObject<Item> DIRT_SLAB_ITEM = slabItem(
             "dirt_slab", DIRT_SLAB, Blocks.DIRT);

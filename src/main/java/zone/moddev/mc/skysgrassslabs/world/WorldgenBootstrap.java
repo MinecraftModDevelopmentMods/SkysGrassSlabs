@@ -1,6 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.world;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import java.util.Collections;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
@@ -21,14 +21,14 @@ public final class WorldgenBootstrap {
 
     private static final DeferredRegister<Feature<?>> FEATURES =
             DeferredRegister.create(ForgeRegistries.FEATURES, SkysGrassSlabs.MOD_ID);
-    private static final DeferredRegister<Codec<? extends BiomeModifier>> BIOME_MODIFIERS =
+    private static final DeferredRegister<MapCodec<? extends BiomeModifier>> BIOME_MODIFIERS =
             DeferredRegister.create(ForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS,
                     SkysGrassSlabs.MOD_ID);
     private static final RegistryObject<GrassSlabSmoothingFeature> SMOOTHING =
             FEATURES.register(FEATURE_NAME,
                     () -> new GrassSlabSmoothingFeature(NoneFeatureConfiguration.CODEC));
 
-    private static Holder<PlacedFeature> placedFeature;
+    private static volatile Holder<PlacedFeature> placedFeature;
 
     static {
         BIOME_MODIFIERS.register(FEATURE_NAME, () -> SmoothingBiomeModifier.CODEC);
@@ -44,15 +44,16 @@ public final class WorldgenBootstrap {
     }
 
     private static void commonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> {
+        event.enqueueWork(WorldgenBootstrap::placedFeature);
+    }
+
+    static synchronized Holder<PlacedFeature> placedFeature() {
+        if (placedFeature == null) {
             Holder<ConfiguredFeature<?, ?>> configured = Holder.direct(
                     new ConfiguredFeature<NoneFeatureConfiguration, GrassSlabSmoothingFeature>(
                             SMOOTHING.get(), NoneFeatureConfiguration.INSTANCE));
             placedFeature = Holder.direct(new PlacedFeature(configured, Collections.emptyList()));
-        });
-    }
-
-    static Holder<PlacedFeature> placedFeature() {
+        }
         return placedFeature;
     }
 }

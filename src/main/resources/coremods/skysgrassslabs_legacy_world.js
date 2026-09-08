@@ -54,7 +54,7 @@ function initializeCoreMod() {
                         var sizeInstruction = previousOpcode(instruction);
                         var current = integerValue(sizeInstruction);
                         if (target < 0 || current !== vanilla && current !== target) {
-                            throw new Error("Sky's Grass Slabs found an unexpected Forge 47 "
+                            throw new Error("Sky's Grass Slabs found an unexpected Forge 50 "
                                     + "BlockStateData array layout");
                         }
                         if (current === vanilla) {
@@ -64,7 +64,7 @@ function initializeCoreMod() {
                     }
                 }
                 if (!registerExposed || arraysSeen !== 2) {
-                    throw new Error("Sky's Grass Slabs could not prepare Forge 47 BlockStateData");
+                    throw new Error("Sky's Grass Slabs could not prepare Forge 50 BlockStateData");
                 }
                 return classNode;
             }
@@ -78,7 +78,7 @@ function initializeCoreMod() {
                 var patched = false;
                 for (var methodIndex = 0; methodIndex < classNode.methods.size(); ++methodIndex) {
                     var method = classNode.methods.get(methodIndex);
-                    if (method.desc !== '(Lnet/minecraft/nbt/CompoundTag;'
+                    if (method.desc !== '(Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;'
                             + 'Lnet/minecraft/world/level/storage/LevelStorageSource$LevelDirectory;)V') {
                         continue;
                     }
@@ -89,14 +89,14 @@ function initializeCoreMod() {
                             Opcodes.INVOKESTATIC,
                             'zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook',
                             'captureLegacyLevelData',
-                            '(Lnet/minecraft/nbt/CompoundTag;'
+                            '(Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;'
                                     + 'Lnet/minecraft/world/level/storage/LevelStorageSource$LevelDirectory;)V',
                             false));
                     method.instructions.insert(prefix);
                     patched = true;
                 }
                 if (!patched) {
-                    throw new Error("Sky's Grass Slabs could not patch Forge 47 level data");
+                    throw new Error("Sky's Grass Slabs could not patch Forge 50 level data");
                 }
                 return classNode;
             }
@@ -138,7 +138,7 @@ function initializeCoreMod() {
                     patched = true;
                 }
                 if (!patched) {
-                    throw new Error("Sky's Grass Slabs could not patch Forge 47 ChunkStorage");
+                    throw new Error("Sky's Grass Slabs could not patch Forge 50 ChunkStorage");
                 }
                 return classNode;
             }

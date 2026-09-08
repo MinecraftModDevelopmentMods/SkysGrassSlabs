@@ -193,13 +193,12 @@ public final class GrassSlabsMigrationHandler {
     static boolean migrateStacksInNbt(Tag tag, ModWorldState state) {
         boolean changed = false;
         if (tag instanceof CompoundTag compound) {
-            if (compound.contains("id", Tag.TAG_STRING)
-                    && compound.contains("Count", Tag.TAG_ANY_NUMERIC)) {
+            if (compound.contains("id", Tag.TAG_STRING) && hasStackCount(compound)) {
                 LegacyKind kind = legacyKind(ResourceLocation.tryParse(compound.getString("id")));
                 if (kind != null) {
                     compound.putString("id",
                             kind.item().builtInRegistryHolder().key().location().toString());
-                    int count = compound.getByte("Count") & 255;
+                    int count = stackCount(compound);
                     recordItems(state, kind, count);
                     changed = true;
                 }
@@ -309,9 +308,11 @@ public final class GrassSlabsMigrationHandler {
             if (visited.contains(blockEntity.getBlockPos())) {
                 continue;
             }
-            CompoundTag serialized = blockEntity.saveWithFullMetadata();
+            CompoundTag serialized = blockEntity.saveWithFullMetadata(
+                    chunk.getLevel().registryAccess());
             if (migrateStacksInNbt(serialized, state)) {
-                blockEntity.load(serialized);
+                blockEntity.loadWithComponents(serialized, chunk.getLevel().registryAccess());
+                blockEntity.setChanged();
                 changed = true;
             }
         }
@@ -340,10 +341,7 @@ public final class GrassSlabsMigrationHandler {
         if (kind == null) {
             return ItemStack.EMPTY;
         }
-        ItemStack migrated = new ItemStack(kind.item(), stack.getCount());
-        if (stack.hasTag()) {
-            migrated.setTag(stack.getTag().copy());
-        }
+        ItemStack migrated = stack.transmuteCopy(kind.item(), stack.getCount());
         recordItems(state, kind, stack.getCount());
         return migrated;
     }
@@ -356,6 +354,16 @@ public final class GrassSlabsMigrationHandler {
             state.recordGrassSlabsItem(kind.key(), count);
         }
         RUN_ITEMS.add(count);
+    }
+
+    private static boolean hasStackCount(CompoundTag stack) {
+        return stack.contains("Count", Tag.TAG_ANY_NUMERIC)
+                || stack.contains("count", Tag.TAG_ANY_NUMERIC);
+    }
+
+    private static int stackCount(CompoundTag stack) {
+        return stack.contains("count", Tag.TAG_ANY_NUMERIC)
+                ? stack.getInt("count") : stack.getByte("Count") & 255;
     }
 
     private static LegacyKind legacyKind(Block block) {
