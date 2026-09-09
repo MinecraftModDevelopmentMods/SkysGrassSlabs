@@ -2,9 +2,10 @@ package zone.moddev.mc.skysgrassslabs;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
@@ -14,6 +15,8 @@ import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsCompat;
 import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsMigrationHandler;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyMigrationHandler;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
+import zone.moddev.mc.skysgrassslabs.compat.MissingMappingHandler;
+import zone.moddev.mc.skysgrassslabs.client.ClientEvents;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.event.CommonEvents;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
@@ -27,34 +30,37 @@ public final class SkysGrassSlabs {
     /** Stable Forge mod identifier and resource namespace. */
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.1.0.121011";
+    public static final String VERSION = "1.1.0.121111";
     public static final Logger LOGGER = LogManager.getLogger();
 
     /** Registers content, configuration, world generation, and persistent state. */
+    @SuppressWarnings("removal") // DistExecutor prevents client classes loading on dedicated servers.
     public SkysGrassSlabs(FMLJavaModLoadingContext context) {
-        IEventBus modBus = context.getModEventBus();
+        BusGroup modBusGroup = context.getModBusGroup();
 
         SkysGrassSlabsConfig.migrateLegacyConfig();
         SkysGrassSlabsConfig.register(context);
-        ModBlocks.register(modBus);
-        ModRecipes.register(modBus);
-        WorldgenBootstrap.register(modBus);
-        BuildingBricksCompat.register(modBus);
-        GrassSlabsCompat.register(modBus);
+        ModBlocks.register(modBusGroup);
+        ModRecipes.register(modBusGroup);
+        WorldgenBootstrap.register(modBusGroup);
+        BuildingBricksCompat.register(modBusGroup);
+        GrassSlabsCompat.register(modBusGroup);
         LegacyWorldDataHook.register();
         LegacyMigrationHandler.register();
         GrassSlabsMigrationHandler.register();
         CommonEvents.register();
-        registerGameTests(modBus);
+        registerGameTests(modBusGroup);
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientEvents::register);
 
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStarted);
+        ServerStartedEvent.BUS.addListener(this::onServerStarted);
+        MissingMappingHandler.register();
     }
 
-    private static void registerGameTests(IEventBus modBus) {
+    private static void registerGameTests(BusGroup modBusGroup) {
         try {
             Class<?> bootstrap = Class.forName(
                     "zone.moddev.mc.skysgrassslabs.gametest.GameTestBootstrap");
-            bootstrap.getMethod("register", IEventBus.class).invoke(null, modBus);
+            bootstrap.getMethod("register", BusGroup.class).invoke(null, modBusGroup);
         } catch (ClassNotFoundException exception) {
             String enabledNamespaces = System.getProperty("forge.enabledGameTestNamespaces", "");
             if (Arrays.stream(enabledNamespaces.split(","))

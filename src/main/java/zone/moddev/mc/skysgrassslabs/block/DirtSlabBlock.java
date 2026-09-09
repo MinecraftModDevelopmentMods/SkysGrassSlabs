@@ -7,7 +7,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowyDirtBlock;
@@ -37,9 +38,11 @@ public final class DirtSlabBlock extends SlabBlock {
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
-            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
-        BlockState updated = super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+    protected BlockState updateShape(BlockState state, LevelReader level,
+            ScheduledTickAccess tickAccess, BlockPos pos, Direction direction,
+            BlockPos neighbourPos, BlockState neighbour, RandomSource random) {
+        BlockState updated = super.updateShape(state, level, tickAccess, pos, direction,
+                neighbourPos, neighbour, random);
         return updated.setValue(SnowyDirtBlock.SNOWY,
                 SnowySlabAppearance.hasNearbySnow(level, pos, direction, neighbour));
     }

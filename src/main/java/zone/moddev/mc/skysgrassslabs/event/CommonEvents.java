@@ -3,8 +3,7 @@ package zone.moddev.mc.skysgrassslabs.event;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
-import net.minecraft.world.entity.animal.Sheep;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import zone.moddev.mc.skysgrassslabs.entity.ai.TurfEatingGoal;
 
@@ -14,7 +13,7 @@ public final class CommonEvents {
             Collections.newSetFromMap(new WeakHashMap<>());
 
     public static void register() {
-        MinecraftForge.EVENT_BUS.addListener(CommonEvents::addTurfEatingGoal);
+        EntityJoinLevelEvent.BUS.addListener(CommonEvents::addTurfEatingGoal);
     }
 
     public static void addTurfEatingGoal(EntityJoinLevelEvent event) {

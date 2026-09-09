@@ -1,0 +1,50 @@
+modLoader="javafml"
+loaderVersion="[61,)"
+license="LGPL-2.1-only"
+
+[[mods]]
+modId="grassslabs"
+version="1.2.1-test"
+displayName="Grass Slabs Compatibility Fixture"
+description='''Build-only installed-mod replacement verification. Generate no release artifact from this source.'''
+
+[[mods]]
+modId="skysgrassslabsupgradeprobe"
+version="1"
+displayName="Sky's Grass Slabs Upgrade Probe"
+description='''Build-only saved-world compatibility verification.'''
+
+[[dependencies.skysgrassslabsupgradeprobe]]
+modId="forge"
+mandatory=true
+versionRange="[61.1.0,62)"
+ordering="NONE"
+side="SERVER"
+
+[[dependencies.skysgrassslabsupgradeprobe]]
+modId="skysgrassslabs"
+mandatory=true
+versionRange="[1.1.0.121111]"
+ordering="AFTER"
+side="SERVER"
+
+[[dependencies.skysgrassslabsupgradeprobe]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.21.11,1.22)"
+ordering="NONE"
+side="SERVER"
+
+[[dependencies.grassslabs]]
+modId="forge"
+mandatory=true
+versionRange="[61.1.0,62)"
+ordering="NONE"
+side="SERVER"
+
+[[dependencies.grassslabs]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.21.11,1.22)"
+ordering="NONE"
+side="SERVER"

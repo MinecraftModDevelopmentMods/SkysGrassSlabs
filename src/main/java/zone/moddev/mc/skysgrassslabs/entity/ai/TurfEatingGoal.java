@@ -3,7 +3,8 @@ package zone.moddev.mc.skysgrassslabs.entity.ai;
 import java.util.EnumSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.animal.sheep.Sheep;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.event.ForgeEventFactory;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
@@ -57,7 +58,8 @@ public final class TurfEatingGoal extends Goal {
         if (!level.getBlockState(pos).is(ModBlocks.TURF.get())) {
             return;
         }
-        if (ForgeEventFactory.getMobGriefingEvent(level, sheep)) {
+        if (level instanceof ServerLevel serverLevel
+                && ForgeEventFactory.getMobGriefingEvent(serverLevel, sheep)) {
             level.destroyBlock(pos, false);
         }
         sheep.ate();

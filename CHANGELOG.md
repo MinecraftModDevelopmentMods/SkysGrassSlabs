@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0.121111 - Minecraft 1.21.11
+
+- Ported the complete feature set to Minecraft 1.21.11 and Forge 61.
+- Preserved the existing blocks, items, recipes, configuration and world data.
+- Updated crafting, resources, world generation and legacy world recovery for
+  the current game and Forge APIs.
+
 ## 1.1.0.121011 - Minecraft 1.21.1
 
 - Ported the complete feature set to Minecraft 1.21.1 and Forge 52.

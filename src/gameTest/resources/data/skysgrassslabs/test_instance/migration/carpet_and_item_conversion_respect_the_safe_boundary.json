@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:migration/carpet_and_item_conversion_respect_the_safe_boundary",
+  "max_ticks": 100,
+  "structure": "forge:empty8x4x8"
+}

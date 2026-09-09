@@ -7,8 +7,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -28,13 +28,17 @@ public final class ModBlocks {
             DeferredRegister.create(ForgeRegistries.ITEMS, SkysGrassSlabs.MOD_ID);
 
     public static final RegistryObject<Block> DIRT_SLAB = BLOCKS.register("dirt_slab",
-            () -> new DirtSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT).randomTicks()));
+            () -> new DirtSlabBlock(RegistrationProperties.block(
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT).randomTicks(), "dirt_slab")));
     public static final RegistryObject<Block> GRASS_SLAB = BLOCKS.register("grass_slab",
-            () -> new GrassSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).randomTicks()));
+            () -> new GrassSlabBlock(RegistrationProperties.block(
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).randomTicks(), "grass_slab")));
     public static final RegistryObject<Block> PATH_SLAB = BLOCKS.register("path_slab",
-            () -> new PathSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH)));
+            () -> new PathSlabBlock(RegistrationProperties.block(
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH), "path_slab")));
     public static final RegistryObject<Block> TURF = BLOCKS.register("turf",
-            () -> new TurfBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GREEN_CARPET).randomTicks()));
+            () -> new TurfBlock(RegistrationProperties.block(
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.GREEN_CARPET).randomTicks(), "turf")));
 
     public static final RegistryObject<Item> DIRT_SLAB_ITEM = slabItem(
             "dirt_slab", DIRT_SLAB, Blocks.DIRT);
@@ -43,15 +47,16 @@ public final class ModBlocks {
     public static final RegistryObject<Item> PATH_SLAB_ITEM = slabItem(
             "path_slab", PATH_SLAB, Blocks.DIRT_PATH);
     public static final RegistryObject<Item> TURF_ITEM = ITEMS.register("turf",
-            () -> new TurfBlockItem(TURF.get(), new Item.Properties()));
+            () -> new TurfBlockItem(TURF.get(), RegistrationProperties.item(
+                    new Item.Properties(), "turf")));
 
     private ModBlocks() {
     }
 
-    public static void register(IEventBus eventBus) {
-        BLOCKS.register(eventBus);
-        ITEMS.register(eventBus);
-        eventBus.addListener(ModBlocks::buildCreativeTab);
+    public static void register(BusGroup modBusGroup) {
+        BLOCKS.register(modBusGroup);
+        ITEMS.register(modBusGroup);
+        BuildCreativeModeTabContentsEvent.BUS.addListener(ModBlocks::buildCreativeTab);
     }
 
     public static BlockState dirtStateLike(BlockState source) {
@@ -79,7 +84,7 @@ public final class ModBlocks {
     private static RegistryObject<Item> slabItem(String name, RegistryObject<Block> block,
             Block combinedBlock) {
         return ITEMS.register(name, () -> new NormalizingSlabItem(block.get(), combinedBlock,
-                new Item.Properties()));
+                RegistrationProperties.item(new Item.Properties(), name)));
     }
 
     private static void buildCreativeTab(BuildCreativeModeTabContentsEvent event) {

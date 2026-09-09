@@ -18,11 +18,10 @@ public class ProjectContractTest {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
 
         assertTrue(properties.contains("mod_id=skysgrassslabs"));
-        assertTrue(properties.contains("minecraft_version=1.21.1"));
-        assertTrue(properties.contains("forge_version=52.1.0"));
+        assertTrue(properties.contains("minecraft_version=1.21.11"));
+        assertTrue(properties.contains("forge_version=61.1.0"));
         assertTrue(properties.contains("mapping_channel=official"));
-        assertTrue(properties.contains("mapping_version=1.21.1"));
-        assertTrue(properties.contains("mcp_version=20240808.132146"));
+        assertTrue(properties.contains("mapping_version=1.21.11"));
         assertTrue(properties.contains("java_toolchain_version=21.0.7+6"));
         String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
         assertTrue(build.contains("verifyJava21Toolchain"));
@@ -36,14 +35,14 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
         assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.0.121011.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.0.121111.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void releaseIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.1.0.121011"));
+        assertTrue(properties.contains("mod_version=1.1.0.121111"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -56,7 +55,18 @@ public class ProjectContractTest {
         String workflow = Files.readString(
                 Path.of(".github/workflows/deploy-release.yml"), StandardCharsets.UTF_8);
         String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
-        assertTrue(build.contains("server-port=0"));
+        String version = properties.lines()
+                .filter(line -> line.startsWith("mod_version="))
+                .findFirst().orElseThrow().substring("mod_version=".length());
+        String suffix = version.substring(version.lastIndexOf('.') + 1);
+        String digits = suffix.substring(0, suffix.length() - 1);
+        int patch = Integer.parseInt(digits.substring(digits.length() - 2));
+        digits = digits.substring(0, digits.length() - 2);
+        int minor = Integer.parseInt(digits.substring(digits.length() - 2));
+        int major = Integer.parseInt(digits.substring(0, digits.length() - 2));
+        assertEquals("master-1.21.11", "master-" + major + "." + minor + "." + patch);
+        assertTrue(workflow.contains("target_suffix=\"${BASH_REMATCH[1]}\""));
+        assertTrue(workflow.contains("\"master-$mc_major.$mc_minor.$mc_patch$loader_suffix\""));
 
         assertTrue(properties.contains("loader_name=forge"));
         assertTrue(properties.contains("loader_code=1"));
@@ -100,7 +110,7 @@ public class ProjectContractTest {
         assertTrue(config.contains("push(\"compat\")"));
         assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
         assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
-        assertTrue(main.contains("VERSION = \"1.1.0.121011\""));
+        assertTrue(main.contains("VERSION = \"1.1.0.121111\""));
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
         assertTrue(state.contains("schema_version"));
@@ -140,19 +150,33 @@ public class ProjectContractTest {
 
     @Test
     public void legacyUpgradeHooksAreNarrowAndAvoidUnsafe() throws Exception {
-        String coremod = Files.readString(Path.of(
-                "src/main/resources/coremods/skysgrassslabs_legacy_world.js"),
+        String mixinConfig = Files.readString(Path.of(
+                "src/main/resources/skysgrassslabs.mixins.json"), StandardCharsets.UTF_8);
+        String stateMixin = Files.readString(Path.of(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/mixin/BlockStateDataMixin.java"),
+                StandardCharsets.UTF_8);
+        String stateAccessor = Files.readString(Path.of(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/mixin/BlockStateDataAccessor.java"),
+                StandardCharsets.UTF_8);
+        String forgeMixin = Files.readString(Path.of(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/mixin/ForgeHooksMixin.java"),
+                StandardCharsets.UTF_8);
+        String chunkMixin = Files.readString(Path.of(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/mixin/SimpleRegionStorageMixin.java"),
                 StandardCharsets.UTF_8);
         String bridge = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook.java"),
                 StandardCharsets.UTF_8);
-        assertTrue(coremod.contains("net.minecraft.util.datafix.fixes.BlockStateData"));
-        assertTrue(coremod.contains("net.minecraftforge.common.ForgeHooks"));
-        assertTrue(coremod.contains("net.minecraft.world.level.chunk.storage.ChunkStorage"));
-        assertTrue(coremod.contains("65536"));
-        assertTrue(coremod.contains("4096"));
-        assertTrue(coremod.contains("current !== vanilla && current !== target"));
-        assertTrue(coremod.contains("throw new Error"));
+        assertTrue(mixinConfig.contains("BlockStateDataMixin"));
+        assertTrue(mixinConfig.contains("ForgeHooksMixin"));
+        assertTrue(mixinConfig.contains("SimpleRegionStorageMixin"));
+        assertTrue(stateMixin.contains("MAP.length < 65_536"));
+        assertTrue(stateMixin.contains("BLOCK_DEFAULTS.length < 4_096"));
+        assertTrue(stateAccessor.contains("@Accessor(\"MAP\")"));
+        assertTrue(forgeMixin.contains("readAdditionalLevelSaveData"));
+        assertTrue(chunkMixin.contains("SimpleRegionStorage"));
+        assertTrue(chunkMixin.contains("upgradeChunkTag"));
+        assertTrue(bridge.contains("new Dynamic<>(NbtOps.INSTANCE"));
         assertTrue(bridge.contains("skysgrassslabs_legacy_registry.dat"));
         assertTrue(bridge.contains("indexLegacyChunks"));
         assertTrue(bridge.contains("SUPPORTED_BLOCK_IDS"));
@@ -189,7 +213,7 @@ public class ProjectContractTest {
     }
 
     @Test
-    public void forge52LifecycleAndDataPackContractsArePresent() throws Exception {
+    public void forge61LifecycleAndDataPackContractsArePresent() throws Exception {
         String blocks = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ModBlocks.java"),
                 StandardCharsets.UTF_8);
@@ -214,9 +238,9 @@ public class ProjectContractTest {
         assertTrue(modifier.contains("BiomeTags.IS_END"));
         assertTrue(modifierJson.contains("skysgrassslabs:grass_slab_smoothing"));
         assertTrue(worldgen.contains("DeferredRegister<MapCodec<? extends BiomeModifier>>"));
-        assertTrue(pack.contains("\"pack_format\": 34"));
-        assertTrue(pack.contains("\"min_inclusive\": 34"));
-        assertTrue(pack.contains("\"max_inclusive\": 48"));
+        assertTrue(pack.contains("\"max_format\": 94"));
+        assertTrue(pack.contains("\"min_format\":"));
+        assertTrue(pack.contains("94"));
 
         for (String recipeName : new String[] {"dirt_slab", "grass_slab",
                 "grass_block_from_seeds", "grass_slab_from_seeds", "turf"}) {
@@ -243,13 +267,13 @@ public class ProjectContractTest {
                 "validate-gradle-build.yml"}) {
             String workflow = Files.readString(Path.of(".github/workflows", name),
                     StandardCharsets.UTF_8);
-            assertTrue(name, workflow.contains("master-1.21.1"));
+            assertTrue(name, workflow.contains("master-1.21.11"));
         }
         String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
                 StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.121011.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.121011-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.121011-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.121111.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.121111-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.121111-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
         assertEquals(2, ci.lines()
                 .filter(line -> line.contains("java-version: '8.0.502+7'"))
@@ -269,12 +293,27 @@ public class ProjectContractTest {
     @Test
     public void adjacentUpgradeFixtureIsTracked() {
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "skysgrassslabs-1.20.6-forward-world.zip")));
+                + "skysgrassslabs-1.21.1-forward-world.zip")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "skysgrassslabs-1.20.6-forward-world.manifest")));
+                + "skysgrassslabs-1.21.1-forward-world.manifest")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
                 + "grassslabs-1.18.2-migration-world.zip")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
                 + "grassslabs-1.18.2-migration-world.manifest")));
+    }
+
+    @Test
+    public void upgradeHarnessesAreBuildOnly() throws Exception {
+        String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
+        assertTrue(build.contains("upgradeIntegrationTestModJar"));
+        assertTrue(build.contains("installedGrassSlabsIntegrationTestModJar"));
+        assertTrue(build.contains("exclude '**/InstalledGrassSlabsTestMod.class'"));
+        assertTrue(build.contains("dependsOn tasks.named('upgradeIntegrationTestModJar')"));
+        assertTrue(build.contains(
+                "dependsOn tasks.named('installedGrassSlabsIntegrationTestModJar')"));
+        assertTrue(Files.isRegularFile(Path.of(
+                "src/upgradeIntegrationTest/resources/pack.mcmeta")));
+        assertTrue(Files.isRegularFile(Path.of(
+                "src/upgradeIntegrationTest/installed-grassslabs/pack.mcmeta")));
     }
 }

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:worldgen/smoothing_is_border_safe_and_idempotent",
+  "max_ticks": 300,
+  "structure": "forge:empty8x4x8"
+}

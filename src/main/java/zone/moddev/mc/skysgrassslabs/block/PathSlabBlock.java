@@ -11,6 +11,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceGateBlock;
@@ -74,19 +75,22 @@ public final class PathSlabBlock extends SlabBlock {
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
-            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
-        BlockState updated = super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+    protected BlockState updateShape(BlockState state, LevelReader level,
+            ScheduledTickAccess tickAccess, BlockPos pos, Direction direction,
+            BlockPos neighbourPos, BlockState neighbour, RandomSource random) {
+        BlockState updated = super.updateShape(state, level, tickAccess, pos, direction,
+                neighbourPos, neighbour, random);
 
         if (updated.getValue(WATERLOGGED)
                 || direction == Direction.UP && !canSurvive(updated, level, pos)) {
-            level.scheduleTick(pos, this, 1);
+            tickAccess.scheduleTick(pos, this, 1);
         }
 
         return updated;
     }
 
     @Override
+    @SuppressWarnings("deprecation") // Vanilla DirtPathBlock uses the cached solid-state flag.
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         if (state.getValue(WATERLOGGED)) {
             return false;

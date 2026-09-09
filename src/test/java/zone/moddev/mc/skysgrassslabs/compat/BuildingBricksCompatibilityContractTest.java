@@ -1,13 +1,14 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.Test;
 
 public class BuildingBricksCompatibilityContractTest {
@@ -22,9 +23,9 @@ public class BuildingBricksCompatibilityContractTest {
                 LegacyMigrationHandler.legacySlabKind(BuildingBricksCompat.DIRT_SLAB_ID));
 
         assertNull(LegacyMigrationHandler.legacySlabKind(
-                ResourceLocation.fromNamespaceAndPath("buildingbricks", "grass_stairs")));
+                Identifier.fromNamespaceAndPath("buildingbricks", "grass_stairs")));
         assertNull(LegacyMigrationHandler.legacySlabKind(
-                ResourceLocation.fromNamespaceAndPath("buildingbricks", "dirt_vertical_slab")));
+                Identifier.fromNamespaceAndPath("buildingbricks", "dirt_vertical_slab")));
     }
 
     @Test
@@ -39,5 +40,18 @@ public class BuildingBricksCompatibilityContractTest {
         assertTrue(migration.contains("|| BuildingBricksCompat.isInstalled()\n"
                 + "                        && SkysGrassSlabsConfig"
                 + ".forceReplaceBuildingBricksSlabs()"));
+    }
+
+    @Test
+    public void loadedChunksAreMigratedOnTheServerTick() throws Exception {
+        String migration = Files.readString(Path.of(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyMigrationHandler.java"),
+                StandardCharsets.UTF_8);
+
+        assertTrue(migration.contains("ChunkEvent.Load.BUS.addListener"));
+        assertTrue(migration.contains("TickEvent.ServerTickEvent.Post.BUS.addListener"));
+        assertTrue(migration.contains("PENDING_CHUNKS.add(chunk)"));
+        assertTrue(migration.contains("while ((chunk = PENDING_CHUNKS.poll()) != null)"));
+        assertFalse(migration.contains("ChunkDataEvent.Load"));
     }
 }

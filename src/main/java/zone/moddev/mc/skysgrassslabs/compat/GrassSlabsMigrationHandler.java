@@ -1,16 +1,17 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
+import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Queue;
 import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.LongAdder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -25,13 +26,17 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.event.level.ChunkDataEvent;
+import net.minecraftforge.event.level.ChunkEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
@@ -39,44 +44,53 @@ import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 
 /** Converts supported content from the Grass Slabs source mod. */
 public final class GrassSlabsMigrationHandler {
+    private static final org.slf4j.Logger SERIALIZATION_LOGGER = LogUtils.getLogger();
     static final String CHUNK_MARKER = "skysgrassslabs_grassslabs_migration_version";
 
-    private static final Set<LevelChunk> MIGRATED_CHUNKS =
-            Collections.newSetFromMap(new WeakHashMap<>());
     private static final LongAdder RUN_BLOCKS = new LongAdder();
     private static final LongAdder RUN_ITEMS = new LongAdder();
     private static final LongAdder RUN_RETAINED_CARPETS = new LongAdder();
+    private static final Queue<LevelChunk> PENDING_CHUNKS = new ConcurrentLinkedQueue<>();
 
     public static void register() {
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::loadChunk);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::saveChunk);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::playerLogin);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::entityJoin);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::blockPlaced);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::serverAboutToStart);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::serverStopping);
+        ChunkEvent.Load.BUS.addListener(GrassSlabsMigrationHandler::loadChunk);
+        TickEvent.ServerTickEvent.Post.BUS.addListener(
+                GrassSlabsMigrationHandler::serverTick);
+        PlayerEvent.PlayerLoggedInEvent.BUS.addListener(
+                GrassSlabsMigrationHandler::playerLogin);
+        EntityJoinLevelEvent.BUS.addListener(GrassSlabsMigrationHandler::entityJoin);
+        BlockEvent.EntityPlaceEvent.BUS.addListener(GrassSlabsMigrationHandler::blockPlaced);
+        ServerAboutToStartEvent.BUS.addListener(
+                GrassSlabsMigrationHandler::serverAboutToStart);
+        ServerStoppingEvent.BUS.addListener(GrassSlabsMigrationHandler::serverStopping);
     }
 
-    public static void loadChunk(ChunkDataEvent.Load event) {
+    public static void loadChunk(ChunkEvent.Load event) {
         if (!(event.getLevel() instanceof Level level)
                 || !(event.getChunk() instanceof LevelChunk chunk)
-                || level.isClientSide || !replacementEnabled()) {
+                || level.isClientSide() || !replacementEnabled()) {
+            return;
+        }
+        PENDING_CHUNKS.add(chunk);
+    }
+
+    private static void serverTick(TickEvent.ServerTickEvent.Post event) {
+        LevelChunk chunk;
+        while ((chunk = PENDING_CHUNKS.poll()) != null) {
+            migrateChunk(chunk);
+        }
+    }
+
+    private static void migrateChunk(LevelChunk chunk) {
+        Level level = chunk.getLevel();
+        if (level.isClientSide() || !replacementEnabled()) {
             return;
         }
         ModWorldState state = ModWorldState.get(level);
-        boolean changed = migrateChunkInventories(chunk, event.getData(), state);
-        ScanResult result = migrateChunkBlocks(chunk, event.getData(), state);
-        if (result.encountered()) {
-            MIGRATED_CHUNKS.add(chunk);
-            chunk.setUnsaved(true);
-        } else if (changed) {
-            chunk.setUnsaved(true);
-        }
-    }
-
-    public static void saveChunk(ChunkDataEvent.Save event) {
-        if (event.getChunk() instanceof LevelChunk chunk && MIGRATED_CHUNKS.remove(chunk)) {
-            event.getData().putInt(CHUNK_MARKER, ModWorldState.MIGRATION_VERSION);
+        boolean changed = migrateChunkInventories(chunk, java.util.List.of(), state);
+        ScanResult result = migrateChunkBlocks(chunk, state);
+        if (result.encountered() || changed) {
+            chunk.markUnsaved();
         }
     }
 
@@ -97,14 +111,20 @@ public final class GrassSlabsMigrationHandler {
         }
         Level level = event.getLevel();
         Entity entity = event.getEntity();
-        CompoundTag serialized = entity.saveWithoutId(new CompoundTag());
-        if (migrateStacksInNbt(serialized, ModWorldState.get(level))) {
-            entity.load(serialized);
+        try (ProblemReporter.ScopedCollector problems = new ProblemReporter.ScopedCollector(
+                entity.problemPath(), SERIALIZATION_LOGGER)) {
+            TagValueOutput output = TagValueOutput.createWithContext(
+                    problems, entity.registryAccess());
+            entity.saveWithoutId(output);
+            CompoundTag serialized = output.buildResult();
+            if (migrateStacksInNbt(serialized, ModWorldState.get(level))) {
+                entity.load(TagValueInput.create(problems, entity.registryAccess(), serialized));
+            }
         }
     }
 
     public static void blockPlaced(BlockEvent.EntityPlaceEvent event) {
-        if (!(event.getLevel() instanceof Level level) || level.isClientSide
+        if (!(event.getLevel() instanceof Level level) || level.isClientSide()
                 || !GrassSlabsCompat.isInstalled()
                 || !SkysGrassSlabsConfig.forceReplaceGrassSlabsModContent()) {
             return;
@@ -135,6 +155,7 @@ public final class GrassSlabsMigrationHandler {
     }
 
     private static void serverStopping(ServerStoppingEvent event) {
+        PENDING_CHUNKS.clear();
         long blocks = RUN_BLOCKS.sum();
         long items = RUN_ITEMS.sum();
         long retained = RUN_RETAINED_CARPETS.sum();
@@ -155,7 +176,7 @@ public final class GrassSlabsMigrationHandler {
         return aliases || installed && forced;
     }
 
-    static LegacyKind legacyKind(ResourceLocation id) {
+    static LegacyKind legacyKind(Identifier id) {
         if (GrassSlabsCompat.GRASS_SLAB_ID.equals(id)) {
             return LegacyKind.GRASS_SLAB;
         }
@@ -193,17 +214,17 @@ public final class GrassSlabsMigrationHandler {
     static boolean migrateStacksInNbt(Tag tag, ModWorldState state) {
         boolean changed = false;
         if (tag instanceof CompoundTag compound) {
-            if (compound.contains("id", Tag.TAG_STRING) && hasStackCount(compound)) {
-                LegacyKind kind = legacyKind(ResourceLocation.tryParse(compound.getString("id")));
+            if (compound.contains("id") && hasStackCount(compound)) {
+                LegacyKind kind = legacyKind(Identifier.tryParse(
+                        compound.getStringOr("id", "")));
                 if (kind != null) {
-                    compound.putString("id",
-                            kind.item().builtInRegistryHolder().key().location().toString());
+                    compound.putString("id", ForgeRegistries.ITEMS.getKey(kind.item()).toString());
                     int count = stackCount(compound);
                     recordItems(state, kind, count);
                     changed = true;
                 }
             }
-            for (String key : new ArrayList<>(compound.getAllKeys())) {
+            for (String key : new ArrayList<>(compound.keySet())) {
                 Tag child = compound.get(key);
                 if (child != null) {
                     changed |= migrateStacksInNbt(child, state);
@@ -217,17 +238,12 @@ public final class GrassSlabsMigrationHandler {
         return changed;
     }
 
-    private static ScanResult migrateChunkBlocks(
-            LevelChunk chunk, CompoundTag chunkData, ModWorldState state) {
-        if (chunkData.getInt(CHUNK_MARKER) >= ModWorldState.MIGRATION_VERSION
-                || !containsLegacyId(chunkData)) {
-            return ScanResult.EMPTY;
-        }
+    private static ScanResult migrateChunkBlocks(LevelChunk chunk, ModWorldState state) {
 
         long converted = 0L;
         long retained = 0L;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int y = chunk.getMinBuildHeight(); y < chunk.getMaxBuildHeight(); ++y) {
+        for (int y = chunk.getMinY(); y <= chunk.getMaxY(); ++y) {
             for (int z = 0; z < 16; ++z) {
                 for (int x = 0; x < 16; ++x) {
                     cursor.set(chunk.getPos().getMinBlockX() + x, y,
@@ -250,7 +266,7 @@ public final class GrassSlabsMigrationHandler {
             }
         }
 
-        if (converted + retained == 0L) {
+        if (converted == 0L) {
             return ScanResult.EMPTY;
         }
         state.recordGrassSlabsChunk();
@@ -260,45 +276,17 @@ public final class GrassSlabsMigrationHandler {
         return new ScanResult(converted, retained);
     }
 
-    private static boolean containsLegacyId(Tag tag) {
-        if (tag instanceof CompoundTag compound) {
-            for (String key : compound.getAllKeys()) {
-                Tag child = compound.get(key);
-                if (child != null && containsLegacyId(child)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        if (tag instanceof ListTag list) {
-            for (Tag child : list) {
-                if (containsLegacyId(child)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        if (tag.getId() == Tag.TAG_STRING) {
-            ResourceLocation id = ResourceLocation.tryParse(tag.getAsString());
-            return id != null && legacyKind(id) != null;
-        }
-        return false;
-    }
-
     private static boolean migrateChunkInventories(
-            LevelChunk chunk, CompoundTag chunkData, ModWorldState state) {
+            LevelChunk chunk, java.util.List<CompoundTag> pending, ModWorldState state) {
         boolean changed = false;
         Set<BlockPos> visited = new HashSet<>();
-        ListTag pending = chunkData.getList("block_entities", Tag.TAG_COMPOUND);
-        for (int index = 0; index < pending.size(); ++index) {
-            CompoundTag serialized = pending.getCompound(index);
-            if (!serialized.contains("x", Tag.TAG_ANY_NUMERIC)
-                    || !serialized.contains("y", Tag.TAG_ANY_NUMERIC)
-                    || !serialized.contains("z", Tag.TAG_ANY_NUMERIC)) {
+        for (CompoundTag serialized : pending) {
+            if (!serialized.contains("x") || !serialized.contains("y")
+                    || !serialized.contains("z")) {
                 continue;
             }
-            BlockPos pos = new BlockPos(serialized.getInt("x"), serialized.getInt("y"),
-                    serialized.getInt("z"));
+            BlockPos pos = new BlockPos(serialized.getIntOr("x", 0),
+                    serialized.getIntOr("y", 0), serialized.getIntOr("z", 0));
             if (migrateStacksInNbt(serialized, state)) {
                 visited.add(pos);
                 changed = true;
@@ -311,7 +299,11 @@ public final class GrassSlabsMigrationHandler {
             CompoundTag serialized = blockEntity.saveWithFullMetadata(
                     chunk.getLevel().registryAccess());
             if (migrateStacksInNbt(serialized, state)) {
-                blockEntity.loadWithComponents(serialized, chunk.getLevel().registryAccess());
+                try (ProblemReporter.ScopedCollector problems = new ProblemReporter.ScopedCollector(
+                        blockEntity.problemPath(), SERIALIZATION_LOGGER)) {
+                    blockEntity.loadWithComponents(TagValueInput.create(problems,
+                            chunk.getLevel().registryAccess(), serialized));
+                }
                 blockEntity.setChanged();
                 changed = true;
             }
@@ -357,13 +349,12 @@ public final class GrassSlabsMigrationHandler {
     }
 
     private static boolean hasStackCount(CompoundTag stack) {
-        return stack.contains("Count", Tag.TAG_ANY_NUMERIC)
-                || stack.contains("count", Tag.TAG_ANY_NUMERIC);
+        return stack.contains("Count") || stack.contains("count");
     }
 
     private static int stackCount(CompoundTag stack) {
-        return stack.contains("count", Tag.TAG_ANY_NUMERIC)
-                ? stack.getInt("count") : stack.getByte("Count") & 255;
+        return stack.contains("count")
+                ? stack.getIntOr("count", 0) : stack.getByteOr("Count", (byte) 0) & 255;
     }
 
     private static LegacyKind legacyKind(Block block) {

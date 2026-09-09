@@ -10,7 +10,11 @@ import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.ToolActions;
@@ -22,10 +26,12 @@ import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 /** Cuts turf while returning the matching dirt and an unchanged shovel. */
 public final class TurfCuttingRecipe extends CustomRecipe {
     private final NonNullList<Ingredient> ingredients;
+    private final PlacementInfo placementInfo;
 
     public TurfCuttingRecipe(CraftingBookCategory category) {
         super(category);
         ingredients = createIngredients();
+        placementInfo = PlacementInfo.create(ingredients);
     }
 
     @Override
@@ -54,18 +60,16 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return width * height >= 2;
+    public PlacementInfo placementInfo() {
+        return placementInfo;
     }
 
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
-        return new ItemStack(ModBlocks.TURF_ITEM.get());
-    }
-
-    @Override
-    public NonNullList<Ingredient> getIngredients() {
-        return ingredients;
+    public List<RecipeDisplay> display() {
+        return List.of(new ShapelessCraftingRecipeDisplay(
+                ingredients.stream().map(Ingredient::display).toList(),
+                new SlotDisplay.ItemStackSlotDisplay(new ItemStack(ModBlocks.TURF_ITEM.get())),
+                new SlotDisplay.ItemSlotDisplay(Blocks.CRAFTING_TABLE.asItem())));
     }
 
     @Override
@@ -95,7 +99,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<TurfCuttingRecipe> getSerializer() {
         return ModRecipes.TURF_CUTTING.get();
     }
 
@@ -106,11 +110,11 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     private static NonNullList<Ingredient> createIngredients() {
         NonNullList<Ingredient> result = NonNullList.create();
         result.add(Ingredient.of(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB.get()));
-        List<ItemStack> shovels = new ArrayList<>();
+        List<Item> shovels = new ArrayList<>();
         for (Item item : ForgeRegistries.ITEMS.getValues()) {
             ItemStack candidate = new ItemStack(item);
             if (isShovel(candidate)) {
-                shovels.add(candidate);
+                shovels.add(item);
             }
         }
         result.add(Ingredient.of(shovels.stream()));

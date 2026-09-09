@@ -83,7 +83,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
             for (int localX = 0; localX < 16; ++localX) {
                 int center = haloIndex(localX + 1, localZ + 1);
                 int y = buffer.heights[center];
-                if (y == MISSING || y + 1 >= owner.getMaxBuildHeight()) {
+                if (y == MISSING || y + 1 > owner.getMaxY()) {
                     continue;
                 }
                 cursor.set(minX + localX, y + 1, minZ + localZ);
@@ -123,10 +123,10 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                     || owner.getBlockEntityNbt(cursor) != null) {
                 continue;
             }
-            owner.setBlockState(cursor, slab, false);
+            owner.setBlockState(cursor, slab, 0);
             cursor.setY(y);
             if (owner.getBlockState(cursor).is(Blocks.GRASS_BLOCK)) {
-                owner.setBlockState(cursor, Blocks.DIRT.defaultBlockState(), false);
+                owner.setBlockState(cursor, Blocks.DIRT.defaultBlockState(), 0);
             }
             changed = true;
         }
@@ -136,7 +136,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
     private static int surfaceY(ChunkAccess chunk, int localX, int localZ,
             BlockPos.MutableBlockPos cursor) {
         int y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, localX, localZ);
-        int minY = chunk.getMinBuildHeight();
+        int minY = chunk.getMinY();
         int x = chunk.getPos().getMinBlockX() + localX;
         int z = chunk.getPos().getMinBlockZ() + localZ;
         while (y >= minY && chunk.getBlockState(cursor.set(x, y, z)).isAir()) {

@@ -8,7 +8,7 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraftforge.common.world.BiomeModifier;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -37,10 +37,10 @@ public final class WorldgenBootstrap {
     private WorldgenBootstrap() {
     }
 
-    public static void register(IEventBus modBus) {
-        FEATURES.register(modBus);
-        BIOME_MODIFIERS.register(modBus);
-        modBus.addListener(WorldgenBootstrap::commonSetup);
+    public static void register(BusGroup modBusGroup) {
+        FEATURES.register(modBusGroup);
+        BIOME_MODIFIERS.register(modBusGroup);
+        FMLCommonSetupEvent.getBus(modBusGroup).addListener(WorldgenBootstrap::commonSetup);
     }
 
     private static void commonSetup(FMLCommonSetupEvent event) {

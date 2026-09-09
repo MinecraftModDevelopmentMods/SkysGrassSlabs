@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:migration/slab_states_convert_without_losing_native_properties",
+  "max_ticks": 100,
+  "structure": "forge:empty8x4x8"
+}

@@ -2,9 +2,8 @@ package zone.moddev.mc.skysgrassslabs.gametest;
 
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
@@ -13,7 +12,9 @@ import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import net.minecraftforge.gametest.GameTestHolder;
+import net.minecraftforge.gametest.GameTest;
+import net.minecraftforge.gametest.GameTestNamespace;
+import net.minecraftforge.gametest.GameTestPrefix;
 import net.minecraftforge.common.world.BiomeModifier;
 import net.minecraftforge.common.world.ModifiableBiomeInfo.BiomeInfo;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -22,18 +23,20 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingFeature;
 
 /** Controlled runtime proof for owning-chunk, border, rejection and idempotence rules. */
-@GameTestHolder(value = SkysGrassSlabs.MOD_ID, namespace = SkysGrassSlabs.MOD_ID)
+@GameTestNamespace(SkysGrassSlabs.MOD_ID)
+@GameTestPrefix("worldgen")
 public final class WorldgenGameTests {
     private WorldgenGameTests() {
     }
 
-    @GameTest(template = "skysgrassslabs:empty", batch = "worldgen000", timeoutTicks = 100)
+    @GameTest(structure = "forge:empty8x4x8", maxTicks = 100)
     public static void smoothingIsFirstVegetationFeature(GameTestHelper helper) {
         var biome = helper.getLevel().getBiome(helper.absolutePos(BlockPos.ZERO));
         var modifiers = helper.getLevel().registryAccess()
-                .registryOrThrow(ForgeRegistries.Keys.BIOME_MODIFIERS);
-        var modifier = modifiers.get(ResourceLocation.fromNamespaceAndPath(
-                SkysGrassSlabs.MOD_ID, "grass_slab_smoothing"));
+                .lookupOrThrow(ForgeRegistries.Keys.BIOME_MODIFIERS);
+        var modifier = modifiers.get(Identifier.fromNamespaceAndPath(
+                SkysGrassSlabs.MOD_ID, "grass_slab_smoothing"))
+                .orElseThrow().value();
         require(helper, modifier instanceof zone.moddev.mc.skysgrassslabs.world.SmoothingBiomeModifier,
                 "registered smoothing biome modifier is missing");
 
@@ -49,7 +52,7 @@ public final class WorldgenGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "skysgrassslabs:empty", batch = "worldgen001", timeoutTicks = 300)
+    @GameTest(structure = "forge:empty8x4x8", maxTicks = 300)
     public static void smoothingIsBorderSafeAndIdempotent(GameTestHelper helper) {
         ChunkPos owner = new ChunkPos(helper.absolutePos(new BlockPos(1, 2, 1)));
         int y = 120;
@@ -114,8 +117,8 @@ public final class WorldgenGameTests {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
-                for (int y = helper.getLevel().getMinBuildHeight();
-                        y < helper.getLevel().getMaxBuildHeight(); y++) {
+                for (int y = helper.getLevel().getMinY();
+                        y <= helper.getLevel().getMaxY(); y++) {
                     if (helper.getLevel().getBlockState(cursor.set(x, y, z))
                             .is(ModBlocks.GRASS_SLAB.get())) {
                         count++;

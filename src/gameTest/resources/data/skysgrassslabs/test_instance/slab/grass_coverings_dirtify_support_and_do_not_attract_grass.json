@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/grass_coverings_dirtify_support_and_do_not_attract_grass",
+  "max_ticks": 100,
+  "structure": "forge:empty8x4x8"
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:worldgen/smoothing_is_first_vegetation_feature",
+  "max_ticks": 100,
+  "structure": "forge:empty8x4x8"
+}

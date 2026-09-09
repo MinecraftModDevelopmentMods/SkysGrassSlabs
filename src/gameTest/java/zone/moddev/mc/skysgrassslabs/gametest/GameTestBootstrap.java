@@ -1,62 +1,42 @@
 package zone.moddev.mc.skysgrassslabs.gametest;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.IntTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraftforge.event.RegisterGameTestsEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.Registries;
+import net.minecraftforge.gametest.ForgeGameTestHooks;
+import net.minecraftforge.gametest.ForgeGameTestHooks.TestReference;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
+import net.minecraftforge.registries.RegisterEvent;
 import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsMigrationGameTests;
 
 /** Registers test-only classes without including them in the production jar. */
 public final class GameTestBootstrap {
+    private static final Map<Identifier, TestReference> TESTS = gatherTests();
+
     private GameTestBootstrap() {
     }
 
-    public static void register(IEventBus modBus) {
-        writeEmptyStructure();
-        modBus.addListener(GameTestBootstrap::registerTests);
+    public static void register(BusGroup modBusGroup) {
+        RegisterEvent.getBus(modBusGroup).addListener(GameTestBootstrap::registerTestFunctions);
     }
 
-    private static void writeEmptyStructure() {
-        CompoundTag root = new CompoundTag();
-        NbtUtils.addCurrentDataVersion(root);
+    private static Map<Identifier, TestReference> gatherTests() {
+        Map<Identifier, TestReference> tests = new LinkedHashMap<>();
+        tests.putAll(ForgeGameTestHooks.gatherTests(SlabGameTests.class, null));
+        tests.putAll(ForgeGameTestHooks.gatherTests(WorldgenGameTests.class, null));
+        tests.putAll(ForgeGameTestHooks.gatherTests(GrassSlabsMigrationGameTests.class, null));
+        return Map.copyOf(tests);
+    }
 
-        ListTag size = new ListTag();
-        size.add(IntTag.valueOf(8));
-        size.add(IntTag.valueOf(4));
-        size.add(IntTag.valueOf(8));
-        root.put("size", size);
-
-        CompoundTag air = new CompoundTag();
-        air.putString("Name", "minecraft:air");
-        ListTag palette = new ListTag();
-        palette.add(air);
-        root.put("palette", palette);
-        root.put("blocks", new ListTag());
-        root.put("entities", new ListTag());
-
-        Path structure = Path.of("world", "generated", "skysgrassslabs",
-                "structures", "empty.nbt");
-        try {
-            Files.createDirectories(structure.getParent());
-            try (OutputStream output = Files.newOutputStream(structure)) {
-                NbtIo.writeCompressed(root, output);
-            }
-        } catch (IOException exception) {
-            throw new IllegalStateException("Could not prepare the GameTest structure", exception);
+    private static void registerTestFunctions(RegisterEvent event) {
+        if (event.getRegistryKey() != Registries.TEST_FUNCTION) {
+            return;
         }
+
+        TESTS.forEach((id, reference) ->
+                event.register(Registries.TEST_FUNCTION, id, reference::consumer));
     }
 
-    private static void registerTests(RegisterGameTestsEvent event) {
-        event.register(SlabGameTests.class);
-        event.register(WorldgenGameTests.class);
-        event.register(GrassSlabsMigrationGameTests.class);
-    }
 }

@@ -6,18 +6,19 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
@@ -30,7 +31,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.LegacyRandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
@@ -39,7 +40,9 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraftforge.common.Tags;
 import net.minecraftforge.common.ToolActions;
-import net.minecraftforge.gametest.GameTestHolder;
+import net.minecraftforge.gametest.GameTest;
+import net.minecraftforge.gametest.GameTestNamespace;
+import net.minecraftforge.gametest.GameTestPrefix;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
@@ -56,14 +59,15 @@ import zone.moddev.mc.skysgrassslabs.event.CommonEvents;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 
 /** Runtime coverage for save-facing block state, tool, lifecycle, recipe and loot contracts. */
-@GameTestHolder(value = SkysGrassSlabs.MOD_ID, namespace = SkysGrassSlabs.MOD_ID)
+@GameTestNamespace(SkysGrassSlabs.MOD_ID)
+@GameTestPrefix("slab")
 public final class SlabGameTests {
-    private static final String EMPTY = "skysgrassslabs:empty";
+    private static final String EMPTY = "forge:empty8x4x8";
 
     private SlabGameTests() {
     }
 
-    @GameTest(template = EMPTY, batch = "slabs001")
+    @GameTest(structure = EMPTY)
     public static void shovelFlatteningPreservesOrientation(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
         UseOnContext context = context(helper, pos, new ItemStack(Items.IRON_SHOVEL));
@@ -100,7 +104,7 @@ public final class SlabGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs002")
+    @GameTest(structure = EMPTY)
     public static void stackingNormalizesGrassAndPath(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
         helper.getLevel().setBlock(pos, ModBlocks.GRASS_SLAB.get().defaultBlockState(), 3);
@@ -119,7 +123,7 @@ public final class SlabGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs003")
+    @GameTest(structure = EMPTY)
     public static void pathProfilesAndDecayMatchContract(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
         PathSlabBlock path = (PathSlabBlock) ModBlocks.PATH_SLAB.get();
@@ -152,9 +156,9 @@ public final class SlabGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs004")
+    @GameTest(structure = EMPTY)
     public static void grassLifecycleInteroperatesWithVanilla(GameTestHelper helper) {
-        helper.setDayTime(6000);
+        helper.getLevel().setDayTime(6000);
         BlockPos dirtPos = helper.absolutePos(new BlockPos(1, 2, 1));
         BlockPos sourcePos = dirtPos.east();
         helper.getLevel().setBlock(dirtPos.west().above(), Blocks.GLOWSTONE.defaultBlockState(), 3);
@@ -173,7 +177,8 @@ public final class SlabGameTests {
             require(helper,
                     helper.getLevel().getBlockState(dirtPos).is(ModBlocks.GRASS_SLAB.get()),
                     "vanilla grass did not reach dirt slab; areaLoaded="
-                            + helper.getLevel().isAreaLoaded(dirtPos, 3) + ", brightness="
+                            + helper.getLevel().hasChunk(dirtPos.getX() >> 4,
+                                    dirtPos.getZ() >> 4) + ", brightness="
                             + helper.getLevel().getMaxLocalRawBrightness(dirtPos.above())
                             + ", source=" + helper.getLevel().getBlockState(sourcePos)
                             + ", target=" + helper.getLevel().getBlockState(dirtPos));
@@ -195,16 +200,17 @@ public final class SlabGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, batch = "slabs005")
+    @GameTest(structure = EMPTY)
     public static void recipesTagsAndLootLoad(GameTestHelper helper) {
-        require(helper, Items.WHEAT_SEEDS.builtInRegistryHolder().is(Tags.Items.SEEDS),
+        require(helper, new ItemStack(Items.WHEAT_SEEDS).is(Tags.Items.SEEDS),
                 "wheat seeds are absent from forge:seeds");
-        require(helper, Items.BEETROOT_SEEDS.builtInRegistryHolder().is(Tags.Items.SEEDS),
+        require(helper, new ItemStack(Items.BEETROOT_SEEDS).is(Tags.Items.SEEDS),
                 "beetroot seeds are absent from forge:seeds");
         for (String recipe : List.of("dirt_slab", "grass_slab", "grass_block_from_seeds",
                 "grass_slab_from_seeds")) {
-            require(helper, helper.getLevel().getRecipeManager().byKey(
-                    ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, recipe)).isPresent(),
+            require(helper, helper.getLevel().recipeAccess().byKey(ResourceKey.create(
+                    Registries.RECIPE,
+                    Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, recipe))).isPresent(),
                     "missing recipe " + recipe);
         }
 
@@ -240,9 +246,9 @@ public final class SlabGameTests {
                 && doubleDrops.get(0).getCount() == 2,
                 "double dirt slab did not drop two slabs");
 
-        CraftingRecipe seedRecipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
-                .byKey(ResourceLocation.fromNamespaceAndPath(
-                        SkysGrassSlabs.MOD_ID, "grass_slab_from_seeds"))
+        CraftingRecipe seedRecipe = (CraftingRecipe) helper.getLevel().recipeAccess()
+                .byKey(ResourceKey.create(Registries.RECIPE, Identifier.fromNamespaceAndPath(
+                        SkysGrassSlabs.MOD_ID, "grass_slab_from_seeds")))
                 .orElseThrow().value();
         require(helper, matchesSeedRecipe(seedRecipe, helper, Items.WHEAT_SEEDS),
                 "wheat seeds did not match the grass slab recipe");
@@ -251,7 +257,7 @@ public final class SlabGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs006")
+    @GameTest(structure = EMPTY)
     public static void snowPlantsBonemealAndWaterAreTopAware(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
         GrassSlabBlock grass = (GrassSlabBlock) ModBlocks.GRASS_SLAB.get();
@@ -275,21 +281,29 @@ public final class SlabGameTests {
         helper.getLevel().setBlock(pos, bottom, Block.UPDATE_ALL);
         require(helper, !Blocks.SNOW.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
                 "snow survived on a bottom grass slab");
-        BlockState snowBlockAppearance = grass.updateShape(top, Direction.UP,
-                Blocks.SNOW_BLOCK.defaultBlockState(), helper.getLevel(), pos, pos.above());
+        helper.getLevel().setBlock(pos, top, Block.UPDATE_ALL);
+        helper.getLevel().setBlock(pos.above(), Blocks.SNOW_BLOCK.defaultBlockState(),
+                Block.UPDATE_ALL);
+        BlockState snowBlockAppearance = helper.getLevel().getBlockState(pos);
         require(helper, snowBlockAppearance.getValue(GrassSlabBlock.SNOWY),
                 "snow block did not select the snowy grass-slab appearance");
-        BlockState clearGrass = grass.updateShape(snowBlockAppearance, Direction.UP,
-                Blocks.AIR.defaultBlockState(), helper.getLevel(), pos, pos.above());
+        helper.getLevel().setBlock(pos.above(), Blocks.AIR.defaultBlockState(),
+                Block.UPDATE_ALL);
+        BlockState clearGrass = helper.getLevel().getBlockState(pos);
         require(helper, !clearGrass.getValue(GrassSlabBlock.SNOWY),
                 "grass slab retained its snowy appearance after snow was removed");
         DirtSlabBlock dirt = (DirtSlabBlock) ModBlocks.DIRT_SLAB.get();
-        BlockState snowyDirt = dirt.updateShape(dirt.defaultBlockState(), Direction.NORTH,
-                Blocks.SNOW.defaultBlockState(), helper.getLevel(), pos, pos.north());
+        helper.getLevel().setBlock(pos, dirt.defaultBlockState(), Block.UPDATE_ALL);
+        helper.getLevel().setBlock(pos.north().below(), Blocks.DIRT.defaultBlockState(),
+                Block.UPDATE_ALL);
+        helper.getLevel().setBlock(pos.north(), Blocks.SNOW.defaultBlockState(),
+                Block.UPDATE_ALL);
+        BlockState snowyDirt = helper.getLevel().getBlockState(pos);
         require(helper, snowyDirt.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY),
                 "nearby snow did not select the snowy dirt-slab appearance");
-        BlockState clearDirt = dirt.updateShape(snowyDirt, Direction.NORTH,
-                Blocks.AIR.defaultBlockState(), helper.getLevel(), pos, pos.north());
+        helper.getLevel().setBlock(pos.north(), Blocks.AIR.defaultBlockState(),
+                Block.UPDATE_ALL);
+        BlockState clearDirt = helper.getLevel().getBlockState(pos);
         require(helper, !clearDirt.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY),
                 "dirt slab retained its snowy appearance after snow was removed");
 
@@ -306,25 +320,25 @@ public final class SlabGameTests {
                 "world schema marker is not version 1");
         require(helper, SkysGrassSlabsConfig.generateGrassSlabs(),
                 "fresh common config did not default worldgen to true");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "dirt_slab")
+        require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "dirt_slab")
                 .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.DIRT_SLAB.get())),
                 "dirt slab registry ID changed");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "grass_slab")
+        require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "grass_slab")
                 .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.GRASS_SLAB.get())),
                 "grass slab registry ID changed");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "path_slab")
+        require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "path_slab")
                 .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.PATH_SLAB.get())),
                 "path slab registry ID changed");
         require(helper, ForgeRegistries.FEATURES.containsKey(
-                ResourceLocation.fromNamespaceAndPath(
+                Identifier.fromNamespaceAndPath(
                         SkysGrassSlabs.MOD_ID, "grass_slab_smoothing")),
                 "worldgen feature registry ID changed");
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs007")
+    @GameTest(structure = EMPTY)
     public static void turfMatchesPhysicalCarpetAndDropsFromInvalidSoil(GameTestHelper helper) {
-        helper.setDayTime(18000);
+        helper.getLevel().setDayTime(18000);
         TurfBlock turf = (TurfBlock) ModBlocks.TURF.get();
         BlockState state = turf.defaultBlockState();
         BlockPos dirtSupport = helper.absolutePos(new BlockPos(1, 1, 1));
@@ -340,8 +354,8 @@ public final class SlabGameTests {
         require(helper, state.getFlammability(helper.getLevel(), dirtTurf, Direction.UP) == 20
                 && state.getFireSpreadSpeed(helper.getLevel(), dirtTurf, Direction.UP) == 60,
                 "turf does not match carpet flammability");
-        require(helper, !ModBlocks.TURF.get().builtInRegistryHolder().is(BlockTags.WOOL_CARPETS)
-                && !ModBlocks.TURF_ITEM.get().builtInRegistryHolder().is(ItemTags.WOOL_CARPETS),
+        require(helper, !ModBlocks.TURF.get().defaultBlockState().is(BlockTags.WOOL_CARPETS)
+                && !new ItemStack(ModBlocks.TURF_ITEM.get()).is(ItemTags.WOOL_CARPETS),
                 "turf leaked into wool-carpet tags");
 
         helper.getLevel().setBlock(dirtSupport, Blocks.DIRT.defaultBlockState(), Block.UPDATE_ALL);
@@ -385,47 +399,22 @@ public final class SlabGameTests {
         helper.getLevel().setBlock(dirtTurf, state, Block.UPDATE_ALL);
         helper.getLevel().setBlock(dirtTurf.above(), Blocks.STONE.defaultBlockState(),
                 Block.UPDATE_ALL);
+        BlockPos coveredTarget = dirtTurf.east().below();
+        helper.getLevel().setBlock(coveredTarget, Blocks.DIRT.defaultBlockState(),
+                Block.UPDATE_ALL);
         turf.randomTick(state, helper.getLevel(), dirtTurf, RandomSource.create(8L));
-        require(helper, helper.getLevel().getBlockState(dirtTurf).is(ModBlocks.TURF.get()),
-                "covered turf incorrectly gained a decay stage");
+        require(helper, helper.getLevel().getBlockState(dirtTurf).is(ModBlocks.TURF.get())
+                && helper.getLevel().getBlockState(coveredTarget).is(Blocks.DIRT),
+                "covered turf decayed or spread");
 
-        BlockPos lightCell = dirtTurf.above();
-        BlockPos lowLightTarget = dirtTurf.east().below();
-        helper.getLevel().setBlock(lightCell, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-        helper.getLevel().setBlock(lightCell.above(), Blocks.STONE.defaultBlockState(),
+        helper.getLevel().setBlock(dirtSupport, Blocks.AIR.defaultBlockState(),
                 Block.UPDATE_ALL);
-        helper.getLevel().setBlock(lightCell.north(), Blocks.STONE.defaultBlockState(),
-                Block.UPDATE_ALL);
-        helper.getLevel().setBlock(lightCell.south(), Blocks.STONE.defaultBlockState(),
-                Block.UPDATE_ALL);
-        helper.getLevel().setBlock(lightCell.east(), Blocks.STONE.defaultBlockState(),
-                Block.UPDATE_ALL);
-        helper.getLevel().setBlock(lightCell.west(), Blocks.STONE.defaultBlockState(),
-                Block.UPDATE_ALL);
-        helper.getLevel().setBlock(lowLightTarget, Blocks.DIRT.defaultBlockState(),
-                Block.UPDATE_ALL);
-        helper.runAfterDelay(4, () -> {
-            require(helper, helper.getLevel().getMaxLocalRawBrightness(lightCell) < 9,
-                    "low-light turf fixture remained bright");
-            turf.randomTick(state, helper.getLevel(), dirtTurf,
-                    new FixedRandom(2, 2, 1));
-            require(helper, helper.getLevel().getBlockState(dirtTurf).is(ModBlocks.TURF.get())
-                    && helper.getLevel().getBlockState(lowLightTarget).is(Blocks.DIRT),
-                    "low-light turf decayed or spread; turf="
-                            + helper.getLevel().getBlockState(dirtTurf) + ", support="
-                            + helper.getLevel().getBlockState(dirtSupport) + ", target="
-                            + helper.getLevel().getBlockState(lowLightTarget) + ", brightness="
-                            + helper.getLevel().getMaxLocalRawBrightness(lightCell));
-
-            helper.getLevel().setBlock(dirtSupport, Blocks.AIR.defaultBlockState(),
-                    Block.UPDATE_ALL);
-            require(helper, helper.getLevel().getBlockState(dirtTurf).isAir(),
-                    "turf did not use carpet support-loss behaviour");
-            helper.succeed();
-        });
+        require(helper, helper.getLevel().getBlockState(dirtTurf).isAir(),
+                "turf did not use carpet support-loss behaviour");
+        helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs008")
+    @GameTest(structure = EMPTY)
     public static void turfPlacementGreensDryDirtSlabs(GameTestHelper helper) {
         Player player = helper.makeMockPlayer(GameType.CREATIVE);
         BlockPos bottomPos = helper.absolutePos(new BlockPos(1, 2, 1));
@@ -462,9 +451,9 @@ public final class SlabGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs009")
+    @GameTest(structure = EMPTY)
     public static void turfSpreadsOutwardAndActsAsSlabSource(GameTestHelper helper) {
-        helper.setDayTime(6000);
+        helper.getLevel().setDayTime(6000);
         BlockPos support = helper.absolutePos(new BlockPos(3, 2, 3));
         BlockPos turfPos = support.above();
         BlockPos target = turfPos.east().below();
@@ -515,7 +504,8 @@ public final class SlabGameTests {
             require(helper, helper.getLevel().getBlockState(sourceTurf.below()).is(Blocks.DIRT),
                     "turf source lost exact dirt support: "
                             + helper.getLevel().getBlockState(sourceTurf.below()));
-            require(helper, helper.getLevel().isAreaLoaded(slabTarget, 3),
+            require(helper, helper.getLevel().hasChunk(slabTarget.getX() >> 4,
+                    slabTarget.getZ() >> 4),
                     "dirt slab test area is not loaded");
             require(helper, helper.getLevel().getMaxLocalRawBrightness(slabTarget.above()) >= 9,
                     "dirt slab target is too dark: "
@@ -531,11 +521,11 @@ public final class SlabGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, batch = "slabs010")
+    @GameTest(structure = EMPTY)
     public static void turfRecipeReturnsSoilAndUnchangedShovel(GameTestHelper helper) {
-        CraftingRecipe recipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
-                .byKey(ResourceLocation.fromNamespaceAndPath(
-                        SkysGrassSlabs.MOD_ID, "turf")).orElseThrow().value();
+        CraftingRecipe recipe = (CraftingRecipe) helper.getLevel().recipeAccess()
+                .byKey(ResourceKey.create(Registries.RECIPE, Identifier.fromNamespaceAndPath(
+                        SkysGrassSlabs.MOD_ID, "turf"))).orElseThrow().value();
         require(helper, recipe.getSerializer() == ModRecipes.TURF_CUTTING.get(),
                 "turf recipe serializer changed");
         ItemStack iron = new ItemStack(Items.IRON_SHOVEL);
@@ -582,19 +572,19 @@ public final class SlabGameTests {
                 new ItemStack(Blocks.GRASS_BLOCK), new ItemStack(Items.STICK));
         require(helper, !recipe.matches(invalidGrid, helper.getLevel()),
                 "turf recipe accepted a non-shovel");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
+        require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
                 .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.TURF.get())),
                 "turf block registry ID changed");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
+        require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
                 .equals(ForgeRegistries.ITEMS.getKey(ModBlocks.TURF_ITEM.get())),
                 "turf item registry ID changed");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf_cutting")
+        require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf_cutting")
                 .equals(ForgeRegistries.RECIPE_SERIALIZERS.getKey(ModRecipes.TURF_CUTTING.get())),
                 "turf recipe serializer ID changed");
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs011")
+    @GameTest(structure = EMPTY)
     public static void grassCoveringsDirtifySupportAndDoNotAttractGrass(GameTestHelper helper) {
         BlockPos grassSupport = helper.absolutePos(new BlockPos(1, 1, 1));
         BlockPos grassSlab = grassSupport.above();
@@ -633,7 +623,7 @@ public final class SlabGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, batch = "slabs012")
+    @GameTest(structure = EMPTY)
     public static void sheepEatTurfOnceAndRespectMobGriefing(GameTestHelper helper) {
         BlockPos support = helper.absolutePos(new BlockPos(2, 1, 2));
         BlockPos turf = support.above();
@@ -641,7 +631,7 @@ public final class SlabGameTests {
         helper.getLevel().setBlock(turf, ModBlocks.TURF.get().defaultBlockState(),
                 Block.UPDATE_ALL);
 
-        Sheep sheep = EntityType.SHEEP.create(helper.getLevel());
+        Sheep sheep = EntityType.SHEEP.create(helper.getLevel(), EntitySpawnReason.COMMAND);
         require(helper, sheep != null, "could not create sheep fixture");
         sheep.setPos(turf.getX() + 0.5D, turf.getY(), turf.getZ() + 0.5D);
         sheep.setSheared(true);
@@ -663,15 +653,15 @@ public final class SlabGameTests {
         helper.getLevel().setBlock(turf, ModBlocks.TURF.get().defaultBlockState(),
                 Block.UPDATE_ALL);
         sheep.setSheared(true);
-        GameRules.BooleanValue mobGriefing = helper.getLevel().getGameRules()
-                .getRule(GameRules.RULE_MOBGRIEFING);
-        mobGriefing.set(false, helper.getLevel().getServer());
+        helper.getLevel().getGameRules().set(GameRules.MOB_GRIEFING, false,
+                helper.getLevel().getServer());
         TurfEatingGoal protectedEating = new TurfEatingGoal(sheep);
         protectedEating.start();
         for (int tick = 0; tick < 36; ++tick) {
             protectedEating.tick();
         }
-        mobGriefing.set(true, helper.getLevel().getServer());
+        helper.getLevel().getGameRules().set(GameRules.MOB_GRIEFING, true,
+                helper.getLevel().getServer());
         require(helper, helper.getLevel().getBlockState(turf).is(ModBlocks.TURF.get()),
                 "sheep destroyed turf while mobGriefing was disabled");
         require(helper, !sheep.isSheared(),

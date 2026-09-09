@@ -7,7 +7,7 @@ import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import net.minecraftforge.common.world.BiomeGenerationSettingsBuilder;
+import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraftforge.common.world.BiomeModifier;
 import net.minecraftforge.common.world.ModifiableBiomeInfo.BiomeInfo;
 
@@ -26,7 +26,7 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
                 || biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END)) {
             return;
         }
-        BiomeGenerationSettingsBuilder generation = builder.getGenerationSettings();
+        BiomeGenerationSettings.PlainBuilder generation = builder.getGenerationSettings();
         List<Holder<PlacedFeature>> features = generation.getFeatures(
                 GenerationStep.Decoration.VEGETAL_DECORATION);
         if (features.stream().noneMatch(existing -> existing.value() == smoothing.value())) {

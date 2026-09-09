@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/sheep_eat_turf_once_and_respect_mob_griefing",
+  "max_ticks": 100,
+  "structure": "forge:empty8x4x8"
+}

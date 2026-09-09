@@ -65,6 +65,6 @@ public final class NormalizingSlabItem extends BlockItem {
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 }

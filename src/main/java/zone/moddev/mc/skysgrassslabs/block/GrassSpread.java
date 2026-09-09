@@ -3,6 +3,7 @@ package zone.moddev.mc.skysgrassslabs.block;
 import net.minecraft.util.RandomSource;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.Blocks;
@@ -19,20 +20,20 @@ public final class GrassSpread {
     public static boolean canRemainGrass(ServerLevel level, BlockPos pos) {
         BlockPos above = pos.above();
         return level.getMaxLocalRawBrightness(above) >= 4
-                || level.getBlockState(above).getLightBlock(level, above) < level.getMaxLightLevel();
+                || level.getBlockState(above).getLightBlock() < 15;
     }
 
     public static boolean hasSpreadLight(ServerLevel level, BlockPos pos) {
         BlockPos above = pos.above();
         BlockState cover = level.getBlockState(above);
         return level.getMaxLocalRawBrightness(above) >= 9
-                && cover.getLightBlock(level, above) < level.getMaxLightLevel()
+                && cover.getLightBlock() < 15
                 && !level.getFluidState(above).is(FluidTags.WATER);
     }
 
     public static void spreadFrom(ServerLevel level, BlockPos source, RandomSource random,
             @Nullable BlockPos excludedTarget) {
-        if (!level.isAreaLoaded(source, 3) || !hasSpreadLight(level, source)) {
+        if (!hasLoadedArea(level, source, 3) || !hasSpreadLight(level, source)) {
             return;
         }
         for (int attempt = 0; attempt < SPREAD_ATTEMPTS; ++attempt) {
@@ -48,7 +49,7 @@ public final class GrassSpread {
 
     public static void tickDirtSlab(ServerLevel level, BlockPos target, BlockState state,
             RandomSource random) {
-        if (!level.isAreaLoaded(target, 3) || !targetIsViable(level, target)) {
+        if (!hasLoadedArea(level, target, 3) || !targetIsViable(level, target)) {
             return;
         }
         for (int attempt = 0; attempt < SPREAD_ATTEMPTS; ++attempt) {
@@ -112,7 +113,7 @@ public final class GrassSpread {
             return false;
         }
         return level.getMaxLocalRawBrightness(above) >= 4
-                && cover.getLightBlock(level, above) < level.getMaxLightLevel()
+                && cover.getLightBlock() < 15
                 && !level.getFluidState(above).is(FluidTags.WATER);
     }
 
@@ -124,7 +125,22 @@ public final class GrassSpread {
     }
 
     private static boolean withinBuildHeight(ServerLevel level, BlockPos pos) {
-        return pos.getY() >= level.getMinBuildHeight() && pos.getY() < level.getMaxBuildHeight();
+        return pos.getY() >= level.getMinY() && pos.getY() <= level.getMaxY();
+    }
+
+    private static boolean hasLoadedArea(ServerLevel level, BlockPos center, int range) {
+        int minX = SectionPos.blockToSectionCoord(center.getX() - range);
+        int maxX = SectionPos.blockToSectionCoord(center.getX() + range);
+        int minZ = SectionPos.blockToSectionCoord(center.getZ() - range);
+        int maxZ = SectionPos.blockToSectionCoord(center.getZ() + range);
+        for (int chunkX = minX; chunkX <= maxX; ++chunkX) {
+            for (int chunkZ = minZ; chunkZ <= maxZ; ++chunkZ) {
+                if (!level.hasChunk(chunkX, chunkZ)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private GrassSpread() {
