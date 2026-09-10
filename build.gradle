@@ -87,6 +87,16 @@ java {
     withJavadocJar()
 }
 
+// ForgeGradle declares Slime Launcher as Java 8-compatible, but Forge 64 and
+// this project run entirely on Java 25. Bind the launcher explicitly so a
+// clean setup does not depend on an unrelated legacy JDK.
+fgtools.configure('slimelauncher') {
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(25)
+        vendor = JvmVendorSpec.ADOPTIUM
+    })
+}
+
 tasks.withType(JavaCompile).configureEach {
     javaCompiler = javaToolchains.compilerFor {
         languageVersion = JavaLanguageVersion.of(25)

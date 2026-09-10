@@ -26,6 +26,7 @@ public class ProjectContractTest {
         String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
         assertTrue(build.contains("verifyJava25Toolchain"));
         assertTrue(build.contains("runtimeVersion == '25.0.3+9'"));
+        assertTrue(build.contains("fgtools.configure('slimelauncher')"));
         assertFalse(metadata.contains("modId=\"orespawn\""));
     }
 
