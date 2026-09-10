@@ -6,7 +6,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraftforge.gametest.GameTest;
@@ -36,7 +36,7 @@ public final class GrassSlabsMigrationGameTests {
         require(helper, convertedGrass.is(ModBlocks.GRASS_SLAB.get())
                         && convertedGrass.getValue(SlabBlock.TYPE) == SlabType.TOP
                         && convertedGrass.getValue(SlabBlock.WATERLOGGED)
-                        && !convertedGrass.getValue(SnowyDirtBlock.SNOWY),
+                        && !convertedGrass.getValue(SnowyBlock.SNOWY),
                 "grass slab state was not preserved");
 
         BlockState dirt = GrassSlabsCompat.dirtSlab().defaultBlockState()

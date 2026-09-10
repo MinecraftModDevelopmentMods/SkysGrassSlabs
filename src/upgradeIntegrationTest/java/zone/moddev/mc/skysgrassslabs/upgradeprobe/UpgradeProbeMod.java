@@ -20,9 +20,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
@@ -53,6 +54,8 @@ public final class UpgradeProbeMod {
 
     private static void serverStarted(ServerStartedEvent event) {
         pendingServer = event.getServer();
+        pendingServer.overworld().getGameRules().set(
+                GameRules.RANDOM_TICK_SPEED, 0, pendingServer);
         Path root = pendingServer.getWorldPath(LevelResource.ROOT);
         requiredWarmupTicks = Files.exists(
                 root.resolve("grassslabs-migration-fixture.properties")) ? 100 : 20;
@@ -353,8 +356,8 @@ public final class UpgradeProbeMod {
                 "Wrong slab orientation at " + pos + ": " + state);
         require(state.getValue(SlabBlock.WATERLOGGED) == waterlogged,
                 "Wrong water state at " + pos + ": " + state);
-        if (state.hasProperty(SnowyDirtBlock.SNOWY)) {
-            require(state.getValue(SnowyDirtBlock.SNOWY) == snowy,
+        if (state.hasProperty(SnowyBlock.SNOWY)) {
+            require(state.getValue(SnowyBlock.SNOWY) == snowy,
                     "Wrong snowy state at " + pos + ": " + state);
         }
     }

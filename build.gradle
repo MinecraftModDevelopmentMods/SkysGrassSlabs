@@ -37,15 +37,15 @@ def mavenizerLicense = mavenizerToolsDirectory.file('LICENSE-MAVENIZER.txt')
 def mavenizerReadme = mavenizerToolsDirectory.file('README.md')
 def mavenizerFixtureChecksums = [
         (mavenizerCompatibilityJar.asFile):
-                'B36CA046DB72E30F27BD38E02B4AE34274ADB51AE1D65BAF9E1D07763755682E',
+                'BB0DACB3DEB2A711CA67DD402D5FDAB5A9847C37C7B9B596DEC7CF37378FA085',
         (mavenizerRuleManifest.asFile):
-                '88F2EE4C6B7C903EB1C7D693C0BEEFC0EFC601C1023FB197F7CBA187B1142DB7',
+                '21D1F5984E735BCEA1B1EFB9F965655796B39538FC91AAED1C3474004710423D',
         (mavenizerSourcePatch.asFile):
-                '88F9035C8545CF1CBC7342C14F2F95076C4E415EDB7A74D585409CFC3F1BDD5C',
+                '7C8EC895E79DF31AFD2CA3B505B43573C7052718A24050832189AAA2D3CC6137',
         (mavenizerLicense.asFile):
                 '20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331',
         (mavenizerReadme.asFile):
-                'A097E126C606BDC86B34F5DDFB9580228A7C5BC866C6509C6BB362152EBACED7'
+                '7686880D2B0F6BD6ACAFA4F0AB7585189767813174BC36DB675FEC0142440A77'
 ]
 
 // ForgeGradle invokes Mavenizer while configuring the project. Verify the
@@ -80,7 +80,7 @@ base {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
         vendor = JvmVendorSpec.ADOPTIUM
     }
     withSourcesJar()
@@ -89,11 +89,11 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
         vendor = JvmVendorSpec.ADOPTIUM
     }
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
     options.encoding = 'UTF-8'
     options.compilerArgs.addAll(['-Xlint:deprecation', '-Xmaxerrs', '1000'])
 }
@@ -105,20 +105,20 @@ tasks.withType(Javadoc).configureEach {
     options.addBooleanOption('notimestamp', true)
 }
 
-def java21Launcher = javaToolchains.launcherFor {
-    languageVersion = JavaLanguageVersion.of(21)
+def java25Launcher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(25)
     vendor = JvmVendorSpec.ADOPTIUM
 }
 
-tasks.register('verifyJava21Toolchain') {
+tasks.register('verifyJava25Toolchain') {
     group = 'verification'
-    description = 'Verifies the pinned Temurin Java 21 production toolchain.'
+    description = 'Verifies the pinned Temurin Java 25 production toolchain.'
     doLast {
-        def metadata = java21Launcher.get().metadata
+        def metadata = java25Launcher.get().metadata
         String runtimeVersion = metadata.javaRuntimeVersion
-        if (project.java_toolchain_version != '21.0.7+6'
+        if (project.java_toolchain_version != '25.0.3+9'
                 || metadata.vendor.toString() != 'Eclipse Temurin'
-                || !(runtimeVersion == '21.0.7+6' || runtimeVersion == '21.0.7+6-LTS')) {
+                || !(runtimeVersion == '25.0.3+9' || runtimeVersion == '25.0.3+9-LTS')) {
             throw new GradleException("Expected Temurin ${project.java_toolchain_version}, found " +
                     "${metadata.vendor} ${runtimeVersion} at ${metadata.installationPath}")
         }
@@ -126,7 +126,7 @@ tasks.register('verifyJava21Toolchain') {
 }
 
 tasks.named('check') {
-    dependsOn tasks.named('verifyJava21Toolchain')
+    dependsOn tasks.named('verifyJava25Toolchain')
 }
 
 sourceSets {
@@ -225,8 +225,8 @@ tasks.register('compileUpgradeIntegrationTestMod', JavaCompile) {
     source fileTree('src/upgradeIntegrationTest/java')
     classpath = files(sourceSets.main.output, sourceSets.main.compileClasspath)
     destinationDirectory = upgradeIntegrationClasses
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
     options.encoding = 'UTF-8'
 }
 tasks.register('upgradeIntegrationTestModJar', Jar) {
@@ -254,7 +254,7 @@ def processedMainResourcesPath = {
     project.relativePath(processedMainResourcesDirectory()).replace('\\', '/')
 }
 
-// ForgeGradle 7 models Forge 61 source sets as merged output directories.
+// ForgeGradle 7 models Forge 64 source sets as merged output directories.
 // Compile through staging so Gradle and Eclipse never write classes and
 // processed resources to the same location at the same time.
 def compiledMainClasses = layout.buildDirectory.dir('compiled-classes/main')
@@ -359,7 +359,7 @@ dependencies {
 
 def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompatibilityFixture') {
     group = 'verification'
-    description = 'Verifies the checksum-sealed Forge 1.21.11 Mavenizer compatibility fixture.'
+    description = 'Verifies the checksum-sealed Forge 26.1.2 Mavenizer compatibility fixture.'
     inputs.files mavenizerFixtureChecksums.keySet()
     doLast {
         mavenizerFixtureChecksums.each { File fixture, String expected ->
@@ -374,13 +374,13 @@ def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompati
         }
 
         def parsed = new JsonSlurper().parse(mavenizerRuleManifest.asFile)
-        String target = 'net.minecraftforge:forge:1.21.11-61.1.0'
+        String target = 'net.minecraftforge:forge:26.1.2-64.0.9'
         if (parsed.schema != 1 || parsed.targets.keySet() != [target] as Set) {
             throw new GradleException('Mavenizer target-rule manifest has unexpected targets or schema')
         }
         def forgeRules = parsed.targets[target]
         if (forgeRules.expectedApplications != 0 || !forgeRules.rules.isEmpty()) {
-            throw new GradleException('Forge 61 Mavenizer target must be an explicit zero-rule qualification')
+            throw new GradleException('Forge 64 Mavenizer target must be an explicit zero-rule qualification')
         }
 
         ZipFile fixtureJar = new ZipFile(mavenizerCompatibilityJar.asFile)
@@ -429,7 +429,7 @@ def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompati
         String licenseText = mavenizerLicense.asFile.getText('UTF-8')
         if (!readme.contains('6968241ce7a0a902cdc1c534b976e8373a423091')
                 || !readme.contains('Temurin `25.0.3+9`')
-                || !readme.contains('1.21.11-61.1.0')) {
+                || !readme.contains('26.1.2-64.0.9')) {
             throw new GradleException('Mavenizer provenance, target, or Java 25 build instructions are incomplete')
         }
         if (!patchText.contains('SourceCompatibilityPatcher.java')
@@ -478,7 +478,7 @@ tasks.named('jar', Jar).configure {
                 'Implementation-Title'    : project.name,
                 'Implementation-Version'  : project.jar.archiveVersion,
                 'Implementation-Vendor'   : mod_authors,
-                'Built-On-Java'           : '21',
+                'Built-On-Java'           : '25',
                 'Built-On'                : "${minecraft_version}-${forge_version}",
                 'MixinConfigs'            : 'skysgrassslabs.mixins.json'
         ])
@@ -510,12 +510,12 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.21.11' || project.forge_version != '61.1.0' ||
-                project.mapping_channel != 'official' || project.mapping_version != '1.21.11' ||
+        if (project.minecraft_version != '26.1.2' || project.forge_version != '64.0.9' ||
+                project.mapping_channel != 'official' || project.mapping_version != '26.1.2' ||
                 project.loader_name != 'forge' || project.loader_code != '1' ||
-                project.java_version != '21' || project.java_toolchain_version != '21.0.7+6' ||
-                project.gradle_java_version != '21' || project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 1.21.11 release metadata')
+                project.java_version != '25' || project.java_toolchain_version != '25.0.3+9' ||
+                project.gradle_java_version != '25' || project.curseforge_project_id != '1677588') {
+            throw new GradleException('Unexpected 26.1.2 release metadata')
         }
     }
 }
@@ -554,7 +554,7 @@ tasks.register('verifyReleaseArtifacts') {
              'assets/grassslabs/blockstates/dirt_path_slab.json',
              'assets/grassslabs/blockstates/grass_carpet.json',
              'data/grassslabs/loot_table/blocks/grass_carpet.json',
-             'data/forge/tags/item/seeds.json',
+             'data/c/tags/item/seeds.json',
              'data/skysgrassslabs/forge/biome_modifier/grass_slab_smoothing.json',
              'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class',
              'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsCompat.class',
@@ -585,16 +585,16 @@ tasks.register('verifyReleaseArtifacts') {
                     }
                 }
                 int major = ((header[6] & 0xff) << 8) | (header[7] & 0xff)
-                if (major != 65) {
+                if (major != 69) {
                     throw new GradleException(
-                            "${entry.name} uses class major ${major}, expected 65")
+                            "${entry.name} uses class major ${major}, expected 69")
                 }
             }
 
             String metadata = zip.getInputStream(zip.getEntry('META-INF/mods.toml'))
                     .getText(StandardCharsets.UTF_8.name())
-            if (!metadata.contains('versionRange="[1.21.11,1.22)"') ||
-                    !metadata.contains('versionRange="[61,)"')) {
+            if (!metadata.contains('versionRange="[26.1.2,26.2,)"') ||
+                    !metadata.contains('versionRange="[64,)"')) {
                 throw new GradleException('Packaged Forge metadata targets the wrong version')
             }
 
@@ -811,9 +811,9 @@ eclipse {
     synchronizationTasks 'isolateEclipseProductionRuns'
 }
 
-def syncForge61EclipseLaunches = tasks.register('syncForge61EclipseLaunches') {
+def syncForge64EclipseLaunches = tasks.register('syncForge64EclipseLaunches') {
     group = 'ide'
-    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 61.'
+    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 64.'
     doLast {
         String mainOutput = new File(projectDir, 'bin/main').absolutePath
         String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
@@ -883,14 +883,14 @@ def syncForge61EclipseLaunches = tasks.register('syncForge61EclipseLaunches') {
 }
 
 tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
-    finalizedBy syncForge61EclipseLaunches
+    finalizedBy syncForge64EclipseLaunches
 }
 
 def isolateEclipseProductionRuns = tasks.register('isolateEclipseProductionRuns') {
     group = 'ide'
     description = 'Prepares the complete ForgeGradle 7 Eclipse project configuration.'
     dependsOn tasks.named('genEclipseRuns')
-    dependsOn syncForge61EclipseLaunches
+    dependsOn syncForge64EclipseLaunches
     dependsOn configureEclipseBuildship
     dependsOn prepareEclipseResources
 }

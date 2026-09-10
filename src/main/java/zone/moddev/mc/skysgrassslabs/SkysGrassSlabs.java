@@ -4,8 +4,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
@@ -16,7 +14,6 @@ import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsMigrationHandler;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyMigrationHandler;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 import zone.moddev.mc.skysgrassslabs.compat.MissingMappingHandler;
-import zone.moddev.mc.skysgrassslabs.client.ClientEvents;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.event.CommonEvents;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
@@ -30,11 +27,10 @@ public final class SkysGrassSlabs {
     /** Stable Forge mod identifier and resource namespace. */
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.1.0.121111";
+    public static final String VERSION = "1.1.0.2601021";
     public static final Logger LOGGER = LogManager.getLogger();
 
     /** Registers content, configuration, world generation, and persistent state. */
-    @SuppressWarnings("removal") // DistExecutor prevents client classes loading on dedicated servers.
     public SkysGrassSlabs(FMLJavaModLoadingContext context) {
         BusGroup modBusGroup = context.getModBusGroup();
 
@@ -50,8 +46,6 @@ public final class SkysGrassSlabs {
         GrassSlabsMigrationHandler.register();
         CommonEvents.register();
         registerGameTests(modBusGroup);
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientEvents::register);
-
         ServerStartedEvent.BUS.addListener(this::onServerStarted);
         MissingMappingHandler.register();
     }

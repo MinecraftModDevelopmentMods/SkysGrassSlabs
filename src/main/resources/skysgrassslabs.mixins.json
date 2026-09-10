@@ -6,6 +6,7 @@
   "mixins": [
     "BlockStateDataAccessor",
     "BlockStateDataMixin",
+    "FileFixerUpperMixin",
     "ForgeHooksMixin",
     "SimpleRegionStorageMixin"
   ],

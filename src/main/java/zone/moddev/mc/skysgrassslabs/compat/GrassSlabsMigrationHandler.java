@@ -21,7 +21,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
@@ -205,8 +205,8 @@ public final class GrassSlabsMigrationHandler {
         boolean waterlogged = source.hasProperty(SlabBlock.WATERLOGGED)
                 && source.getValue(SlabBlock.WATERLOGGED);
         replacement = replacement.setValue(SlabBlock.WATERLOGGED, waterlogged);
-        if (replacement.hasProperty(SnowyDirtBlock.SNOWY)) {
-            replacement = replacement.setValue(SnowyDirtBlock.SNOWY, false);
+        if (replacement.hasProperty(SnowyBlock.SNOWY)) {
+            replacement = replacement.setValue(SnowyBlock.SNOWY, false);
         }
         return replacement;
     }

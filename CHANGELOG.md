@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0.2601021 - Minecraft 26.1.2
+
+- Ported the complete feature set to Minecraft 26.1.2 and Forge 64.
+- Preserved all blocks, items, recipes, settings and supported world upgrades.
+- Updated crafting, saved data, resources and terrain smoothing for the target
+  game and Forge APIs.
+- Moved the persistent world state to Minecraft's namespaced data directory
+  while preserving existing state files on upgrade.
+
 ## 1.1.0.121111 - Minecraft 1.21.11
 
 - Ported the complete feature set to Minecraft 1.21.11 and Forge 61.

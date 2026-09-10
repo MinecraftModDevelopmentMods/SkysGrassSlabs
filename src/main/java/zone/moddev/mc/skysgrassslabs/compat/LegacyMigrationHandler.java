@@ -19,7 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -271,7 +271,7 @@ public final class LegacyMigrationHandler {
             replacement = replacement.setValue(SlabBlock.TYPE, source.getValue(SlabBlock.TYPE));
         }
         replacement = replacement.setValue(SlabBlock.WATERLOGGED, false);
-        return replacement.setValue(SnowyDirtBlock.SNOWY, false);
+        return replacement.setValue(SnowyBlock.SNOWY, false);
     }
 
     private static boolean migrateChunkInventories(LevelChunk chunk, ModWorldState state) {

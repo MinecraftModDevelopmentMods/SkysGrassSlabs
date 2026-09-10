@@ -3,14 +3,16 @@ package zone.moddev.mc.skysgrassslabs.block;
 import net.minecraft.util.RandomSource;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.level.lighting.LightEngine;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Shared vanilla-shaped grass propagation for slabs and turf. */
@@ -19,15 +21,18 @@ public final class GrassSpread {
 
     public static boolean canRemainGrass(ServerLevel level, BlockPos pos) {
         BlockPos above = pos.above();
+        BlockState cover = level.getBlockState(above);
         return level.getMaxLocalRawBrightness(above) >= 4
-                || level.getBlockState(above).getLightBlock() < 15;
+                || LightEngine.getLightBlockInto(lightSourceState(level.getBlockState(pos)), cover,
+                        Direction.UP, cover.getLightDampening()) < 15;
     }
 
     public static boolean hasSpreadLight(ServerLevel level, BlockPos pos) {
         BlockPos above = pos.above();
         BlockState cover = level.getBlockState(above);
         return level.getMaxLocalRawBrightness(above) >= 9
-                && cover.getLightBlock() < 15
+                && LightEngine.getLightBlockInto(lightSourceState(level.getBlockState(pos)), cover,
+                        Direction.UP, cover.getLightDampening()) < 15
                 && !level.getFluidState(above).is(FluidTags.WATER);
     }
 
@@ -113,13 +118,21 @@ public final class GrassSpread {
             return false;
         }
         return level.getMaxLocalRawBrightness(above) >= 4
-                && cover.getLightBlock() < 15
+                && LightEngine.getLightBlockInto(lightSourceState(state), cover,
+                        Direction.UP, cover.getLightDampening()) < 15
                 && !level.getFluidState(above).is(FluidTags.WATER);
     }
 
+    private static BlockState lightSourceState(BlockState state) {
+        return state.is(ModBlocks.DIRT_SLAB.get())
+                || state.is(ModBlocks.GRASS_SLAB.get())
+                || state.is(ModBlocks.TURF.get())
+                ? Blocks.AIR.defaultBlockState() : state;
+    }
+
     private static BlockState snowyState(ServerLevel level, BlockPos pos, BlockState state) {
-        return state.hasProperty(SnowyDirtBlock.SNOWY)
-                ? state.setValue(SnowyDirtBlock.SNOWY,
+        return state.hasProperty(SnowyBlock.SNOWY)
+                ? state.setValue(SnowyBlock.SNOWY,
                         SnowySlabAppearance.hasNearbySnow(level, pos))
                 : state;
     }

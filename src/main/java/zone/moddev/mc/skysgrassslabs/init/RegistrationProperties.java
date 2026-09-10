@@ -7,7 +7,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 
-/** Assigns stable registry identities before Forge 61 constructs content. */
+/** Assigns stable registry identities before Forge constructs content. */
 public final class RegistrationProperties {
     public static BlockBehaviour.Properties block(BlockBehaviour.Properties properties,
             String path) {

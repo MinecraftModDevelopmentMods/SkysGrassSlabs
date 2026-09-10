@@ -39,7 +39,7 @@ final class SoilLifecycle {
                 || state.is(ModBlocks.TURF.get())
                 ? Blocks.AIR.defaultBlockState() : state;
         int blocked = LightEngine.getLightBlockInto(lightState, cover,
-                Direction.UP, cover.getLightBlock());
+                Direction.UP, cover.getLightDampening());
 
         return blocked < 15;
     }

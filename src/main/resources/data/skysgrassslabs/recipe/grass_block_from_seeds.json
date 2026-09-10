@@ -3,7 +3,7 @@
   "category": "building",
   "ingredients": [
     "minecraft:dirt",
-    "#forge:seeds"
+    "#c:seeds"
   ],
   "result": { "id": "minecraft:grass_block" }
 }

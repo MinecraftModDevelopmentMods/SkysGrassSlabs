@@ -42,7 +42,7 @@ public final class GrassSlabsCompat {
     }
 
     public static boolean isInstalled() {
-        return ModList.get().isLoaded(MOD_ID);
+        return ModList.isLoaded(MOD_ID);
     }
 
     public static boolean hasLegacyAliases() {

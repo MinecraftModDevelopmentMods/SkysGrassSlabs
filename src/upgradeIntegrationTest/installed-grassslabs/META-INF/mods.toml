@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[61,)"
+loaderVersion="[64,)"
 license="LGPL-2.1-only"
 
 [[mods]]
@@ -17,34 +17,34 @@ description='''Build-only saved-world compatibility verification.'''
 [[dependencies.skysgrassslabsupgradeprobe]]
 modId="forge"
 mandatory=true
-versionRange="[61.1.0,62)"
+versionRange="[64.0.9,65)"
 ordering="NONE"
 side="SERVER"
 
 [[dependencies.skysgrassslabsupgradeprobe]]
 modId="skysgrassslabs"
 mandatory=true
-versionRange="[1.1.0.121111]"
+versionRange="[1.1.0.2601021]"
 ordering="AFTER"
 side="SERVER"
 
 [[dependencies.skysgrassslabsupgradeprobe]]
 modId="minecraft"
 mandatory=true
-versionRange="[1.21.11,1.22)"
+versionRange="[26.1.2,26.2,)"
 ordering="NONE"
 side="SERVER"
 
 [[dependencies.grassslabs]]
 modId="forge"
 mandatory=true
-versionRange="[61.1.0,62)"
+versionRange="[64.0.9,65)"
 ordering="NONE"
 side="SERVER"
 
 [[dependencies.grassslabs]]
 modId="minecraft"
 mandatory=true
-versionRange="[1.21.11,1.22)"
+versionRange="[26.1.2,26.2,)"
 ordering="NONE"
 side="SERVER"
