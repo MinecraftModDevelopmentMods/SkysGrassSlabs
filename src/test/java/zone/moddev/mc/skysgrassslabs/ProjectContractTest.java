@@ -208,7 +208,8 @@ public class ProjectContractTest {
             String model = Files.readString(Path.of(
                     "src/main/resources/assets/skysgrassslabs/models/block/"
                             + modelName + ".json"), StandardCharsets.UTF_8);
-            assertTrue(modelName, model.contains("\"render_type\": \"cutout_mipped\""));
+            assertTrue(modelName, model.contains("\"render_type\": \"minecraft:cutout\""));
+            assertFalse(modelName, model.contains("cutout_mipped"));
         }
     }
 

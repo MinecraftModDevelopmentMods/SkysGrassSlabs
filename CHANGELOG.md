@@ -6,6 +6,7 @@
 - Preserved the existing blocks, items, recipes, configuration and world data.
 - Updated crafting, resources, world generation and legacy world recovery for
   the current game and Forge APIs.
+- Corrected grass slab sides to use Forge 61's supported cutout layer.
 
 ## 1.1.0.121011 - Minecraft 1.21.1
 

@@ -8,7 +8,8 @@ grass slab for a smoother slope.
 ## Highlights
 
 - Dirt, grass and dirt path slabs with top, bottom and waterlogged placement.
-- Biome coloured grass, snowy edges and correctly aligned dirt path sides.
+- Biome coloured grass with natural dirt sides, snowy edges and correctly
+  aligned dirt path sides.
 - Shovel flattening for dirt and grass slabs.
 - Turf cutting, dirt slab conversion and sheep interaction.
 - Grass spreading between full blocks, slabs and turf.
