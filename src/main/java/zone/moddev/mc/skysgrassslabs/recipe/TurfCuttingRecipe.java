@@ -16,7 +16,6 @@ import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.display.RecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
-import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.ToolActions;
@@ -88,8 +87,8 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     public List<RecipeDisplay> display() {
         return List.of(new ShapelessCraftingRecipeDisplay(
                 ingredients().stream().map(Ingredient::display).toList(),
-                new SlotDisplay.ItemSlotDisplay(ModBlocks.TURF_ITEM.get()),
-                new SlotDisplay.ItemSlotDisplay(Blocks.CRAFTING_TABLE.asItem())));
+                Ingredient.of(ModBlocks.TURF_ITEM.get()).display(),
+                Ingredient.of(Blocks.CRAFTING_TABLE).display()));
     }
 
     @Override

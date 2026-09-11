@@ -1,0 +1,8 @@
+fixture=skysgrassslabs-26.1.2-forward-world.zip
+fixture_sha256=0AFFA1D367F8582BD77F83830FA872D6C441B2DD1D6EB8D0AAA979D6CF760F6F
+fixture_bytes=93586
+fixture_entries=8
+source_minecraft=26.1.2
+source_mod_version=1.1.0.2601021
+source_jar_sha256=EE631FF66EF3AD11DF1F48D562C19762DB84AE2E603839CBA7A51044F99ACF5A
+generator=Accepted 1.21.11 fixture upgraded and saved twice with the accepted 26.1.2 jar

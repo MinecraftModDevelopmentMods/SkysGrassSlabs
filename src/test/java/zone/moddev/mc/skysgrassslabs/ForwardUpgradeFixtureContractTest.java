@@ -76,7 +76,11 @@ public class ForwardUpgradeFixtureContractTest {
             new Fixture("1.21.11", "1.1.0.121111",
                     "80DCECC12FEED2624B937139F029CA382B39EA92DAFBBF9EAE163388A50862AD",
                     "D3E6EE0D15D91AC0F6DD4FA6A1DD257F4CE8A8A63ABECC35F558520C40591EC7", 11,
-                    true)
+                    true),
+            new Fixture("26.1.2", "1.1.0.2601021",
+                    "0AFFA1D367F8582BD77F83830FA872D6C441B2DD1D6EB8D0AAA979D6CF760F6F",
+                    "EE631FF66EF3AD11DF1F48D562C19762DB84AE2E603839CBA7A51044F99ACF5A", 11,
+                    true, true)
     };
 
     @Test
@@ -105,9 +109,23 @@ public class ForwardUpgradeFixtureContractTest {
                 "region/r.0.0.mca",
                 "skysgrassslabs-forward-fixture.properties"));
         for (Fixture fixture : FIXTURES) {
-            Set<String> expected = new TreeSet<>(baseExpected);
-            if (fixture.separateEntityStorage) {
-                expected.add("entities/r.0.0.mca");
+            Set<String> expected;
+            if (fixture.namespacedOverworld) {
+                expected = new TreeSet<>(Arrays.asList(
+                        "data/minecraft/world_gen_settings.dat",
+                        "dimensions/minecraft/overworld/data/forge/capabilities.dat",
+                        "dimensions/minecraft/overworld/data/skysgrassslabs/"
+                                + "skysgrassslabs_world_state.dat",
+                        "dimensions/minecraft/overworld/entities/r.0.0.mca",
+                        "dimensions/minecraft/overworld/region/r.0.0.mca",
+                        "level.dat",
+                        "level.dat_old",
+                        "skysgrassslabs-forward-fixture.properties"));
+            } else {
+                expected = new TreeSet<>(baseExpected);
+                if (fixture.separateEntityStorage) {
+                    expected.add("entities/r.0.0.mca");
+                }
             }
             try (ZipFile zip = new ZipFile(fixture.archive)) {
                 Set<String> actual = new TreeSet<>();
@@ -177,17 +195,26 @@ public class ForwardUpgradeFixtureContractTest {
         private final String jarSha256;
         private final int expectedBlocks;
         private final boolean separateEntityStorage;
+        private final boolean namespacedOverworld;
         private final File archive;
         private final File manifest;
 
         private Fixture(String minecraftVersion, String modVersion, String fixtureSha256,
                 String jarSha256, int expectedBlocks, boolean separateEntityStorage) {
+            this(minecraftVersion, modVersion, fixtureSha256, jarSha256, expectedBlocks,
+                    separateEntityStorage, false);
+        }
+
+        private Fixture(String minecraftVersion, String modVersion, String fixtureSha256,
+                String jarSha256, int expectedBlocks, boolean separateEntityStorage,
+                boolean namespacedOverworld) {
             this.minecraftVersion = minecraftVersion;
             this.modVersion = modVersion;
             this.fixtureSha256 = fixtureSha256;
             this.jarSha256 = jarSha256;
             this.expectedBlocks = expectedBlocks;
             this.separateEntityStorage = separateEntityStorage;
+            this.namespacedOverworld = namespacedOverworld;
             String baseName = "skysgrassslabs-" + minecraftVersion + "-forward-world";
             archive = new File(FIXTURE_DIRECTORY + baseName + ".zip");
             manifest = new File(FIXTURE_DIRECTORY + baseName + ".manifest");

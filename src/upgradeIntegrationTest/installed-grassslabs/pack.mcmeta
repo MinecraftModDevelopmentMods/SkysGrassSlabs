@@ -2,6 +2,7 @@
   "pack": {
     "description": "Sky's Grass Slabs build-only installed-mod verification",
     "min_format": [101, 1],
-    "max_format": 101
+    "max_format": 107,
+    "min_format": [107, 1]
   }
 }

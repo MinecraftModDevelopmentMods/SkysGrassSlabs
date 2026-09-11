@@ -16,7 +16,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.item.ItemStack;
@@ -638,7 +638,7 @@ public final class SlabGameTests {
         helper.getLevel().setBlock(turf, ModBlocks.TURF.get().defaultBlockState(),
                 Block.UPDATE_ALL);
 
-        Sheep sheep = EntityType.SHEEP.create(helper.getLevel(), EntitySpawnReason.COMMAND);
+        Sheep sheep = EntityTypes.SHEEP.create(helper.getLevel(), EntitySpawnReason.COMMAND);
         require(helper, sheep != null, "could not create sheep fixture");
         sheep.setPos(turf.getX() + 0.5D, turf.getY(), turf.getZ() + 0.5D);
         sheep.setSheared(true);
