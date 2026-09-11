@@ -28,6 +28,19 @@ public class ProjectContractTest {
     }
 
     @Test
+    public void onlyTheGameTestServerEnablesTheGameTestNamespace() throws Exception {
+        String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
+        String setting = "systemProperty 'neoforge.enabledGameTestNamespaces', mod_id";
+
+        assertEquals(1, countOccurrences(build, setting));
+        int gameTestServer = build.indexOf("gameTestServer {");
+        int dataRun = build.indexOf("data {", gameTestServer);
+        assertTrue(gameTestServer >= 0);
+        assertTrue(dataRun > gameTestServer);
+        assertTrue(build.substring(gameTestServer, dataRun).contains(setting));
+    }
+
+    @Test
     public void playerAndMaintainerDocumentsExist() {
         assertTrue(Files.isRegularFile(Path.of("docs/CONFIGURATION.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
@@ -265,5 +278,15 @@ public class ProjectContractTest {
                 + "grassslabs-1.18.2-migration-world.zip")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
                 + "grassslabs-1.18.2-migration-world.manifest")));
+    }
+
+    private static int countOccurrences(String text, String needle) {
+        int count = 0;
+        int fromIndex = 0;
+        while ((fromIndex = text.indexOf(needle, fromIndex)) >= 0) {
+            count++;
+            fromIndex += needle.length();
+        }
+        return count;
     }
 }
