@@ -41,7 +41,7 @@ public final class ModBlocks {
                     BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH), "path_slab")));
     public static final DeferredHolder<Block, Block> TURF = BLOCKS.register("turf",
             () -> new TurfBlock(RegistrationProperties.block(
-                    BlockBehaviour.Properties.ofFullCopy(Blocks.GREEN_CARPET).randomTicks(), "turf")));
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.CARPET.green()).randomTicks(), "turf")));
 
     public static final DeferredHolder<Item, Item> DIRT_SLAB_ITEM = slabItem(
             "dirt_slab", DIRT_SLAB, Blocks.DIRT);

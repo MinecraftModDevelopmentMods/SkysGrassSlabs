@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1.2602002 - Minecraft 26.2 (NeoForge)
+
+- Added the NeoForge 26.2 build with the same blocks, recipes, world
+  smoothing and upgrade support as the accepted 26.1.2 build.
+- Updated grass light checks, carpet references and recipe-book displays for
+  Minecraft 26.2.
+- Retained translated names for all four items in 18 language variants.
+
 ## 1.1.1.2601022 - Minecraft 26.1.2 (NeoForge)
 
 - Added the NeoForge 26.1.2 build with the same blocks, recipes, world

@@ -3,10 +3,10 @@ name: CodeQL
 on:
   push:
     branches:
-      - master-26.1.2-neo
+      - master-26.2-neo
   pull_request:
     branches:
-      - master-26.1.2-neo
+      - master-26.2-neo
   schedule:
     - cron: '53 7 * * 4'
 
@@ -42,7 +42,8 @@ jobs:
       - name: Compile production code
         run: |
           chmod +x ./gradlew
-          ./gradlew clean classes --rerun-tasks --no-daemon --stacktrace \
+          ./gradlew clean --no-daemon --stacktrace
+          ./gradlew classes --rerun-tasks --no-daemon --stacktrace \
             -Dorg.gradle.java.installations.paths="$JAVA_HOME" \
             -Dorg.gradle.java.installations.auto-detect=false \
             -Dorg.gradle.java.installations.auto-download=false

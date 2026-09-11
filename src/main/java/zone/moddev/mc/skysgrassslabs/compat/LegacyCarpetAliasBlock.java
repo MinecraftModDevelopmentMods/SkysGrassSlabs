@@ -9,6 +9,6 @@ import net.minecraft.resources.ResourceKey;
 /** Hidden holder that preserves historical grass carpet on unsupported substrates. */
 final class LegacyCarpetAliasBlock extends CarpetBlock {
     LegacyCarpetAliasBlock(ResourceKey<Block> id) {
-        super(BlockBehaviour.Properties.ofFullCopy(Blocks.GREEN_CARPET).setId(id));
+        super(BlockBehaviour.Properties.ofFullCopy(Blocks.CARPET.green()).setId(id));
     }
 }

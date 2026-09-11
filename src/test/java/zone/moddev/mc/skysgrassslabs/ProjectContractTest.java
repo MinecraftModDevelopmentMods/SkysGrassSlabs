@@ -18,8 +18,9 @@ public class ProjectContractTest {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
 
         assertTrue(properties.contains("mod_id=skysgrassslabs"));
-        assertTrue(properties.contains("minecraft_version=26.1.2"));
-        assertTrue(properties.contains("neo_version=26.1.2.94"));
+        assertTrue(properties.contains("minecraft_version=26.2"));
+        assertTrue(properties.contains("neo_version=26.2.0.45-beta"));
+        assertFalse(properties.contains("neogradle.subsystems.decompiler.enabled"));
         assertTrue(properties.contains("java_toolchain_version=25.0.3+9"));
         String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
         assertTrue(build.contains("verifyJava25Toolchain"));
@@ -33,14 +34,14 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
         assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.1.2601022.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.1.2602002.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void releaseIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.1.1.2601022"));
+        assertTrue(properties.contains("mod_version=1.1.1.2602002"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -62,7 +63,8 @@ public class ProjectContractTest {
         digits = digits.substring(0, digits.length() - 2);
         int minor = Integer.parseInt(digits.substring(digits.length() - 2));
         int major = Integer.parseInt(digits.substring(0, digits.length() - 2));
-        assertEquals("master-26.1.2", "master-" + major + "." + minor + "." + patch);
+        assertEquals("master-26.2", "master-" + major + "." + minor
+                + (patch == 0 ? "" : "." + patch));
         assertTrue(workflow.contains("target_suffix=\"${BASH_REMATCH[1]}\""));
         assertTrue(workflow.contains("\"master-$mc_major.$mc_minor.$mc_patch$loader_suffix\""));
 
@@ -88,7 +90,13 @@ public class ProjectContractTest {
     public void codeQlCannotReuseCachedCompilationOutput() throws Exception {
         String workflow = Files.readString(
                 Path.of(".github/workflows/codeql-analysis.yml"), StandardCharsets.UTF_8);
-        assertTrue(workflow.contains("clean classes --rerun-tasks --no-daemon"));
+        String ci = Files.readString(
+                Path.of(".github/workflows/ci.yml"), StandardCharsets.UTF_8);
+        assertTrue(workflow.contains("./gradlew clean --no-daemon"));
+        assertTrue(workflow.contains("./gradlew classes --rerun-tasks --no-daemon"));
+        assertFalse(workflow.contains("./gradlew clean classes"));
+        assertTrue(ci.contains("./gradlew clean --no-daemon"));
+        assertFalse(ci.contains("./gradlew clean check"));
     }
 
 
@@ -108,7 +116,7 @@ public class ProjectContractTest {
         assertTrue(config.contains("push(\"compat\")"));
         assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
         assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
-        assertTrue(main.contains("VERSION = \"1.1.1.2601022\""));
+        assertTrue(main.contains("VERSION = \"1.1.1.2602002\""));
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
         assertTrue(state.contains("schema_version"));
@@ -228,7 +236,7 @@ public class ProjectContractTest {
     }
 
     @Test
-    public void neoForge261LifecycleAndDataPackContractsArePresent() throws Exception {
+    public void neoForge262LifecycleAndDataPackContractsArePresent() throws Exception {
         String blocks = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ModBlocks.java"),
                 StandardCharsets.UTF_8);
@@ -253,17 +261,19 @@ public class ProjectContractTest {
         assertTrue(modifier.contains("BiomeTags.IS_END"));
         assertTrue(modifierJson.contains("skysgrassslabs:grass_slab_smoothing"));
         assertTrue(worldgen.contains("DeferredRegister<MapCodec<? extends BiomeModifier>>"));
-        assertTrue(pack.contains("\"max_format\": 101"));
+        assertTrue(pack.contains("\"max_format\": 107"));
         assertTrue(pack.contains("\"min_format\":"));
-        assertTrue(pack.contains("101"));
+        assertTrue(pack.contains("107"));
 
         for (String recipeName : new String[] {"dirt_slab", "grass_slab",
                 "grass_block_from_seeds", "grass_slab_from_seeds", "turf"}) {
             String recipe = Files.readString(Path.of(
                     "src/main/resources/data/skysgrassslabs/recipe/" + recipeName + ".json"),
                     StandardCharsets.UTF_8);
-            assertTrue(recipeName, recipe.contains("\"category\": \"building\""));
-            if (!recipeName.equals("turf")) {
+            if (recipeName.equals("turf")) {
+                assertFalse(recipeName, recipe.contains("\"category\""));
+            } else {
+                assertTrue(recipeName, recipe.contains("\"category\": \"building\""));
                 assertTrue(recipeName, recipe.contains("\"id\":"));
                 assertFalse(recipeName, recipe.contains("\"result\": { \"item\":"));
             }
@@ -282,13 +292,13 @@ public class ProjectContractTest {
                 "validate-gradle-build.yml"}) {
             String workflow = Files.readString(Path.of(".github/workflows", name),
                     StandardCharsets.UTF_8);
-            assertTrue(name, workflow.contains("master-26.1.2-neo"));
+            assertTrue(name, workflow.contains("master-26.2-neo"));
         }
         String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
                 StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2601022.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2601022-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2601022-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2602002.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2602002-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2602002-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
         assertTrue(ci.contains("java-version: '25.0.3+9.0.LTS'"));
         assertTrue(ci.contains("--offline --no-daemon"));
@@ -300,9 +310,9 @@ public class ProjectContractTest {
     @Test
     public void adjacentUpgradeFixtureIsTracked() {
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "skysgrassslabs-1.21.11-forward-world.zip")));
+                + "skysgrassslabs-26.1.2-forward-world.zip")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "skysgrassslabs-1.21.11-forward-world.manifest")));
+                + "skysgrassslabs-26.1.2-forward-world.manifest")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
                 + "grassslabs-1.18.2-migration-world.zip")));
         assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
