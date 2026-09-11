@@ -76,6 +76,13 @@ public final class SlabGameTests {
         helper.succeed();
     }
 
+    private static void setClockTime(GameTestHelper helper, int time) {
+        helper.getLevel().getServer().clockManager().setTotalTicks(
+                helper.getLevel().dimensionTypeRegistration().value().defaultClock()
+                        .orElseThrow(),
+                time);
+    }
+
     public static void shovelFlatteningPreservesOrientation(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
         UseOnContext context = context(helper, pos, new ItemStack(Items.IRON_SHOVEL));
@@ -163,7 +170,7 @@ public final class SlabGameTests {
     }
 
     public static void grassLifecycleInteroperatesWithVanilla(GameTestHelper helper) {
-        helper.getLevel().setDayTime(6000);
+        setClockTime(helper, 6000);
         BlockPos dirtPos = helper.absolutePos(new BlockPos(1, 2, 1));
         BlockPos sourcePos = dirtPos.east();
         helper.getLevel().setBlock(dirtPos.west().above(), Blocks.GLOWSTONE.defaultBlockState(), 3);
@@ -302,12 +309,12 @@ public final class SlabGameTests {
         helper.getLevel().setBlock(pos.north(), Blocks.SNOW.defaultBlockState(),
                 Block.UPDATE_ALL);
         BlockState snowyDirt = helper.getLevel().getBlockState(pos);
-        require(helper, snowyDirt.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY),
+        require(helper, snowyDirt.getValue(net.minecraft.world.level.block.SnowyBlock.SNOWY),
                 "nearby snow did not select the snowy dirt-slab appearance");
         helper.getLevel().setBlock(pos.north(), Blocks.AIR.defaultBlockState(),
                 Block.UPDATE_ALL);
         BlockState clearDirt = helper.getLevel().getBlockState(pos);
-        require(helper, !clearDirt.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY),
+        require(helper, !clearDirt.getValue(net.minecraft.world.level.block.SnowyBlock.SNOWY),
                 "dirt slab retained its snowy appearance after snow was removed");
 
         BlockState wetGrass = top.setValue(SlabBlock.WATERLOGGED, true);
@@ -340,7 +347,7 @@ public final class SlabGameTests {
     }
 
     public static void turfMatchesPhysicalCarpetAndDropsFromInvalidSoil(GameTestHelper helper) {
-        helper.getLevel().setDayTime(18000);
+        setClockTime(helper, 18000);
         TurfBlock turf = (TurfBlock) ModBlocks.TURF.get();
         BlockState state = turf.defaultBlockState();
         BlockPos dirtSupport = helper.absolutePos(new BlockPos(1, 1, 1));
@@ -453,7 +460,7 @@ public final class SlabGameTests {
     }
 
     public static void turfSpreadsOutwardAndActsAsSlabSource(GameTestHelper helper) {
-        helper.getLevel().setDayTime(6000);
+        setClockTime(helper, 6000);
         BlockPos support = helper.absolutePos(new BlockPos(3, 2, 3));
         BlockPos turfPos = support.above();
         BlockPos target = turfPos.east().below();
@@ -535,7 +542,7 @@ public final class SlabGameTests {
         CraftingInput blockGrid = craftingGrid(2, 2,
                 new ItemStack(Blocks.GRASS_BLOCK), iron);
         require(helper, recipe.matches(blockGrid, helper.getLevel())
-                && recipe.assemble(blockGrid, helper.getLevel().registryAccess())
+                && recipe.assemble(blockGrid)
                         .is(ModBlocks.TURF_ITEM.get()),
                 "grass block and shovel did not craft turf in a 2x2 grid");
         NonNullList<ItemStack> blockRemainders = recipe.getRemainingItems(blockGrid);
@@ -673,7 +680,7 @@ public final class SlabGameTests {
         CraftingInput grid = craftingGrid(2, 2,
                 new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get()), new ItemStack(seed));
         return recipe.matches(grid, helper.getLevel())
-                && recipe.assemble(grid, helper.getLevel().registryAccess())
+                && recipe.assemble(grid)
                         .is(ModBlocks.GRASS_SLAB_ITEM.get());
     }
 

@@ -1,7 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.world.item.crafting.RecipeSerializer;
-import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -16,7 +15,7 @@ public final class ModRecipes {
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<TurfCuttingRecipe>> TURF_CUTTING =
             SERIALIZERS.register("turf_cutting",
-                    () -> new CustomRecipe.Serializer<>(TurfCuttingRecipe::new));
+                    () -> TurfCuttingRecipe.SERIALIZER);
 
     private ModRecipes() {
     }

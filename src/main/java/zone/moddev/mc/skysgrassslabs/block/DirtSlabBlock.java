@@ -11,7 +11,7 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.neoforged.neoforge.common.ItemAbility;
@@ -20,20 +20,20 @@ import net.neoforged.neoforge.common.ItemAbility;
 public final class DirtSlabBlock extends SlabBlock {
     public DirtSlabBlock(Properties properties) {
         super(properties);
-        registerDefaultState(defaultBlockState().setValue(SnowyDirtBlock.SNOWY, false));
+        registerDefaultState(defaultBlockState().setValue(SnowyBlock.SNOWY, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
-        builder.add(SnowyDirtBlock.SNOWY);
+        builder.add(SnowyBlock.SNOWY);
     }
 
     @Override
     @Nullable
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         BlockState state = super.getStateForPlacement(context);
-        return state == null ? null : state.setValue(SnowyDirtBlock.SNOWY,
+        return state == null ? null : state.setValue(SnowyBlock.SNOWY,
                 SnowySlabAppearance.hasNearbySnow(context.getLevel(), context.getClickedPos()));
     }
 
@@ -43,13 +43,13 @@ public final class DirtSlabBlock extends SlabBlock {
             BlockPos neighbourPos, BlockState neighbour, RandomSource random) {
         BlockState updated = super.updateShape(state, level, tickAccess, pos, direction,
                 neighbourPos, neighbour, random);
-        return updated.setValue(SnowyDirtBlock.SNOWY,
+        return updated.setValue(SnowyBlock.SNOWY,
                 SnowySlabAppearance.hasNearbySnow(level, pos, direction, neighbour));
     }
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        BlockState repaired = state.setValue(SnowyDirtBlock.SNOWY,
+        BlockState repaired = state.setValue(SnowyBlock.SNOWY,
                 SnowySlabAppearance.hasNearbySnow(level, pos));
         if (repaired != state) {
             level.setBlock(pos, repaired, Block.UPDATE_CLIENTS);

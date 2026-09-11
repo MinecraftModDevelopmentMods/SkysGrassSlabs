@@ -10,7 +10,7 @@ import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -41,10 +41,10 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
             return false;
         }
         ChunkAccess owner = level instanceof WorldGenRegion region
-                ? level.getChunk(region.getCenter().x, region.getCenter().z)
+                ? level.getChunk(region.getCenter().x(), region.getCenter().z())
                 : level.getChunk(context.origin());
         ChunkPos ownerPos = owner.getPos();
-        if (LegacyWorldDataHook.isLegacyChunk(ownerPos.x, ownerPos.z)) {
+        if (LegacyWorldDataHook.isLegacyChunk(ownerPos.x(), ownerPos.z())) {
             return false;
         }
 
@@ -58,8 +58,8 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
             for (int haloX = 0; haloX < HALO_WIDTH; ++haloX) {
                 int localX = haloX - 1;
                 int localZ = haloZ - 1;
-                int chunkX = ownerPos.x + Math.floorDiv(localX, 16);
-                int chunkZ = ownerPos.z + Math.floorDiv(localZ, 16);
+                int chunkX = ownerPos.x() + Math.floorDiv(localX, 16);
+                int chunkZ = ownerPos.z() + Math.floorDiv(localZ, 16);
                 if (!level.hasChunk(chunkX, chunkZ)) {
                     continue;
                 }
@@ -108,7 +108,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
         BlockState slab = ModBlocks.GRASS_SLAB.get().defaultBlockState()
                 .setValue(SlabBlock.TYPE, SlabType.BOTTOM)
                 .setValue(SlabBlock.WATERLOGGED, false)
-                .setValue(SnowyDirtBlock.SNOWY, false);
+                .setValue(SnowyBlock.SNOWY, false);
         boolean changed = false;
         for (int index = 0; index < buffer.candidates.length; ++index) {
             if (!buffer.candidates[index]) {

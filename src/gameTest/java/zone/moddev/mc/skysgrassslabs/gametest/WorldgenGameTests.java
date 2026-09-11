@@ -47,7 +47,7 @@ public final class WorldgenGameTests {
     }
 
     public static void smoothingIsBorderSafeAndIdempotent(GameTestHelper helper) {
-        ChunkPos owner = new ChunkPos(helper.absolutePos(new BlockPos(1, 2, 1)));
+        ChunkPos owner = ChunkPos.containing(helper.absolutePos(new BlockPos(1, 2, 1)));
         int y = 120;
 
         BlockPos center = new BlockPos(owner.getMinBlockX() + 8, y, owner.getMinBlockZ() + 8);

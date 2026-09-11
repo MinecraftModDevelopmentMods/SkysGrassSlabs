@@ -27,7 +27,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.storage.LevelResource;
@@ -284,8 +284,8 @@ public final class LegacyWorldDataHook {
         state = state.setValue(SlabBlock.TYPE,
                 (metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM)
                 .setValue(SlabBlock.WATERLOGGED, false);
-        return state.hasProperty(SnowyDirtBlock.SNOWY)
-                ? state.setValue(SnowyDirtBlock.SNOWY, false) : state;
+        return state.hasProperty(SnowyBlock.SNOWY)
+                ? state.setValue(SnowyBlock.SNOWY, false) : state;
     }
 
     private static boolean containsSupportedBlock(CompoundTag level) {
@@ -311,11 +311,17 @@ public final class LegacyWorldDataHook {
 
     private static int indexLegacyChunks(File worldDirectory) {
         LEGACY_CHUNKS.clear();
-        File regionDirectory = new File(worldDirectory, "region");
+        indexLegacyRegionDirectory(new File(worldDirectory, "region"));
+        indexLegacyRegionDirectory(worldDirectory.toPath().resolve("dimensions")
+                .resolve("minecraft").resolve("overworld").resolve("region").toFile());
+        return LEGACY_CHUNKS.size();
+    }
+
+    private static void indexLegacyRegionDirectory(File regionDirectory) {
         File[] regionFiles = regionDirectory.listFiles((directory, name) ->
                 name.startsWith("r.") && (name.endsWith(".mca") || name.endsWith(".mcr")));
         if (regionFiles == null) {
-            return 0;
+            return;
         }
         byte[] locations = new byte[4096];
         for (File regionFile : regionFiles) {
@@ -353,7 +359,6 @@ public final class LegacyWorldDataHook {
                         exception);
             }
         }
-        return LEGACY_CHUNKS.size();
     }
 
     private static Identifier id(String path) {

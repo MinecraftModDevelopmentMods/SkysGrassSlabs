@@ -6,7 +6,7 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.1.1.121112.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.1.1.2601022.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -18,6 +18,10 @@ so unopened chunks can be converted when they are later visited.
 Minecraft 1.13.2 through 1.21.11 worlds already use named block states. Their
 orientation, snowy and waterlogged states load through Minecraft's normal
 upgrade process.
+
+Minecraft 26.1 stores dimension data in namespaced folders. The mod copies its
+older Overworld state into the new location before loading it and leaves the
+original file untouched as an additional recovery point.
 
 World smoothing still affects only newly generated chunks. Chunks indexed as
 part of an older world are not treated as new terrain by the smoothing

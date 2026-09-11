@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/block_items_use_translated_block_description_ids",
+  "max_ticks": 100,
+  "structure": "minecraft:empty"
+}

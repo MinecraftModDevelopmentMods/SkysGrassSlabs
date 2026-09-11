@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1.2601022 - Minecraft 26.1.2 (NeoForge)
+
+- Added the NeoForge 26.1.2 build with the same blocks, recipes, world
+  smoothing and supported world upgrade behaviour as the Forge build.
+- Preserved older world state while Minecraft moves saved data into its
+  namespaced 26.1 layout.
+- Corrected translated names for all four block items.
+
 ## 1.1.1.121112 - Minecraft 1.21.11 (NeoForge)
 
 - Added the NeoForge 1.21.11 build with the same blocks, recipes, world

@@ -13,19 +13,19 @@ import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 @Mixin(SimpleRegionStorage.class)
 abstract class SimpleRegionStorageMixin {
     @Inject(
-            method = "upgradeChunkTag(Lnet/minecraft/nbt/CompoundTag;ILnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;",
+            method = "upgradeChunkTag(Lnet/minecraft/nbt/CompoundTag;ILnet/minecraft/nbt/CompoundTag;I)Lnet/minecraft/nbt/CompoundTag;",
             at = @At("HEAD"))
     private void skysgrassslabs$prepareLegacyChunk(CompoundTag chunk,
-            int fallbackDataVersion, @Nullable CompoundTag context,
+            int fallbackDataVersion, @Nullable CompoundTag context, int targetDataVersion,
             CallbackInfoReturnable<CompoundTag> callback) {
         LegacyWorldDataHook.prepareLegacyChunk(chunk);
     }
 
     @Inject(
-            method = "upgradeChunkTag(Lnet/minecraft/nbt/CompoundTag;ILnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;",
+            method = "upgradeChunkTag(Lnet/minecraft/nbt/CompoundTag;ILnet/minecraft/nbt/CompoundTag;I)Lnet/minecraft/nbt/CompoundTag;",
             at = @At("RETURN"), cancellable = true)
     private void skysgrassslabs$finalizeLegacyChunk(CompoundTag chunk,
-            int fallbackDataVersion, @Nullable CompoundTag context,
+            int fallbackDataVersion, @Nullable CompoundTag context, int targetDataVersion,
             CallbackInfoReturnable<CompoundTag> callback) {
         callback.setReturnValue(LegacyWorldDataHook.finalizeLegacyChunk(
                 callback.getReturnValue()));

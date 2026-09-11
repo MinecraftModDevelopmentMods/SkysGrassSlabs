@@ -1,6 +1,7 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.List;
+import java.util.Optional;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.TriState;
 
@@ -23,20 +24,19 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BonemealableBlock;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
-import net.minecraft.world.level.levelgen.feature.configurations.RandomPatchConfiguration;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.neoforged.neoforge.common.ItemAbility;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Grass slab with target aware spreading and top slab vegetation behaviour. */
 public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock {
-    public static final BooleanProperty SNOWY = SnowyDirtBlock.SNOWY;
+    public static final BooleanProperty SNOWY = SnowyBlock.SNOWY;
 
     public GrassSlabBlock(Properties properties) {
         super(properties);
@@ -140,6 +140,9 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
 
         BlockPos start = pos.above();
         BlockState vanillaGrass = Blocks.SHORT_GRASS.defaultBlockState();
+        Optional<Holder.Reference<PlacedFeature>> grassFeature = level.registryAccess()
+                .lookupOrThrow(Registries.PLACED_FEATURE)
+                .get(VegetationPlacements.GRASS_BONEMEAL);
 
         outer:
         for (int attempt = 0; attempt < 128; attempt++) {
@@ -168,23 +171,20 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
             }
 
             if (current.isAir()) {
-                Holder<PlacedFeature> feature;
-
                 if (random.nextInt(8) == 0) {
                     List<ConfiguredFeature<?, ?>> flowers = level.getBiome(target).value()
-                            .getGenerationSettings().getFlowerFeatures();
+                            .getGenerationSettings().getBoneMealFeatures();
 
                     if (flowers.isEmpty()) {
                         continue;
                     }
 
-                    feature = ((RandomPatchConfiguration) flowers.get(0).config()).feature();
-                } else {
-                    feature = level.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE)
-                            .get(VegetationPlacements.GRASS_BONEMEAL).orElseThrow();
+                    ConfiguredFeature<?, ?> flower = flowers.get(random.nextInt(flowers.size()));
+                    flower.place(level, level.getChunkSource().getGenerator(), random, target);
+                } else if (grassFeature.isPresent()) {
+                    grassFeature.get().value().place(level,
+                            level.getChunkSource().getGenerator(), random, target);
                 }
-
-                feature.value().place(level, level.getChunkSource().getGenerator(), random, target);
             }
         }
     }

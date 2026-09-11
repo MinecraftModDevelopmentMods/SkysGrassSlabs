@@ -1,0 +1,8 @@
+fixture=skysgrassslabs-1.21.11-forward-world.zip
+fixture_sha256=80DCECC12FEED2624B937139F029CA382B39EA92DAFBBF9EAE163388A50862AD
+fixture_bytes=94008
+fixture_entries=7
+source_minecraft=1.21.11
+source_mod_version=1.1.0.121111
+source_jar_sha256=D3E6EE0D15D91AC0F6DD4FA6A1DD257F4CE8A8A63ABECC35F558520C40591EC7
+generator=Packaged 1.21.1 fixture upgraded and saved twice with the accepted 1.21.11 jar

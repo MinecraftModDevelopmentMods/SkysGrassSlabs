@@ -67,9 +67,9 @@ public final class ModBlocks {
                         source.getValue(net.minecraft.world.level.block.SlabBlock.TYPE))
                 .setValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED,
                         source.getValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED));
-        return state.setValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY,
-                source.hasProperty(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY)
-                        && source.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY));
+        return state.setValue(net.minecraft.world.level.block.SnowyBlock.SNOWY,
+                source.hasProperty(net.minecraft.world.level.block.SnowyBlock.SNOWY)
+                        && source.getValue(net.minecraft.world.level.block.SnowyBlock.SNOWY));
     }
 
     public static BlockState grassStateLike(BlockState source) {
@@ -78,9 +78,9 @@ public final class ModBlocks {
                         source.getValue(net.minecraft.world.level.block.SlabBlock.TYPE))
                 .setValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED,
                         source.getValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED));
-        return state.setValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY,
-                source.hasProperty(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY)
-                        && source.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY));
+        return state.setValue(net.minecraft.world.level.block.SnowyBlock.SNOWY,
+                source.hasProperty(net.minecraft.world.level.block.SnowyBlock.SNOWY)
+                        && source.getValue(net.minecraft.world.level.block.SnowyBlock.SNOWY));
     }
 
     private static DeferredHolder<Item, Item> slabItem(String name, DeferredHolder<Block, Block> block,

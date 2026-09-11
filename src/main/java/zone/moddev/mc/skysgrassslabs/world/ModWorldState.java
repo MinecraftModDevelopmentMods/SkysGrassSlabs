@@ -1,16 +1,23 @@
 package zone.moddev.mc.skysgrassslabs.world;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.util.datafix.DataFixTypes;
+import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 
 /** Persistent schema and aggregate historical-slab migration totals. */
 public final class ModWorldState extends SavedData {
@@ -18,7 +25,7 @@ public final class ModWorldState extends SavedData {
     public static final int SCHEMA_VERSION = 1;
     public static final int MIGRATION_VERSION = 1;
     private static final SavedDataType<ModWorldState> TYPE = new SavedDataType<>(
-            DATA_NAME, ModWorldState::new,
+            Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, DATA_NAME), ModWorldState::new,
             CompoundTag.CODEC.xmap(ModWorldState::new, ModWorldState::saveTag),
             DataFixTypes.SAVED_DATA_MAP_DATA);
 
@@ -60,7 +67,40 @@ public final class ModWorldState extends SavedData {
         if (!(level instanceof ServerLevel serverLevel)) {
             return new ModWorldState();
         }
+        relocateLegacyState(serverLevel);
         return serverLevel.getDataStorage().computeIfAbsent(TYPE);
+    }
+
+    private static synchronized void relocateLegacyState(ServerLevel level) {
+        Path worldRoot = level.getServer().getWorldPath(LevelResource.ROOT);
+        relocateLegacyState(worldRoot);
+    }
+
+    static synchronized void relocateLegacyState(Path worldRoot) {
+        Path oldFile = worldRoot.resolve("data").resolve(DATA_NAME + ".dat");
+        Path newFile = worldRoot.resolve("dimensions").resolve("minecraft")
+                .resolve("overworld").resolve("data").resolve(SkysGrassSlabs.MOD_ID)
+                .resolve(DATA_NAME + ".dat");
+        if (Files.exists(newFile) || !Files.isRegularFile(oldFile)) {
+            return;
+        }
+
+        Path temporary = newFile.resolveSibling(newFile.getFileName() + ".migration.tmp");
+        try {
+            Files.createDirectories(newFile.getParent());
+            Files.copy(oldFile, temporary, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(temporary, newFile, StandardCopyOption.ATOMIC_MOVE);
+            SkysGrassSlabs.LOGGER.info("Preserved Sky's Grass Slabs world state in the "
+                    + "namespaced data directory");
+        } catch (IOException exception) {
+            try {
+                Files.deleteIfExists(temporary);
+            } catch (IOException cleanupFailure) {
+                exception.addSuppressed(cleanupFailure);
+            }
+            throw new IllegalStateException("Could not preserve existing Sky's Grass Slabs "
+                    + "world state before loading this Minecraft version", exception);
+        }
     }
 
     public void recordChunk() {

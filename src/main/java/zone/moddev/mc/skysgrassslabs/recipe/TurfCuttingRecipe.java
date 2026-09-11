@@ -2,9 +2,11 @@ package zone.moddev.mc.skysgrassslabs.recipe;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
@@ -25,13 +27,16 @@ import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 
 /** Cuts turf while returning the matching dirt and an unchanged shovel. */
 public final class TurfCuttingRecipe extends CustomRecipe {
-    private final NonNullList<Ingredient> ingredients;
-    private final PlacementInfo placementInfo;
+    public static final TurfCuttingRecipe INSTANCE = new TurfCuttingRecipe();
+    public static final MapCodec<TurfCuttingRecipe> MAP_CODEC = MapCodec.unit(INSTANCE);
+    public static final StreamCodec<RegistryFriendlyByteBuf, TurfCuttingRecipe> STREAM_CODEC =
+            StreamCodec.unit(INSTANCE);
+    public static final RecipeSerializer<TurfCuttingRecipe> SERIALIZER =
+            new RecipeSerializer<>(MAP_CODEC, STREAM_CODEC);
+    private volatile NonNullList<Ingredient> ingredients;
+    private volatile PlacementInfo placementInfo;
 
-    public TurfCuttingRecipe(CraftingBookCategory category) {
-        super(category);
-        ingredients = createIngredients();
-        placementInfo = PlacementInfo.create(ingredients);
+    private TurfCuttingRecipe() {
     }
 
     @Override
@@ -55,20 +60,35 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput container, HolderLookup.Provider registries) {
+    public ItemStack assemble(CraftingInput container) {
         return new ItemStack(ModBlocks.TURF_ITEM.get());
     }
 
     @Override
     public PlacementInfo placementInfo() {
-        return placementInfo;
+        PlacementInfo result = placementInfo;
+        if (result == null) {
+            synchronized (this) {
+                result = placementInfo;
+                if (result == null) {
+                    result = PlacementInfo.create(ingredients());
+                    placementInfo = result;
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public CraftingBookCategory category() {
+        return CraftingBookCategory.BUILDING;
     }
 
     @Override
     public List<RecipeDisplay> display() {
         return List.of(new ShapelessCraftingRecipeDisplay(
-                ingredients.stream().map(Ingredient::display).toList(),
-                new SlotDisplay.ItemStackSlotDisplay(new ItemStack(ModBlocks.TURF_ITEM.get())),
+                ingredients().stream().map(Ingredient::display).toList(),
+                new SlotDisplay.ItemSlotDisplay(ModBlocks.TURF_ITEM.get()),
                 new SlotDisplay.ItemSlotDisplay(Blocks.CRAFTING_TABLE.asItem())));
     }
 
@@ -85,9 +105,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
             if (!soil.isEmpty()) {
                 remaining.set(slot, soil);
             } else if (isShovel(stack)) {
-                ItemStack shovel = stack.copy();
-                shovel.setCount(1);
-                remaining.set(slot, shovel);
+                remaining.set(slot, stack.copyWithCount(1));
             }
         }
         return remaining;
@@ -118,6 +136,20 @@ public final class TurfCuttingRecipe extends CustomRecipe {
             }
         }
         result.add(Ingredient.of(shovels.stream()));
+        return result;
+    }
+
+    private NonNullList<Ingredient> ingredients() {
+        NonNullList<Ingredient> result = ingredients;
+        if (result == null) {
+            synchronized (this) {
+                result = ingredients;
+                if (result == null) {
+                    result = createIngredients();
+                    ingredients = result;
+                }
+            }
+        }
         return result;
     }
 
