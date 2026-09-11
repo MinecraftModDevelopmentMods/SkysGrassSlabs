@@ -1,6 +1,11 @@
 # Changelog
 
-## 1.1.0.120061 - Minecraft 1.20.6
+## 1.1.0.120062 - Minecraft 1.20.6 (NeoForge)
+
+- Added the NeoForge 1.20.6 build with the same blocks, recipes, world
+  smoothing and supported world upgrade behaviour as the Forge build.
+
+## 1.1.0.120061 - Minecraft 1.20.6 (Forge)
 
 - Ported the complete feature set to Minecraft 1.20.6 and Java 21.
 - Preserved permanent content IDs, saved world data, configuration options and

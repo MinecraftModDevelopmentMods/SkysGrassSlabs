@@ -7,11 +7,11 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegisterEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.registries.RegisterEvent;
 
 /** Compatibility boundary for the supported Grass Slabs source IDs. */
 public final class GrassSlabsCompat {
@@ -99,7 +99,7 @@ public final class GrassSlabsCompat {
     }
 
     private static Block resolve(Block cached, ResourceLocation id) {
-        return cached != null ? cached : ForgeRegistries.BLOCKS.getValue(id);
+        return cached != null ? cached : BuiltInRegistries.BLOCK.get(id);
     }
 
     private static boolean isBlockItem(ItemStack stack, Block block) {
@@ -107,7 +107,7 @@ public final class GrassSlabsCompat {
     }
 
     private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+        return new ResourceLocation(MOD_ID, path);
     }
 
     private GrassSlabsCompat() {

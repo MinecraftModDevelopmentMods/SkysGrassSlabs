@@ -2,6 +2,7 @@ package zone.moddev.mc.skysgrassslabs.gametest;
 
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
@@ -38,11 +39,11 @@ import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraftforge.common.Tags;
-import net.minecraftforge.common.ToolActions;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.Tags;
+import net.neoforged.neoforge.common.ToolActions;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
@@ -57,9 +58,10 @@ import zone.moddev.mc.skysgrassslabs.event.CommonEvents;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 
 /** Runtime coverage for save-facing block state, tool, lifecycle, recipe and loot contracts. */
-@GameTestHolder(value = SkysGrassSlabs.MOD_ID, namespace = SkysGrassSlabs.MOD_ID)
+@GameTestHolder(value = SkysGrassSlabs.MOD_ID)
+@PrefixGameTestTemplate(false)
 public final class SlabGameTests {
-    private static final String EMPTY = "skysgrassslabs:empty";
+    private static final String EMPTY = "empty";
 
     private SlabGameTests() {
     }
@@ -199,13 +201,13 @@ public final class SlabGameTests {
     @GameTest(template = EMPTY, batch = "slabs005")
     public static void recipesTagsAndLootLoad(GameTestHelper helper) {
         require(helper, Items.WHEAT_SEEDS.builtInRegistryHolder().is(Tags.Items.SEEDS),
-                "wheat seeds are absent from forge:seeds");
+                "wheat seeds are absent from c:seeds");
         require(helper, Items.BEETROOT_SEEDS.builtInRegistryHolder().is(Tags.Items.SEEDS),
-                "beetroot seeds are absent from forge:seeds");
+                "beetroot seeds are absent from c:seeds");
         for (String recipe : List.of("dirt_slab", "grass_slab", "grass_block_from_seeds",
                 "grass_slab_from_seeds")) {
             require(helper, helper.getLevel().getRecipeManager().byKey(
-                    ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, recipe)).isPresent(),
+                    new ResourceLocation(SkysGrassSlabs.MOD_ID, recipe)).isPresent(),
                     "missing recipe " + recipe);
         }
 
@@ -240,7 +242,7 @@ public final class SlabGameTests {
                 "double dirt slab did not drop two slabs");
 
         CraftingRecipe seedRecipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
-                .byKey(ResourceLocation.fromNamespaceAndPath(
+                .byKey(new ResourceLocation(
                         SkysGrassSlabs.MOD_ID, "grass_slab_from_seeds"))
                 .orElseThrow().value();
         CraftingContainer grid = new TransientCraftingContainer(new AbstractContainerMenu(null, -1) {
@@ -273,10 +275,10 @@ public final class SlabGameTests {
         require(helper, grass.isValidBonemealTarget(helper.getLevel(), pos, top),
                 "top grass slab rejected bonemeal");
         require(helper, !grass.canSustainPlant(bottom, helper.getLevel(), pos, Direction.UP,
-                (net.minecraftforge.common.IPlantable) Blocks.DANDELION),
+                (net.neoforged.neoforge.common.IPlantable) Blocks.DANDELION),
                 "bottom grass slab sustained a plant");
         require(helper, grass.canSustainPlant(top, helper.getLevel(), pos, Direction.UP,
-                (net.minecraftforge.common.IPlantable) Blocks.DANDELION),
+                (net.neoforged.neoforge.common.IPlantable) Blocks.DANDELION),
                 "top grass slab rejected a plant");
 
         helper.getLevel().setBlock(pos, top, Block.UPDATE_ALL);
@@ -316,17 +318,17 @@ public final class SlabGameTests {
                 "world schema marker is not version 1");
         require(helper, SkysGrassSlabsConfig.generateGrassSlabs(),
                 "fresh common config did not default worldgen to true");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "dirt_slab")
-                .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.DIRT_SLAB.get())),
+        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "dirt_slab")
+                .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.DIRT_SLAB.get())),
                 "dirt slab registry ID changed");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "grass_slab")
-                .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.GRASS_SLAB.get())),
+        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "grass_slab")
+                .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.GRASS_SLAB.get())),
                 "grass slab registry ID changed");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "path_slab")
-                .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.PATH_SLAB.get())),
+        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "path_slab")
+                .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.PATH_SLAB.get())),
                 "path slab registry ID changed");
-        require(helper, ForgeRegistries.FEATURES.containsKey(
-                ResourceLocation.fromNamespaceAndPath(
+        require(helper, BuiltInRegistries.FEATURE.containsKey(
+                new ResourceLocation(
                         SkysGrassSlabs.MOD_ID, "grass_slab_smoothing")),
                 "worldgen feature registry ID changed");
         helper.succeed();
@@ -544,7 +546,7 @@ public final class SlabGameTests {
     @GameTest(template = EMPTY, batch = "slabs010")
     public static void turfRecipeReturnsSoilAndUnchangedShovel(GameTestHelper helper) {
         CraftingRecipe recipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
-                .byKey(ResourceLocation.fromNamespaceAndPath(
+                .byKey(new ResourceLocation(
                         SkysGrassSlabs.MOD_ID, "turf")).orElseThrow().value();
         require(helper, recipe.getSerializer() == ModRecipes.TURF_CUTTING.get(),
                 "turf recipe serializer changed");
@@ -594,14 +596,14 @@ public final class SlabGameTests {
         grid.setItem(1, new ItemStack(Items.STICK));
         require(helper, !recipe.matches(grid, helper.getLevel()),
                 "turf recipe accepted a non-shovel");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
-                .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.TURF.get())),
+        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf")
+                .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.TURF.get())),
                 "turf block registry ID changed");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
-                .equals(ForgeRegistries.ITEMS.getKey(ModBlocks.TURF_ITEM.get())),
+        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf")
+                .equals(BuiltInRegistries.ITEM.getKey(ModBlocks.TURF_ITEM.get())),
                 "turf item registry ID changed");
-        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf_cutting")
-                .equals(ForgeRegistries.RECIPE_SERIALIZERS.getKey(ModRecipes.TURF_CUTTING.get())),
+        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf_cutting")
+                .equals(BuiltInRegistries.RECIPE_SERIALIZER.getKey(ModRecipes.TURF_CUTTING.get())),
                 "turf recipe serializer ID changed");
         helper.succeed();
     }

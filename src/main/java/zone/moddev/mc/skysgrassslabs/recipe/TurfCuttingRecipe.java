@@ -11,10 +11,10 @@ import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.common.ToolActions;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.ToolActions;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
@@ -107,7 +107,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
         NonNullList<Ingredient> result = NonNullList.create();
         result.add(Ingredient.of(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB.get()));
         List<ItemStack> shovels = new ArrayList<>();
-        for (Item item : ForgeRegistries.ITEMS.getValues()) {
+        for (Item item : BuiltInRegistries.ITEM) {
             ItemStack candidate = new ItemStack(item);
             if (isShovel(candidate)) {
                 shovels.add(candidate);

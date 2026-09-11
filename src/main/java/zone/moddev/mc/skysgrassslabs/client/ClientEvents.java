@@ -3,16 +3,17 @@ package zone.moddev.mc.skysgrassslabs.client;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.world.level.GrassColor;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Client side biome tint registration. */
-@Mod.EventBusSubscriber(modid = SkysGrassSlabs.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD,
+@EventBusSubscriber(modid = SkysGrassSlabs.MOD_ID, bus = EventBusSubscriber.Bus.MOD,
         value = Dist.CLIENT)
 public final class ClientEvents {
     private ClientEvents() {

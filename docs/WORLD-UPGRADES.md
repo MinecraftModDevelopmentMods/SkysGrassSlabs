@@ -1,12 +1,12 @@
 # Upgrading an older world
 
 Always make a complete copy of the world before changing its Minecraft or
-Forge version. Test the copy first and keep the original until the upgraded
+NeoForge version. Test the copy first and keep the original until the upgraded
 world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.1.0.120061.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.1.0.120062.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -30,7 +30,7 @@ original mod is absent. Slab orientation, stack counts and custom item data are
 retained.
 
 Other older shapes such as stairs, vertical slabs, corners and steps are not
-part of this migration. Forge may report them as missing and may remove them
+part of this migration. NeoForge may report them as missing and may remove them
 after offering its normal backup and confirmation screen. Do not continue
 unless losing those unsupported blocks is acceptable for that copy of the
 world.
@@ -56,7 +56,7 @@ carpet produces an item which is converted to turf.
 
 Stairs, dirt carpet, dirt path carpet, mycelium variants and podzol variants do
 not have matching blocks in Sky's Grass Slabs. They are not converted. Read
-Forge's complete missing content warning before continuing without the older
+NeoForge's complete missing content warning before continuing without the older
 mod.
 
 When both mods remain installed, their content is left alone by default. See
@@ -65,9 +65,9 @@ When both mods remain installed, their content is left alone by default. See
 ## Modpack checklist
 
 1. Back up the complete instance and world.
-2. Update Forge and every required mod to a matching Minecraft 1.20.6 build.
+2. Update NeoForge and every required mod to a matching Minecraft 1.20.6 build.
 3. Install the 1.20.6 Sky's Grass Slabs jar before the first upgraded start.
-4. Read the complete Forge missing content list before confirming it.
+4. Read the complete NeoForge missing content list before confirming it.
 5. Check representative slabs, turf, paths, inventories and old terrain.
 6. Stop and start the upgraded copy once more, then repeat the checks.
 

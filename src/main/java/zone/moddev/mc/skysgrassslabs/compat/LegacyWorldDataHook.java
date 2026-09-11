@@ -33,8 +33,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.storage.LevelStorageSource;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.server.ServerAboutToStartEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
@@ -65,29 +65,16 @@ public final class LegacyWorldDataHook {
 
     public static synchronized void register() {
         if (!registered) {
-            MinecraftForge.EVENT_BUS.addListener(LegacyWorldDataHook::onServerAboutToStart);
+            NeoForge.EVENT_BUS.addListener(LegacyWorldDataHook::onServerAboutToStart);
             registered = true;
         }
     }
 
-    /** Called from Forge's raw additional-level-data reader before legacy FML data is discarded. */
-    public static void captureLegacyLevelData(LevelStorageSource.LevelStorageAccess access,
+    /** Called from NeoForge's raw additional-level-data reader before legacy FML data is discarded. */
+    public static void captureLegacyLevelData(CompoundTag root,
             LevelStorageSource.LevelDirectory levelDirectory) {
-        if (access == null || levelDirectory == null) {
+        if (root == null || levelDirectory == null) {
             return;
-        }
-        CompoundTag root;
-        try {
-            root = access.getDataTagRaw(false);
-        } catch (IOException primaryFailure) {
-            try {
-                root = access.getDataTagRaw(true);
-            } catch (IOException fallbackFailure) {
-                LOGGER.warn("Could not inspect primary or fallback level data in '{}' for "
-                        + "legacy Sky's Grass Slabs mappings", levelDirectory.path(),
-                        fallbackFailure);
-                return;
-            }
         }
         Path levelPath = levelDirectory.path();
         if (root.contains("FML", Tag.TAG_COMPOUND)) {
@@ -376,12 +363,12 @@ public final class LegacyWorldDataHook {
                 return method;
             }
         }
-        throw new IllegalStateException("Could not find the public Forge 50 legacy block-state "
+        throw new IllegalStateException("Could not find the NeoForge 20.6 legacy block-state "
                 + "registration method; the coremod was not applied");
     }
 
     private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, path);
+        return new ResourceLocation(SkysGrassSlabs.MOD_ID, path);
     }
 
     private static long chunkKey(int chunkX, int chunkZ) {

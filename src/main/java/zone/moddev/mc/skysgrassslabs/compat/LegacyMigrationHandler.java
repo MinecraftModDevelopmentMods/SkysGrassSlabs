@@ -5,12 +5,10 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -23,13 +21,11 @@ import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.event.level.ChunkDataEvent;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.MissingMappingsEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ChunkDataEvent;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
@@ -37,23 +33,15 @@ import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 /** Converts supported historical slab blocks and item stacks as their owners load. */
 public final class LegacyMigrationHandler {
     private static final String CHUNK_MARKER = "skysgrassslabs_buildingbricks_migration_version";
-    private static final ResourceLocation GRASS_PATH =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "grass_path");
-    private static final ResourceLocation DIRT_PATH =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "dirt_path");
-    private static final ResourceLocation SWEET_BERRIES_PICK =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "item.sweet_berries.pick_from_bush");
-    private static final ResourceLocation SWEET_BERRY_BUSH_PICK =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "block.sweet_berry_bush.pick_berries");
     private static final Set<LevelChunk> MIGRATED_CHUNKS =
             Collections.newSetFromMap(new WeakHashMap<>());
 
     public static void register() {
-        MinecraftForge.EVENT_BUS.addListener(LegacyMigrationHandler::loadChunk);
-        MinecraftForge.EVENT_BUS.addListener(LegacyMigrationHandler::saveChunk);
-        MinecraftForge.EVENT_BUS.addListener(LegacyMigrationHandler::playerLogin);
-        MinecraftForge.EVENT_BUS.addListener(LegacyMigrationHandler::entityJoin);
-        MinecraftForge.EVENT_BUS.addListener(LegacyMigrationHandler::blockPlaced);
+        NeoForge.EVENT_BUS.addListener(LegacyMigrationHandler::loadChunk);
+        NeoForge.EVENT_BUS.addListener(LegacyMigrationHandler::saveChunk);
+        NeoForge.EVENT_BUS.addListener(LegacyMigrationHandler::playerLogin);
+        NeoForge.EVENT_BUS.addListener(LegacyMigrationHandler::entityJoin);
+        NeoForge.EVENT_BUS.addListener(LegacyMigrationHandler::blockPlaced);
     }
 
     public static void loadChunk(ChunkDataEvent.Load event) {
@@ -110,53 +98,6 @@ public final class LegacyMigrationHandler {
         if (kind != null) {
             level.setBlock(event.getPos(), replacement(event.getPlacedBlock(), kind),
                     Block.UPDATE_ALL);
-        }
-    }
-
-    public static void remapMissingContent(MissingMappingsEvent event) {
-        for (MissingMappingsEvent.Mapping<Block> mapping
-                : event.getAllMappings(Registries.BLOCK)) {
-            if (GRASS_PATH.equals(mapping.getKey())) {
-                remap(mapping, ForgeRegistries.BLOCKS.getValue(DIRT_PATH));
-                continue;
-            }
-            if (BuildingBricksCompat.hasLegacyAliases()) {
-                continue;
-            }
-            LegacySlabKind kind = legacySlabKind(mapping.getKey());
-            if (kind != null) {
-                mapping.remap(kind == LegacySlabKind.GRASS
-                        ? ModBlocks.GRASS_SLAB.get() : ModBlocks.DIRT_SLAB.get());
-            }
-        }
-        for (MissingMappingsEvent.Mapping<Item> mapping
-                : event.getAllMappings(Registries.ITEM)) {
-            if (GRASS_PATH.equals(mapping.getKey())) {
-                remap(mapping, ForgeRegistries.ITEMS.getValue(DIRT_PATH));
-                continue;
-            }
-            if (BuildingBricksCompat.hasLegacyAliases()) {
-                continue;
-            }
-            LegacySlabKind kind = legacySlabKind(mapping.getKey());
-            if (kind != null) {
-                mapping.remap(kind == LegacySlabKind.GRASS
-                        ? ModBlocks.GRASS_SLAB_ITEM.get() : ModBlocks.DIRT_SLAB_ITEM.get());
-            }
-        }
-        for (MissingMappingsEvent.Mapping<SoundEvent> mapping
-                : event.getAllMappings(Registries.SOUND_EVENT)) {
-            if (SWEET_BERRIES_PICK.equals(mapping.getKey())) {
-                remap(mapping, ForgeRegistries.SOUND_EVENTS.getValue(SWEET_BERRY_BUSH_PICK));
-            }
-        }
-    }
-
-    private static <T> void remap(MissingMappingsEvent.Mapping<T> mapping, T replacement) {
-        if (replacement != null) {
-            mapping.remap(replacement);
-        } else {
-            mapping.warn();
         }
     }
 

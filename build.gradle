@@ -3,11 +3,11 @@ import java.nio.charset.StandardCharsets
 import java.util.zip.ZipFile
 
 plugins {
-    id 'java'
     id 'eclipse'
     id 'idea'
+    id 'java-library'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '7.0.34'
+    id 'net.neoforged.gradle.userdev' version '7.1.38'
 }
 
 def sha256Of = { File inputFile ->
@@ -19,51 +19,6 @@ def sha256Of = { File inputFile ->
         }
     }
     digest.digest().encodeHex().toString().toUpperCase()
-}
-
-def mavenizerToolsDirectory = layout.projectDirectory.dir('ci-fixtures/tools')
-def mavenizerCompatibilityJar = mavenizerToolsDirectory.file(
-        'minecraft-mavenizer-0.5.21-orespawn-compat.jar')
-def mavenizerRuleManifest = mavenizerToolsDirectory.file(
-        'minecraft-source-compatibility.json')
-def mavenizerSourcePatch = mavenizerToolsDirectory.file(
-        'minecraft-mavenizer-0.5.21-orespawn-compat.patch')
-def mavenizerLicense = mavenizerToolsDirectory.file('LICENSE-MAVENIZER.txt')
-def mavenizerReadme = mavenizerToolsDirectory.file('README.md')
-def mavenizerFixtureChecksums = [
-        (mavenizerCompatibilityJar.asFile):
-                '4B14145595E900F178A082F2253A756F63897E6F61C2B8B5E7C819B82CD79E8C',
-        (mavenizerRuleManifest.asFile):
-                '931DAB31C238D8C9C38239671A61DA0942ADADF80149D6359197EE80A16380A8',
-        (mavenizerSourcePatch.asFile):
-                'A140C21312C2A5A8AFC56DC0B037B94D222CA68A7B868512B91684CD3754B650',
-        (mavenizerLicense.asFile):
-                '20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331',
-        (mavenizerReadme.asFile):
-                '25121D3DF400E3C76D87E39985FEDC43BCDAE82E52B75A53A30DA490FF268F71'
-]
-
-// ForgeGradle invokes Mavenizer while configuring the project. Verify the
-// executable and its target rules before any Mavenizer code is allowed to run.
-[mavenizerCompatibilityJar.asFile, mavenizerRuleManifest.asFile].each { fixture ->
-    if (!fixture.isFile()) {
-        throw new GradleException("Missing Mavenizer compatibility fixture: ${fixture}")
-    }
-    String actual = sha256Of(fixture)
-    String expected = mavenizerFixtureChecksums[fixture]
-    if (actual != expected) {
-        throw new GradleException("Mavenizer compatibility fixture checksum mismatch for " +
-                "${fixture.name}: expected ${expected}, found ${actual}")
-    }
-}
-
-fgtools.configure('mavenizer') {
-    classpath.from(mavenizerCompatibilityJar)
-    mainClass.set('net.minecraftforge.mcmaven.cli.Main')
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(25)
-        vendor = JvmVendorSpec.ADOPTIUM
-    })
 }
 
 version = mod_version
@@ -125,9 +80,16 @@ tasks.named('check') {
 
 sourceSets {
     gameTest {
-        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
-        runtimeClasspath += output + compileClasspath
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+        resources.srcDirs = ['src/main/resources', 'src/generated/resources', 'src/gameTest/resources']
     }
+}
+
+configurations {
+    gameTestImplementation.extendsFrom implementation
+    gameTestCompileOnly.extendsFrom compileOnly
+    gameTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
@@ -135,169 +97,63 @@ def developmentRunDirectory = providers.gradleProperty('skysGrassSlabsRunDirecto
         .getOrElse('run')
 def gameTestRunDirectory = providers.gradleProperty('skysGrassSlabsGameTestRunDirectory')
         .getOrElse('run-gametest')
-minecraft {
-    // The mappings can be changed at any time and must be in the following format.
-    // Channel:   Version:
-    // official   MCVersion             Official field/method names from Mojang mapping files
-    // parchment  YYYY.MM.DD-MCVersion  Open community-sourced parameter names and javadocs layered on top of official
-    //
-    // You must be aware of the Mojang license when using the 'official' or 'parchment' mappings.
-    // See more information here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
-    //
-    // Parchment is an unofficial project maintained by ParchmentMC, separate from MinecraftForge
-    // Additional setup is needed to use their mappings: https://github.com/ParchmentMC/Parchment/wiki/Getting-Started
-    //
-    // Use non-default mappings at your own risk. They may not always work.
-    // Simply re-run your setup task after changing the mappings to update your workspace.
-    mappings channel: mapping_channel, version: mapping_version
-
-    // When true, this property will have all Eclipse/IntelliJ IDEA run configurations run the "prepareX" task for the given run configuration before launching the game.
-    // In most cases, it is not necessary to enable.
-    // enableEclipsePrepareRuns = true
-    // enableIdeaPrepareRuns = true
-
-    // When true, this property will add the folder name of all declared run configurations to generated IDE run configurations.
-    // The folder name can be set on a run configuration using the "folderName" property.
-    // By default, the folder name of a run configuration is the name of the Gradle project containing it.
-    // generateRunFolders = true
-
-    // This property enables access transformers for use in development.
-    // They will be applied to the Minecraft artifact.
-    // The access transformer file can be anywhere in the project.
-    // However, it must be at "META-INF/accesstransformer.cfg" in the final mod jar to be loaded by Forge.
-    // This default location is a best practice to automatically put the file in the right place in the final jar.
-    // See https://docs.minecraftforge.net/en/latest/advanced/accesstransformers/ for more information.
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    // Default run configurations.
-    // These can be tweaked, removed, or duplicated as needed.
-    runs {
-        configureEach {
-            workingDir.convention layout.projectDirectory.dir(developmentRunDirectory)
-            jvmArgs '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED'
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            systemProperty 'forge.logging.console.level', 'debug'
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        register('client')
-
-        register('server') {
-            args '--nogui'
-        }
-
-        register('gameTestServer') {
-            workingDir.convention layout.projectDirectory.dir(gameTestRunDirectory)
-            systemProperty 'forge.enabledGameTestNamespaces', mod_id
-            mods {
-                "${mod_id}" {
-                    source sourceSets.gameTest
-                }
-            }
-        }
-
-        register('data') {
-            workingDir.convention layout.projectDirectory.dir('run-data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-        }
-    }
-}
-
-// Include resources generated by data generators.
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-def forgeRunModClassesDirectory = file("${buildDir}/forge-run-mod-classes/main")
-def prepareForgeRunModClasses = tasks.register('prepareForgeRunModClasses', Sync) {
-    dependsOn tasks.named('classes')
-    from sourceSets.main.output.classesDirs
-    from sourceSets.main.output.resourcesDir
-    into forgeRunModClassesDirectory
-}
-def forgeRunGameTestClassesDirectory = file("${buildDir}/forge-run-mod-classes/gameTest")
-def prepareForgeRunGameTestClasses = tasks.register('prepareForgeRunGameTestClasses', Sync) {
-    dependsOn tasks.named('gameTestClasses')
-    from sourceSets.main.output
-    from sourceSets.gameTest.output
-    into forgeRunGameTestClassesDirectory
+runs {
+    configureEach {
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+        workingDirectory project.layout.projectDirectory.dir(developmentRunDirectory)
+    }
+
+    client {
+        systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        modSource project.sourceSets.main
+    }
+
+    server {
+        systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        argument '--nogui'
+        modSource project.sourceSets.main
+    }
+
+    gameTestServer {
+        workingDirectory project.layout.projectDirectory.dir(gameTestRunDirectory)
+        systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        modSource project.sourceSets.gameTest
+    }
+
+    data {
+        workingDirectory project.layout.projectDirectory.dir('run-data')
+        modSource project.sourceSets.main
+        arguments.addAll '--mod', mod_id, '--all', '--output',
+                file('src/generated/resources/').absolutePath, '--existing',
+                file('src/main/resources/').absolutePath
+    }
 }
 
-tasks.withType(JavaExec).configureEach { JavaExec runTask ->
-    if (['runClient', 'runServer', 'runGameTestServer', 'runData'].contains(runTask.name)) {
-        def mergedOutput = runTask.name == 'runGameTestServer'
-                ? forgeRunGameTestClassesDirectory : forgeRunModClassesDirectory
-        runTask.dependsOn(runTask.name == 'runGameTestServer'
-                ? prepareForgeRunGameTestClasses : prepareForgeRunModClasses)
-        runTask.doFirst {
-            Set<String> splitOutputs = (sourceSets.main.output.files +
-                    (runTask.name == 'runGameTestServer' ? sourceSets.gameTest.output.files : []))
-                    .collect {
-                it.canonicalFile.absolutePath
-            } as Set
-            Collection<File> targetClasspath = runTask.classpath.files.findAll {
-                !splitOutputs.contains(it.canonicalFile.absolutePath)
-            }
-            runTask.classpath = files(mergedOutput, targetClasspath)
-            runTask.environment 'MOD_CLASSES', "${mod_id}%%${mergedOutput}"
-        }
-    }
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
 }
 
 repositories {
-    minecraft.mavenizer(it)
-    maven fg.forgeMaven
-    maven fg.minecraftLibsMaven
-    exclusiveContent {
-        forRepository { maven { url = 'https://repo.spongepowered.org/repository/maven-public' } }
-        filter { includeGroupAndSubgroups('org.spongepowered') }
-    }
-    mavenCentral()
-    maven { url = 'https://libraries.minecraft.net/' }
 }
 
 dependencies {
-    implementation minecraft.dependency(
-            "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}")
+    implementation "net.neoforged:neoforge:${neo_version}"
     testImplementation 'junit:junit:4.13.2'
 }
-
-def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompatibilityFixture') {
-    group = 'verification'
-    description = 'Verifies the checksum-sealed Forge 1.20.6 Mavenizer compatibility fixture.'
-    inputs.files mavenizerFixtureChecksums.keySet()
-    doLast {
-        mavenizerFixtureChecksums.each { File fixture, String expected ->
-            if (!fixture.isFile()) {
-                throw new GradleException("Missing Mavenizer compatibility fixture: ${fixture}")
-            }
-            String actual = sha256Of(fixture)
-            if (actual != expected) {
-                throw new GradleException("Mavenizer compatibility fixture checksum mismatch for " +
-                        "${fixture.name}: expected ${expected}, found ${actual}")
-            }
-        }
-    }
-}
-
-tasks.named('compileJava', JavaCompile) {
-    dependsOn verifyMavenizerCompatibilityFixture
-}
-
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
             minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
+            neo_version: neo_version, neo_version_range: neo_version_range,
             loader_version_range: loader_version_range,
             mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
             mod_authors: mod_authors, mod_description: mod_description,
     ]
     inputs.properties replaceProperties
 
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
     }
 }
@@ -316,7 +172,7 @@ tasks.named('jar', Jar).configure {
                 'Implementation-Version'  : project.jar.archiveVersion,
                 'Implementation-Vendor'   : mod_authors,
                 'Built-On-Java'           : '21',
-                'Built-On'                : "${minecraft_version}-${forge_version}"
+                'Built-On'                : "${minecraft_version}-${neo_version}"
         ])
     }
 }
@@ -346,9 +202,8 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.20.6' || project.forge_version != '50.2.0' ||
-                project.mapping_channel != 'official' || project.mapping_version != '1.20.6' ||
-                project.loader_name != 'forge' || project.loader_code != '1' ||
+        if (project.minecraft_version != '1.20.6' || project.neo_version != '20.6.139' ||
+                project.loader_name != 'neoforge' || project.loader_code != '2' ||
                 project.java_version != '21' || project.java_toolchain_version != '21.0.7+6' ||
                 project.gradle_java_version != '21' || project.curseforge_project_id != '1677588') {
             throw new GradleException('Unexpected 1.20.6 release metadata')
@@ -380,7 +235,7 @@ tasks.register('verifyReleaseArtifacts') {
         ZipFile zip = new ZipFile(new File(libs, releaseFiles.get()[0]))
         try {
             Set<String> names = zip.entries().collect { it.name } as Set<String>
-            ['META-INF/mods.toml', 'META-INF/LICENSE', 'META-INF/LICENSE.spdx',
+            ['META-INF/neoforge.mods.toml', 'META-INF/LICENSE', 'META-INF/LICENSE.spdx',
              'META-INF/NOTICE',
              'META-INF/coremods.json',
              'coremods/skysgrassslabs_legacy_world.js',
@@ -391,8 +246,8 @@ tasks.register('verifyReleaseArtifacts') {
              'assets/grassslabs/blockstates/dirt_path_slab.json',
              'assets/grassslabs/blockstates/grass_carpet.json',
              'data/grassslabs/loot_tables/blocks/grass_carpet.json',
-             'data/forge/tags/items/seeds.json',
-             'data/skysgrassslabs/forge/biome_modifier/grass_slab_smoothing.json',
+              'data/c/tags/items/seeds.json',
+              'data/skysgrassslabs/neoforge/biome_modifier/grass_slab_smoothing.json',
              'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class',
              'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsCompat.class',
              'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsMigrationHandler.class',
@@ -427,11 +282,11 @@ tasks.register('verifyReleaseArtifacts') {
                 }
             }
 
-            String metadata = zip.getInputStream(zip.getEntry('META-INF/mods.toml'))
+            String metadata = zip.getInputStream(zip.getEntry('META-INF/neoforge.mods.toml'))
                     .getText(StandardCharsets.UTF_8.name())
-            if (!metadata.contains('versionRange="[1.20.6,1.20.7)"') ||
-                    !metadata.contains('versionRange="[50,)"')) {
-                throw new GradleException('Packaged Forge metadata targets the wrong version')
+            if (!metadata.contains('versionRange="[1.20.6,1.21)"') ||
+                    !metadata.contains('versionRange="[20.6.139,20.7)"')) {
+                throw new GradleException('Packaged NeoForge metadata targets the wrong version')
             }
 
             String windowsPathPrefix = ':' + ((char) 92)
@@ -593,8 +448,11 @@ def prepareEclipseResources = tasks.register('prepareEclipseResources') {
 
 def configureEclipseBuildship = tasks.register('configureEclipseBuildship') {
     group = 'ide'
-    description = 'Pins Eclipse Buildship to the same Gradle home used to generate Forge runs.'
+    description = 'Pins Eclipse Buildship to the Gradle home used for NeoForge.'
     doLast {
+        String requestedGradleHome = System.getenv('GRADLE_USER_HOME')
+        File gradleHome = requestedGradleHome == null || requestedGradleHome.trim().isEmpty()
+                ? gradle.gradleUserHomeDir : file(requestedGradleHome)
         File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
         Properties preferences = new Properties()
         if (preferencesFile.isFile()) {
@@ -602,20 +460,31 @@ def configureEclipseBuildship = tasks.register('configureEclipseBuildship') {
         }
         preferences.setProperty('eclipse.preferences.version', '1')
         preferences.setProperty('connection.gradle.distribution', 'GRADLE_DISTRIBUTION(WRAPPER)')
-        preferences.setProperty('connection.gradle.user.home', gradle.gradleUserHomeDir.canonicalPath)
+        preferences.setProperty('connection.gradle.user.home', gradleHome.canonicalPath)
         preferences.setProperty('connection.project.dir', '')
-        preferences.setProperty('gradle.user.home', gradle.gradleUserHomeDir.canonicalPath)
+        preferences.setProperty('gradle.user.home', gradleHome.canonicalPath)
+        preferences.setProperty('java.home', System.getProperty('java.home'))
         preferences.setProperty('override.workspace.settings', 'true')
         preferencesFile.parentFile.mkdirs()
-        preferencesFile.withOutputStream { preferences.store(it, 'Generated Buildship configuration.') }
+        preferencesFile.withOutputStream { preferences.store(it,
+                'Generated Buildship configuration for the NeoForge development environment.') }
     }
 }
 
 eclipse {
+    project {
+        natures 'org.eclipse.buildship.core.gradleprojectnature'
+        buildCommand 'org.eclipse.buildship.core.gradleprojectbuilder'
+    }
     classpath {
         downloadSources = true
         downloadJavadoc = true
         file.whenMerged { classpath ->
+            def libraryPaths = new LinkedHashSet<String>()
+            classpath.entries = classpath.entries.findAll { entry ->
+                !(entry instanceof org.gradle.plugins.ide.eclipse.model.Library)
+                        || libraryPaths.add(entry.path)
+            }
             classpath.entries.removeAll { entry ->
                 entry instanceof org.gradle.plugins.ide.eclipse.model.SourceFolder &&
                         ['src/main/resources', 'src/generated/resources'].contains(entry.path)
@@ -626,163 +495,48 @@ eclipse {
             }
         }
     }
-    synchronizationTasks 'isolateEclipseProductionRuns'
+    synchronizationTasks 'prepareEclipseResources'
 }
 
-def syncForge50EclipseLaunches = tasks.register('syncForge50EclipseLaunches') {
-    group = 'ide'
-    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 50.'
-    doLast {
-        String mainOutput = new File(projectDir, 'bin/main').absolutePath
-        String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
-        String productionModClasses = "${mod_id}%%${mainOutput}"
-        String gameTestModClasses = productionModClasses + File.pathSeparator +
-                "${mod_id}%%${gameTestOutput}"
-
-        ['Client', 'Server', 'Data'].each { String runName ->
-            File launch = file("run${runName}.launch")
-            if (!launch.isFile()) {
-                throw new GradleException("Missing generated Eclipse launch: ${launch}")
-            }
-            String text = launch.getText('UTF-8')
-            if (text.contains('<mapAttribute key="org.eclipse.debug.core.environmentVariables"/>')) {
-                text = text.replace(
-                        '<mapAttribute key="org.eclipse.debug.core.environmentVariables"/>',
-                        '<mapAttribute key="org.eclipse.debug.core.environmentVariables">\r\n' +
-                                "    <mapEntry key=\"MOD_CLASSES\" value=\"${productionModClasses}\"/>\r\n" +
-                                '</mapAttribute>')
-            }
-            if (!text.contains('<mapEntry key="MOD_CLASSES"')) {
-                text = text.replaceFirst(
-                        /<mapAttribute key="org\.eclipse\.debug\.core\.environmentVariables">\r?\n/,
-                        { String environmentHeader ->
-                            environmentHeader +
-                                    "    <mapEntry key=\"MOD_CLASSES\" value=\"${productionModClasses}\"/>\r\n"
-                        })
-            }
-            text = text.replaceFirst(
-                    /<mapEntry key="MOD_CLASSES" value="[^"]*"\/>/,
-                    java.util.regex.Matcher.quoteReplacement(
-                            "<mapEntry key=\"MOD_CLASSES\" value=\"${productionModClasses}\"/>"))
-            if (!text.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE')) {
-                text = text.replace('</launchConfiguration>',
-                        '  <booleanAttribute key="org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE" value="true"/>\r\n' +
-                                '</launchConfiguration>')
-            }
-            launch.setText(text.replace('\r\n', '\n'), 'UTF-8')
-        }
-
-        File gameTestLaunch = file('runGameTestServer.launch')
-        if (!gameTestLaunch.isFile()) {
-            throw new GradleException("Missing generated Eclipse launch: ${gameTestLaunch}")
-        }
-        String gameTestText = gameTestLaunch.getText('UTF-8')
-        if (gameTestText.contains('<mapAttribute key="org.eclipse.debug.core.environmentVariables"/>')) {
-            gameTestText = gameTestText.replace(
-                    '<mapAttribute key="org.eclipse.debug.core.environmentVariables"/>',
-                    '<mapAttribute key="org.eclipse.debug.core.environmentVariables">\r\n' +
-                            "    <mapEntry key=\"MOD_CLASSES\" value=\"${gameTestModClasses}\"/>\r\n" +
-                            '</mapAttribute>')
-        }
-        if (!gameTestText.contains('<mapEntry key="MOD_CLASSES"')) {
-            gameTestText = gameTestText.replaceFirst(
-                    /<mapAttribute key="org\.eclipse\.debug\.core\.environmentVariables">\r?\n/,
-                    { String environmentHeader ->
-                        environmentHeader +
-                                "    <mapEntry key=\"MOD_CLASSES\" value=\"${gameTestModClasses}\"/>\r\n"
-                    })
-        }
-        gameTestText = gameTestText.replaceFirst(
-                /<mapEntry key="MOD_CLASSES" value="[^"]*"\/>/,
-                java.util.regex.Matcher.quoteReplacement(
-                        "<mapEntry key=\"MOD_CLASSES\" value=\"${gameTestModClasses}\"/>"))
-        gameTestLaunch.setText(gameTestText.replace('\r\n', '\n'), 'UTF-8')
-    }
-}
-
-tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
-    finalizedBy syncForge50EclipseLaunches
-}
-
-def isolateEclipseProductionRuns = tasks.register('isolateEclipseProductionRuns') {
-    group = 'ide'
-    description = 'Prepares the complete ForgeGradle 7 Eclipse project configuration.'
-    dependsOn tasks.named('genEclipseRuns')
-    dependsOn syncForge50EclipseLaunches
-    dependsOn configureEclipseBuildship
+tasks.named('eclipse').configure {
     dependsOn prepareEclipseResources
+    dependsOn configureEclipseBuildship
 }
 
 def verifyEclipseConfiguration = tasks.register('verifyEclipseConfiguration') {
     group = 'verification'
-    description = 'Rejects duplicate Eclipse dependencies, caches, outputs, and test leakage.'
-    dependsOn isolateEclipseProductionRuns
-    dependsOn tasks.named('eclipseClasspath')
+    description = 'Rejects duplicate Eclipse dependencies and production/test classpath leakage.'
+    dependsOn tasks.named('eclipse')
     doLast {
         File classpathFile = file('.classpath')
+        if (!classpathFile.isFile()) throw new GradleException('Eclipse .classpath was not generated')
         String classpathText = classpathFile.getText('UTF-8')
-        int explicitLibraryCount = classpathText.count('kind="lib"')
-        int buildshipContainerCount = classpathText.count(
-                'org.eclipse.buildship.core.gradleclasspathcontainer')
-        if (buildshipContainerCount > 1) {
-            throw new GradleException('Eclipse classpath contains duplicate Buildship containers')
-        }
-        if (explicitLibraryCount == 0 && buildshipContainerCount != 1) {
-            throw new GradleException('Eclipse classpath contains neither the Gradle model nor its Buildship container')
-        }
-        if (explicitLibraryCount > 0 &&
-                !classpathText.contains("forge-${minecraft_version}-${forge_version}.jar")) {
-            throw new GradleException('ForgeGradle 7 Eclipse model is missing the mapped Forge dependency')
-        }
         if (!classpathText.contains('path="build/resources/main"') ||
                 classpathText.contains('path="src/main/resources"') ||
                 classpathText.contains('path="src/generated/resources"')) {
             throw new GradleException('Eclipse must consume only Gradle-processed production resources')
         }
-
         File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
+        if (!preferencesFile.isFile()) throw new GradleException('Missing Buildship preferences')
         Properties preferences = new Properties()
         preferencesFile.withInputStream { preferences.load(it) }
-        String expectedGradleHome = gradle.gradleUserHomeDir.canonicalPath
-        if (preferences.getProperty('connection.gradle.user.home') != expectedGradleHome ||
-                preferences.getProperty('gradle.user.home') != expectedGradleHome ||
-                preferences.getProperty('override.workspace.settings') != 'true') {
-            throw new GradleException("Eclipse Buildship is not pinned to ${expectedGradleHome}")
+        if (preferences.getProperty('override.workspace.settings') != 'true') {
+            throw new GradleException('Eclipse Buildship workspace override is not active')
         }
-
-        String mainOutput = new File(projectDir, 'bin/main').absolutePath
-        String expectedProductionClasses = "${mod_id}%%${mainOutput}"
-        ['Client', 'Server', 'Data'].each { String runName ->
-            File launch = file("run${runName}.launch")
-            String text = launch.getText('UTF-8')
-            if (!text.contains("key=\"MOD_CLASSES\" value=\"${expectedProductionClasses}\"") ||
-                    !text.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE') ||
-                    !text.contains('value="net.minecraftforge.launcher.Main"') ||
-                    !text.contains('org.eclipse.jdt.launching.DEFAULT_CLASSPATH" value="false"') ||
-                    text.count('org.eclipse.buildship.core.gradleclasspathcontainer') != 1) {
-                throw new GradleException("Eclipse production launch is not isolated: ${launch}")
+        File metadata = file('bin/main/META-INF/neoforge.mods.toml')
+        if (!metadata.isFile() || metadata.getText('UTF-8').contains('${mod_version}') ||
+                !metadata.getText('UTF-8').contains("version=\"${project.version}\"")) {
+            throw new GradleException('Eclipse output contains missing or unexpanded NeoForge metadata')
+        }
+        List<String> forbidden = ['src/test', 'bin/test', 'build/classes/java/test',
+                'net.minecraftforge', 'META-INF/mods.toml']
+        fileTree(project.projectDir) { include 'run*.launch' }.files.each { launch ->
+            List<String> leaked = forbidden.findAll { launch.getText('UTF-8').contains(it) }
+            if (!leaked.isEmpty()) {
+                throw new GradleException("${launch.name} exposes test/Forge/local content: ${leaked}")
             }
         }
-
-        String expectedGameTestClasses = expectedProductionClasses + File.pathSeparator +
-                "${mod_id}%%${new File(projectDir, 'bin/gameTest').absolutePath}"
-        File gameTestLaunch = file('runGameTestServer.launch')
-        if (!gameTestLaunch.getText('UTF-8').contains(
-                "key=\"MOD_CLASSES\" value=\"${expectedGameTestClasses}\"")) {
-            throw new GradleException("Eclipse GameTest launch is not isolated: ${gameTestLaunch}")
-        }
-
-        File modMetadata = file('bin/main/META-INF/mods.toml')
-        if (!modMetadata.isFile() || modMetadata.getText('UTF-8').contains('${mod_version}') ||
-                !modMetadata.getText('UTF-8').contains("version=\"${project.version}\"")) {
-            throw new GradleException('Eclipse output contains missing or unexpanded Forge metadata')
-        }
     }
-}
-
-tasks.named('eclipse').configure {
-    dependsOn isolateEclipseProductionRuns
-    finalizedBy verifyEclipseConfiguration
 }
 
 def prepareGameTestStructures = tasks.register('prepareGameTestStructures', Copy) {

@@ -6,20 +6,20 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegisterEvent;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.registries.RegisterEvent;
 
 /** Narrow compatibility boundary for supported historical slab IDs. */
 public final class BuildingBricksCompat {
     public static final String MOD_ID = "buildingbricks";
     public static final ResourceLocation GRASS_SLAB_ID =
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "grass_slab");
+            new ResourceLocation(MOD_ID, "grass_slab");
     public static final ResourceLocation DIRT_SLAB_ID =
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "dirt_slab");
+            new ResourceLocation(MOD_ID, "dirt_slab");
     public static final ResourceLocation HISTORICAL_GRASS_SLAB_ID =
-            ResourceLocation.fromNamespaceAndPath("buildingbrickscompatvanilla", "grass_slab");
+            new ResourceLocation("buildingbrickscompatvanilla", "grass_slab");
 
     private static Block grassSlab;
     private static Block dirtSlab;
@@ -94,7 +94,7 @@ public final class BuildingBricksCompat {
     }
 
     private static Block resolve(Block cached, ResourceLocation id) {
-        return cached != null ? cached : ForgeRegistries.BLOCKS.getValue(id);
+        return cached != null ? cached : BuiltInRegistries.BLOCK.get(id);
     }
 
     private BuildingBricksCompat() {

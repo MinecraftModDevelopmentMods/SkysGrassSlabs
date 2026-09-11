@@ -6,10 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLPaths;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 
 /** Common configuration and one-time migration from the 1.10 configuration file. */
@@ -22,17 +22,17 @@ public final class SkysGrassSlabsConfig {
     public static final String FILE_NAME = "skysgrassslabs-common.toml";
 
     private static final Common COMMON;
-    private static final ForgeConfigSpec SPEC;
+    private static final ModConfigSpec SPEC;
     private static volatile boolean compatibilitySuppressed;
 
     static {
-        Pair<Common, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder().configure(Common::new);
+        Pair<Common, ModConfigSpec> pair = new ModConfigSpec.Builder().configure(Common::new);
         COMMON = pair.getLeft();
         SPEC = pair.getRight();
     }
 
-    public static void register(FMLJavaModLoadingContext context) {
-        context.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+    public static void register(ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
     }
 
     public static void migrateLegacyConfig() {
@@ -65,7 +65,7 @@ public final class SkysGrassSlabsConfig {
             return true;
         } catch (IOException exception) {
             SkysGrassSlabs.LOGGER.warn("Could not migrate the legacy Sky's Grass Slabs config; "
-                    + "Forge defaults will be used", exception);
+                    + "built-in defaults will be used", exception);
             return false;
         }
     }
@@ -118,11 +118,11 @@ public final class SkysGrassSlabsConfig {
     }
 
     private static final class Common {
-        private final ForgeConfigSpec.BooleanValue forceReplaceBuildingBricksSlabs;
-        private final ForgeConfigSpec.BooleanValue forceReplaceGrassSlabsModContent;
-        private final ForgeConfigSpec.BooleanValue generateGrassSlabs;
+        private final ModConfigSpec.BooleanValue forceReplaceBuildingBricksSlabs;
+        private final ModConfigSpec.BooleanValue forceReplaceGrassSlabsModContent;
+        private final ModConfigSpec.BooleanValue generateGrassSlabs;
 
-        private Common(ForgeConfigSpec.Builder builder) {
+        private Common(ModConfigSpec.Builder builder) {
             builder.comment("Legacy world compatibility settings.").push("compat");
             forceReplaceBuildingBricksSlabs = builder.comment(
                     "Replace supported historical grass and dirt slabs when their original mod "

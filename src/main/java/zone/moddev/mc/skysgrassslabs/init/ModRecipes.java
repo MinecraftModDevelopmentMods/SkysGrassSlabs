@@ -2,19 +2,19 @@ package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.recipe.TurfCuttingRecipe;
 
 /** Stable recipe serializer registrations. */
 public final class ModRecipes {
     public static final DeferredRegister<RecipeSerializer<?>> SERIALIZERS =
-            DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, SkysGrassSlabs.MOD_ID);
+            DeferredRegister.create(BuiltInRegistries.RECIPE_SERIALIZER, SkysGrassSlabs.MOD_ID);
 
-    public static final RegistryObject<RecipeSerializer<TurfCuttingRecipe>> TURF_CUTTING =
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<TurfCuttingRecipe>> TURF_CUTTING =
             SERIALIZERS.register("turf_cutting",
                     () -> new SimpleCraftingRecipeSerializer<>(TurfCuttingRecipe::new));
 

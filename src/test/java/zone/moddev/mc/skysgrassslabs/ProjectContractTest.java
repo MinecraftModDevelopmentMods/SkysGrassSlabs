@@ -14,15 +14,14 @@ public class ProjectContractTest {
     @Test
     public void metadataUsesStableIdentityWithoutOreSpawnDependency() throws Exception {
         String metadata = Files.readString(
-                Path.of("src/main/resources/META-INF/mods.toml"), StandardCharsets.UTF_8);
+                Path.of("src/main/resources/META-INF/neoforge.mods.toml"), StandardCharsets.UTF_8);
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
 
         assertTrue(properties.contains("mod_id=skysgrassslabs"));
         assertTrue(properties.contains("minecraft_version=1.20.6"));
-        assertTrue(properties.contains("forge_version=50.2.0"));
-        assertTrue(properties.contains("mapping_channel=official"));
-        assertTrue(properties.contains("mapping_version=1.20.6"));
-        assertTrue(properties.contains("mcp_version=20240429.135109"));
+        assertTrue(properties.contains("neo_version=20.6.139"));
+        assertTrue(properties.contains("loader_name=neoforge"));
+        assertTrue(properties.contains("loader_code=2"));
         assertTrue(properties.contains("java_toolchain_version=21.0.7+6"));
         String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
         assertTrue(build.contains("verifyJava21Toolchain"));
@@ -36,14 +35,14 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
         assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.0.120061.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.0.120062.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void releaseIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.1.0.120061"));
+        assertTrue(properties.contains("mod_version=1.1.0.120062"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -58,8 +57,8 @@ public class ProjectContractTest {
         String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
         assertTrue(build.contains("server-port=0"));
 
-        assertTrue(properties.contains("loader_name=forge"));
-        assertTrue(properties.contains("loader_code=1"));
+        assertTrue(properties.contains("loader_name=neoforge"));
+        assertTrue(properties.contains("loader_code=2"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(workflow.contains("confirm_live_publication:"));
         assertFalse(workflow.contains("    environment:\n      name: release"));
@@ -100,7 +99,7 @@ public class ProjectContractTest {
         assertTrue(config.contains("push(\"compat\")"));
         assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
         assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
-        assertTrue(main.contains("VERSION = \"1.1.0.120061\""));
+        assertTrue(main.contains("VERSION = \"1.1.0.120062\""));
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
         assertTrue(state.contains("schema_version"));
@@ -147,7 +146,7 @@ public class ProjectContractTest {
                 "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook.java"),
                 StandardCharsets.UTF_8);
         assertTrue(coremod.contains("net.minecraft.util.datafix.fixes.BlockStateData"));
-        assertTrue(coremod.contains("net.minecraftforge.common.ForgeHooks"));
+        assertTrue(coremod.contains("net.neoforged.neoforge.common.CommonHooks"));
         assertTrue(coremod.contains("net.minecraft.world.level.chunk.storage.ChunkStorage"));
         assertTrue(coremod.contains("65536"));
         assertTrue(coremod.contains("4096"));
@@ -189,7 +188,7 @@ public class ProjectContractTest {
     }
 
     @Test
-    public void forge50LifecycleAndDataPackContractsArePresent() throws Exception {
+    public void neoForgeLifecycleAndDataPackContractsArePresent() throws Exception {
         String blocks = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ModBlocks.java"),
                 StandardCharsets.UTF_8);
@@ -200,13 +199,13 @@ public class ProjectContractTest {
                 "src/main/java/zone/moddev/mc/skysgrassslabs/world/SmoothingBiomeModifier.java"),
                 StandardCharsets.UTF_8);
         String modifierJson = Files.readString(Path.of(
-                "src/main/resources/data/skysgrassslabs/forge/biome_modifier/"
+                "src/main/resources/data/skysgrassslabs/neoforge/biome_modifier/"
                         + "grass_slab_smoothing.json"), StandardCharsets.UTF_8);
         String pack = Files.readString(Path.of("src/main/resources/pack.mcmeta"),
                 StandardCharsets.UTF_8);
         assertTrue(blocks.contains("BuildCreativeModeTabContentsEvent"));
         assertTrue(blocks.contains("event.getTabKey()"));
-        assertTrue(worldgen.contains("ForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS"));
+        assertTrue(worldgen.contains("NeoForgeRegistries.BIOME_MODIFIER_SERIALIZERS"));
         assertTrue(worldgen.contains("FEATURE_NAME = \"grass_slab_smoothing\""));
         assertTrue(modifier.contains("phase != Phase.AFTER_EVERYTHING"));
         assertTrue(modifier.contains("features.add(0, smoothing)"));
@@ -243,23 +242,17 @@ public class ProjectContractTest {
                 "validate-gradle-build.yml"}) {
             String workflow = Files.readString(Path.of(".github/workflows", name),
                     StandardCharsets.UTF_8);
-            assertTrue(name, workflow.contains("master-1.20.6"));
+            assertTrue(name, workflow.contains("master-1.20.6-neo"));
         }
         String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
                 StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120061.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120061-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120061-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120062.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120062-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.120062-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
-        assertEquals(2, ci.lines()
-                .filter(line -> line.contains("java-version: '8.0.502+7'"))
-                .count());
-        assertEquals(4, ci.lines()
-                .filter(line -> line.contains("JAVA_HOME_8_X64"))
-                .count());
-        assertTrue(ci.contains("java-version: '25.0.3+9.0.LTS'"));
-        assertTrue(ci.contains("JAVA_HOME_25_X64"));
-        assertTrue(ci.contains("ORESPAWN_MAVENIZER_OFFLINE: 'true'"));
+        assertTrue(ci.contains("java-version: '21.0.7+6.0.LTS'"));
+        assertFalse(ci.contains("JAVA_HOME_8_X64"));
+        assertFalse(ci.contains("MAVENIZER"));
         assertTrue(ci.contains("--rerun-tasks --offline --no-daemon --no-build-cache"));
         assertTrue(ci.contains("runGameTestServer"));
         assertTrue(ci.contains("skysGrassSlabsGameTestRunDirectory=build/game-test-run"));

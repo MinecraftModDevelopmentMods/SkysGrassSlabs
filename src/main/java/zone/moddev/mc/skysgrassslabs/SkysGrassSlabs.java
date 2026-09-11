@@ -2,11 +2,11 @@ package zone.moddev.mc.skysgrassslabs;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.ModContainer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
@@ -21,21 +21,19 @@ import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 import zone.moddev.mc.skysgrassslabs.world.ModWorldState;
 import zone.moddev.mc.skysgrassslabs.world.WorldgenBootstrap;
 
-/** Forge entry point for the standalone Sky's Grass Slabs mod. */
+/** NeoForge entry point for the standalone Sky's Grass Slabs mod. */
 @Mod(SkysGrassSlabs.MOD_ID)
 public final class SkysGrassSlabs {
-    /** Stable Forge mod identifier and resource namespace. */
+    /** Stable mod identifier and resource namespace. */
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.1.0.120061";
+    public static final String VERSION = "1.1.0.120062";
     public static final Logger LOGGER = LogManager.getLogger();
 
     /** Registers content, configuration, world generation, and persistent state. */
-    public SkysGrassSlabs(FMLJavaModLoadingContext context) {
-        IEventBus modBus = context.getModEventBus();
-
+    public SkysGrassSlabs(IEventBus modBus, ModContainer modContainer) {
         SkysGrassSlabsConfig.migrateLegacyConfig();
-        SkysGrassSlabsConfig.register(context);
+        SkysGrassSlabsConfig.register(modContainer);
         ModBlocks.register(modBus);
         ModRecipes.register(modBus);
         WorldgenBootstrap.register(modBus);
@@ -47,7 +45,7 @@ public final class SkysGrassSlabs {
         CommonEvents.register();
         registerGameTests(modBus);
 
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStarted);
+        NeoForge.EVENT_BUS.addListener(this::onServerStarted);
     }
 
     private static void registerGameTests(IEventBus modBus) {
@@ -56,7 +54,7 @@ public final class SkysGrassSlabs {
                     "zone.moddev.mc.skysgrassslabs.gametest.GameTestBootstrap");
             bootstrap.getMethod("register", IEventBus.class).invoke(null, modBus);
         } catch (ClassNotFoundException exception) {
-            String enabledNamespaces = System.getProperty("forge.enabledGameTestNamespaces", "");
+            String enabledNamespaces = System.getProperty("neoforge.enabledGameTestNamespaces", "");
             if (Arrays.stream(enabledNamespaces.split(","))
                     .map(String::trim)
                     .anyMatch(MOD_ID::equals)) {

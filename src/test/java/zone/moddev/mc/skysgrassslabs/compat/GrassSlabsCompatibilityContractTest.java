@@ -65,6 +65,6 @@ public class GrassSlabsCompatibilityContractTest {
     }
 
     private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(GrassSlabsCompat.MOD_ID, path);
+        return new ResourceLocation(GrassSlabsCompat.MOD_ID, path);
     }
 }

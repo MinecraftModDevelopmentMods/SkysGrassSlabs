@@ -25,13 +25,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerAboutToStartEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.event.level.ChunkDataEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ChunkDataEvent;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
@@ -48,13 +48,13 @@ public final class GrassSlabsMigrationHandler {
     private static final LongAdder RUN_RETAINED_CARPETS = new LongAdder();
 
     public static void register() {
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::loadChunk);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::saveChunk);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::playerLogin);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::entityJoin);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::blockPlaced);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::serverAboutToStart);
-        MinecraftForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::serverStopping);
+        NeoForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::loadChunk);
+        NeoForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::saveChunk);
+        NeoForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::playerLogin);
+        NeoForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::entityJoin);
+        NeoForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::blockPlaced);
+        NeoForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::serverAboutToStart);
+        NeoForge.EVENT_BUS.addListener(GrassSlabsMigrationHandler::serverStopping);
     }
 
     public static void loadChunk(ChunkDataEvent.Load event) {

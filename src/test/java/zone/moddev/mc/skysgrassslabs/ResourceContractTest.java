@@ -24,13 +24,13 @@ public class ResourceContractTest {
     }
 
     @Test
-    public void recipesUseStableIdsAndForgeSeedTag() throws Exception {
+    public void recipesUseStableIdsAndCommonSeedTag() throws Exception {
         String slab = Files.readString(Path.of(
                 "src/main/resources/data/skysgrassslabs/recipes/grass_slab_from_seeds.json"));
         String block = Files.readString(Path.of(
                 "src/main/resources/data/skysgrassslabs/recipes/grass_block_from_seeds.json"));
-        assertTrue(slab.contains("forge:seeds"));
-        assertTrue(block.contains("forge:seeds"));
+        assertTrue(slab.contains("c:seeds"));
+        assertTrue(block.contains("c:seeds"));
         assertTrue(slab.contains("skysgrassslabs:dirt_slab"));
         assertTrue(slab.contains("skysgrassslabs:grass_slab"));
     }

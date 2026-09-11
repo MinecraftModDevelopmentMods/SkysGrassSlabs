@@ -10,8 +10,8 @@ import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtUtils;
-import net.minecraftforge.event.RegisterGameTestsEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.neoforged.neoforge.event.RegisterGameTestsEvent;
+import net.neoforged.bus.api.IEventBus;
 import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsMigrationGameTests;
 
 /** Registers test-only classes without including them in the production jar. */

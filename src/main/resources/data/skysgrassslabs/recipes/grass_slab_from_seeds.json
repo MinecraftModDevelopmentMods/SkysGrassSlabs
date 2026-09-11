@@ -3,7 +3,7 @@
   "category": "building",
   "ingredients": [
     { "item": "skysgrassslabs:dirt_slab" },
-    { "tag": "forge:seeds" }
+    { "tag": "c:seeds" }
   ],
   "result": { "id": "skysgrassslabs:grass_slab" }
 }

@@ -10,17 +10,19 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
-import net.minecraftforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Runtime checks for the optional Grass Slabs content migration. */
-@GameTestHolder(value = SkysGrassSlabs.MOD_ID, namespace = SkysGrassSlabs.MOD_ID)
+@GameTestHolder(value = SkysGrassSlabs.MOD_ID)
+@PrefixGameTestTemplate(false)
 public final class GrassSlabsMigrationGameTests {
     private GrassSlabsMigrationGameTests() {
     }
 
-    @GameTest(template = "skysgrassslabs:empty", batch = "grassslabscompat001")
+    @GameTest(template = "empty", batch = "grassslabscompat001")
     public static void slabStatesConvertWithoutLosingNativeProperties(GameTestHelper helper) {
         require(helper, GrassSlabsCompat.hasLegacyAliases(),
                 "the absent source mod did not register compatibility holders");
@@ -75,7 +77,7 @@ public final class GrassSlabsMigrationGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "skysgrassslabs:empty", batch = "grassslabscompat002")
+    @GameTest(template = "empty", batch = "grassslabscompat002")
     public static void carpetAndItemConversionRespectTheSafeBoundary(GameTestHelper helper) {
         BlockState carpet = GrassSlabsCompat.grassCarpet().defaultBlockState();
         BlockState safe = GrassSlabsMigrationHandler.replacement(carpet,

@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 import net.minecraft.world.entity.animal.Sheep;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import zone.moddev.mc.skysgrassslabs.entity.ai.TurfEatingGoal;
 
 /** Server gameplay event registrations. */
@@ -14,7 +14,7 @@ public final class CommonEvents {
             Collections.newSetFromMap(new WeakHashMap<>());
 
     public static void register() {
-        MinecraftForge.EVENT_BUS.addListener(CommonEvents::addTurfEatingGoal);
+        NeoForge.EVENT_BUS.addListener(CommonEvents::addTurfEatingGoal);
     }
 
     public static void addTurfEatingGoal(EntityJoinLevelEvent event) {

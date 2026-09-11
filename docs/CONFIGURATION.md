@@ -1,6 +1,6 @@
 # Configuration
 
-Forge creates `config/skysgrassslabs-common.toml` after the mod starts for the
+NeoForge creates `config/skysgrassslabs-common.toml` after the mod starts for the
 first time. Stop the game or server before editing it, then restart to apply
 changes. On a dedicated server, the server's configuration controls world
 generation and world upgrades.
