@@ -363,12 +363,12 @@ public final class LegacyWorldDataHook {
                 return method;
             }
         }
-        throw new IllegalStateException("Could not find the NeoForge 20.6 legacy block-state "
+        throw new IllegalStateException("Could not find the NeoForge 21.1 legacy block-state "
                 + "registration method; the coremod was not applied");
     }
 
     private static ResourceLocation id(String path) {
-        return new ResourceLocation(SkysGrassSlabs.MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, path);
     }
 
     private static long chunkKey(int chunkX, int chunkZ) {

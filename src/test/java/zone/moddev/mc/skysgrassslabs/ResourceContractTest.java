@@ -26,9 +26,9 @@ public class ResourceContractTest {
     @Test
     public void recipesUseStableIdsAndCommonSeedTag() throws Exception {
         String slab = Files.readString(Path.of(
-                "src/main/resources/data/skysgrassslabs/recipes/grass_slab_from_seeds.json"));
+                "src/main/resources/data/skysgrassslabs/recipe/grass_slab_from_seeds.json"));
         String block = Files.readString(Path.of(
-                "src/main/resources/data/skysgrassslabs/recipes/grass_block_from_seeds.json"));
+                "src/main/resources/data/skysgrassslabs/recipe/grass_block_from_seeds.json"));
         assertTrue(slab.contains("c:seeds"));
         assertTrue(block.contains("c:seeds"));
         assertTrue(slab.contains("skysgrassslabs:dirt_slab"));
@@ -79,19 +79,20 @@ public class ResourceContractTest {
     @Test
     public void grassSlabUsesComponentAwareSilkTouchPredicate() throws Exception {
         String loot = Files.readString(Path.of(
-                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/grass_slab.json"));
+                "src/main/resources/data/skysgrassslabs/loot_table/blocks/grass_slab.json"));
         assertTrue(loot.contains("\"predicates\""));
         assertTrue(loot.contains("\"minecraft:enchantments\""));
+        assertTrue(loot.contains("\"enchantments\": \"minecraft:silk_touch\""));
     }
 
     @Test
     public void turfRecipeUsesStableCustomSerializer() throws Exception {
         String recipe = Files.readString(Path.of(
-                "src/main/resources/data/skysgrassslabs/recipes/turf.json"));
+                "src/main/resources/data/skysgrassslabs/recipe/turf.json"));
         assertTrue(recipe.contains("skysgrassslabs:turf_cutting"));
         String implementation = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java"));
-        assertTrue(implementation.contains("canPerformAction(ToolActions.SHOVEL_FLATTEN)"));
+        assertTrue(implementation.contains("canPerformAction(ItemAbilities.SHOVEL_FLATTEN)"));
     }
 
     private static void assertParses(Path path) {

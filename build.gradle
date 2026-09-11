@@ -202,11 +202,11 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.20.6' || project.neo_version != '20.6.139' ||
+        if (project.minecraft_version != '1.21.1' || project.neo_version != '21.1.247' ||
                 project.loader_name != 'neoforge' || project.loader_code != '2' ||
                 project.java_version != '21' || project.java_toolchain_version != '21.0.7+6' ||
                 project.gradle_java_version != '21' || project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 1.20.6 release metadata')
+            throw new GradleException('Unexpected 1.21.1 release metadata')
         }
     }
 }
@@ -245,8 +245,8 @@ tasks.register('verifyReleaseArtifacts') {
              'assets/grassslabs/blockstates/dirt_slab.json',
              'assets/grassslabs/blockstates/dirt_path_slab.json',
              'assets/grassslabs/blockstates/grass_carpet.json',
-             'data/grassslabs/loot_tables/blocks/grass_carpet.json',
-              'data/c/tags/items/seeds.json',
+              'data/grassslabs/loot_table/blocks/grass_carpet.json',
+              'data/c/tags/item/seeds.json',
               'data/skysgrassslabs/neoforge/biome_modifier/grass_slab_smoothing.json',
              'zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.class',
              'zone/moddev/mc/skysgrassslabs/compat/GrassSlabsCompat.class',
@@ -284,8 +284,8 @@ tasks.register('verifyReleaseArtifacts') {
 
             String metadata = zip.getInputStream(zip.getEntry('META-INF/neoforge.mods.toml'))
                     .getText(StandardCharsets.UTF_8.name())
-            if (!metadata.contains('versionRange="[1.20.6,1.21)"') ||
-                    !metadata.contains('versionRange="[20.6.139,20.7)"')) {
+            if (!metadata.contains('versionRange="[1.21.1,1.22)"') ||
+                    !metadata.contains('versionRange="[21.1.247,21.2)"')) {
                 throw new GradleException('Packaged NeoForge metadata targets the wrong version')
             }
 

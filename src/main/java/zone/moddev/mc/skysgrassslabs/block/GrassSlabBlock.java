@@ -30,8 +30,8 @@ import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.feature.configurations.RandomPatchConfiguration;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import net.neoforged.neoforge.common.IPlantable;
-import net.neoforged.neoforge.common.ToolAction;
+import net.neoforged.neoforge.common.ItemAbility;
+import net.neoforged.neoforge.common.util.TriState;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Grass slab with target aware spreading and top slab vegetation behaviour. */
@@ -103,19 +103,21 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     @Override
     @Nullable
     public BlockState getToolModifiedState(BlockState state, UseOnContext context,
-            ToolAction action, boolean simulate) {
+            ItemAbility action, boolean simulate) {
 
         return SlabTransitions.flatten(state, action);
     }
 
     @Override
-    public boolean canSustainPlant(BlockState state, BlockGetter level, BlockPos pos,
-            Direction direction, IPlantable plantable) {
+    public TriState canSustainPlant(BlockState state, BlockGetter level, BlockPos pos,
+            Direction direction, BlockState plant) {
 
-        return state.getValue(TYPE) == SlabType.TOP && !state.getValue(WATERLOGGED)
-                && direction == Direction.UP
-                && Blocks.GRASS_BLOCK.canSustainPlant(Blocks.GRASS_BLOCK.defaultBlockState(),
-                        level, pos, direction, plantable);
+        if (state.getValue(TYPE) != SlabType.TOP || state.getValue(WATERLOGGED)
+                || direction != Direction.UP) {
+            return TriState.FALSE;
+        }
+        return Blocks.GRASS_BLOCK.defaultBlockState()
+                .canSustainPlant(level, pos, direction, plant);
     }
 
     @Override

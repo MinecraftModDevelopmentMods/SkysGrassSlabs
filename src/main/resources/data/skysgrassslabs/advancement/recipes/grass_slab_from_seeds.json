@@ -4,7 +4,7 @@
   "criteria": {
     "has_dirt_slab": {
       "trigger": "minecraft:inventory_changed",
-      "conditions": { "items": [{ "items": ["skysgrassslabs:dirt_slab"] }] }
+      "conditions": { "items": [{ "items": "skysgrassslabs:dirt_slab" }] }
     },
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",

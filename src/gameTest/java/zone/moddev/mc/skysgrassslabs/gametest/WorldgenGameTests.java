@@ -34,7 +34,7 @@ public final class WorldgenGameTests {
         var biome = helper.getLevel().getBiome(helper.absolutePos(BlockPos.ZERO));
         var modifiers = helper.getLevel().registryAccess()
                 .registryOrThrow(NeoForgeRegistries.Keys.BIOME_MODIFIERS);
-        var modifier = modifiers.get(new ResourceLocation(
+        var modifier = modifiers.get(ResourceLocation.fromNamespaceAndPath(
                 SkysGrassSlabs.MOD_ID, "grass_slab_smoothing"));
         require(helper, modifier instanceof zone.moddev.mc.skysgrassslabs.world.SmoothingBiomeModifier,
                 "registered smoothing biome modifier is missing");

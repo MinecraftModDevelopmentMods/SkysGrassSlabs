@@ -2,10 +2,11 @@ package zone.moddev.mc.skysgrassslabs.gametest;
 
 import java.util.List;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -24,9 +25,7 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.inventory.CraftingContainer;
-import net.minecraft.world.inventory.TransientCraftingContainer;
-import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -40,7 +39,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.common.Tags;
-import net.neoforged.neoforge.common.ToolActions;
+import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -77,16 +76,16 @@ public final class SlabGameTests {
         BlockState doubled = dirtTop.setValue(SlabBlock.TYPE, SlabType.DOUBLE)
                 .setValue(SlabBlock.WATERLOGGED, false);
 
-        BlockState topPath = dirtTop.getToolModifiedState(context, ToolActions.SHOVEL_FLATTEN, false);
-        BlockState bottomPath = grassBottom.getToolModifiedState(context, ToolActions.SHOVEL_FLATTEN, false);
+        BlockState topPath = dirtTop.getToolModifiedState(context, ItemAbilities.SHOVEL_FLATTEN, false);
+        BlockState bottomPath = grassBottom.getToolModifiedState(context, ItemAbilities.SHOVEL_FLATTEN, false);
         require(helper, topPath != null && topPath.is(ModBlocks.PATH_SLAB.get())
                 && topPath.getValue(SlabBlock.TYPE) == SlabType.TOP, "top orientation was lost");
         require(helper, bottomPath != null && bottomPath.is(ModBlocks.PATH_SLAB.get())
                 && bottomPath.getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
                 "bottom orientation was lost");
         require(helper, waterlogged.getToolModifiedState(context,
-                ToolActions.SHOVEL_FLATTEN, false) == null, "waterlogged dirt flattened");
-        BlockState fullPath = doubled.getToolModifiedState(context, ToolActions.SHOVEL_FLATTEN, false);
+                ItemAbilities.SHOVEL_FLATTEN, false) == null, "waterlogged dirt flattened");
+        BlockState fullPath = doubled.getToolModifiedState(context, ItemAbilities.SHOVEL_FLATTEN, false);
         require(helper, fullPath != null && fullPath.is(Blocks.DIRT_PATH),
                 "double dirt slab did not normalize to vanilla path");
 
@@ -207,7 +206,7 @@ public final class SlabGameTests {
         for (String recipe : List.of("dirt_slab", "grass_slab", "grass_block_from_seeds",
                 "grass_slab_from_seeds")) {
             require(helper, helper.getLevel().getRecipeManager().byKey(
-                    new ResourceLocation(SkysGrassSlabs.MOD_ID, recipe)).isPresent(),
+                    ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, recipe)).isPresent(),
                     "missing recipe " + recipe);
         }
 
@@ -217,7 +216,9 @@ public final class SlabGameTests {
         List<ItemStack> ordinary = Block.getDrops(grass, helper.getLevel(), pos, null,
                 null, new ItemStack(Items.IRON_SHOVEL));
         ItemStack silkTool = new ItemStack(Items.IRON_SHOVEL);
-        silkTool.enchant(Enchantments.SILK_TOUCH, 1);
+        silkTool.enchant(helper.getLevel().registryAccess()
+                .lookupOrThrow(Registries.ENCHANTMENT)
+                .getOrThrow(Enchantments.SILK_TOUCH), 1);
         List<ItemStack> silk = Block.getDrops(grass, helper.getLevel(), pos, null, null, silkTool);
         require(helper, ordinary.size() == 1 && ordinary.get(0).is(ModBlocks.DIRT_SLAB_ITEM.get()),
                 "ordinary grass slab drop is incorrect");
@@ -242,23 +243,12 @@ public final class SlabGameTests {
                 "double dirt slab did not drop two slabs");
 
         CraftingRecipe seedRecipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
-                .byKey(new ResourceLocation(
+                .byKey(ResourceLocation.fromNamespaceAndPath(
                         SkysGrassSlabs.MOD_ID, "grass_slab_from_seeds"))
                 .orElseThrow().value();
-        CraftingContainer grid = new TransientCraftingContainer(new AbstractContainerMenu(null, -1) {
-            @Override
-            public boolean stillValid(Player player) {
-                return true;
-            }
-
-            @Override
-            public ItemStack quickMoveStack(Player player, int index) {
-                return ItemStack.EMPTY;
-            }
-        }, 2, 2);
-        require(helper, matchesSeedRecipe(grid, seedRecipe, helper, Items.WHEAT_SEEDS),
+        require(helper, matchesSeedRecipe(seedRecipe, helper, Items.WHEAT_SEEDS),
                 "wheat seeds did not match the grass slab recipe");
-        require(helper, matchesSeedRecipe(grid, seedRecipe, helper, Items.BEETROOT_SEEDS),
+        require(helper, matchesSeedRecipe(seedRecipe, helper, Items.BEETROOT_SEEDS),
                 "beetroot seeds did not match the grass slab recipe");
         helper.succeed();
     }
@@ -274,11 +264,11 @@ public final class SlabGameTests {
                 "bottom grass slab accepted bonemeal");
         require(helper, grass.isValidBonemealTarget(helper.getLevel(), pos, top),
                 "top grass slab rejected bonemeal");
-        require(helper, !grass.canSustainPlant(bottom, helper.getLevel(), pos, Direction.UP,
-                (net.neoforged.neoforge.common.IPlantable) Blocks.DANDELION),
+        require(helper, grass.canSustainPlant(bottom, helper.getLevel(), pos, Direction.UP,
+                Blocks.DANDELION.defaultBlockState()).isFalse(),
                 "bottom grass slab sustained a plant");
-        require(helper, grass.canSustainPlant(top, helper.getLevel(), pos, Direction.UP,
-                (net.neoforged.neoforge.common.IPlantable) Blocks.DANDELION),
+        require(helper, !grass.canSustainPlant(top, helper.getLevel(), pos, Direction.UP,
+                Blocks.DANDELION.defaultBlockState()).isFalse(),
                 "top grass slab rejected a plant");
 
         helper.getLevel().setBlock(pos, top, Block.UPDATE_ALL);
@@ -318,17 +308,17 @@ public final class SlabGameTests {
                 "world schema marker is not version 1");
         require(helper, SkysGrassSlabsConfig.generateGrassSlabs(),
                 "fresh common config did not default worldgen to true");
-        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "dirt_slab")
+        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "dirt_slab")
                 .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.DIRT_SLAB.get())),
                 "dirt slab registry ID changed");
-        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "grass_slab")
+        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "grass_slab")
                 .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.GRASS_SLAB.get())),
                 "grass slab registry ID changed");
-        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "path_slab")
+        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "path_slab")
                 .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.PATH_SLAB.get())),
                 "path slab registry ID changed");
         require(helper, BuiltInRegistries.FEATURE.containsKey(
-                new ResourceLocation(
+                ResourceLocation.fromNamespaceAndPath(
                         SkysGrassSlabs.MOD_ID, "grass_slab_smoothing")),
                 "worldgen feature registry ID changed");
         helper.succeed();
@@ -546,24 +536,22 @@ public final class SlabGameTests {
     @GameTest(template = EMPTY, batch = "slabs010")
     public static void turfRecipeReturnsSoilAndUnchangedShovel(GameTestHelper helper) {
         CraftingRecipe recipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
-                .byKey(new ResourceLocation(
+                .byKey(ResourceLocation.fromNamespaceAndPath(
                         SkysGrassSlabs.MOD_ID, "turf")).orElseThrow().value();
         require(helper, recipe.getSerializer() == ModRecipes.TURF_CUTTING.get(),
                 "turf recipe serializer changed");
-        CraftingContainer grid = craftingGrid(2, 2);
-
         ItemStack iron = new ItemStack(Items.IRON_SHOVEL);
         iron.setDamageValue(7);
         CompoundTag customData = new CompoundTag();
         customData.putString("turf_test", "preserved");
         iron.set(DataComponents.CUSTOM_DATA, CustomData.of(customData));
-        grid.setItem(0, new ItemStack(Blocks.GRASS_BLOCK));
-        grid.setItem(1, iron);
-        require(helper, recipe.matches(grid, helper.getLevel())
-                && recipe.assemble(grid, helper.getLevel().registryAccess())
+        CraftingInput blockGrid = craftingGrid(2, 2,
+                new ItemStack(Blocks.GRASS_BLOCK), iron);
+        require(helper, recipe.matches(blockGrid, helper.getLevel())
+                && recipe.assemble(blockGrid, helper.getLevel().registryAccess())
                         .is(ModBlocks.TURF_ITEM.get()),
                 "grass block and shovel did not craft turf in a 2x2 grid");
-        NonNullList<ItemStack> blockRemainders = recipe.getRemainingItems(grid);
+        NonNullList<ItemStack> blockRemainders = recipe.getRemainingItems(blockGrid);
         require(helper, blockRemainders.get(0).is(Blocks.DIRT.asItem()),
                 "grass block did not return dirt");
         require(helper, blockRemainders.get(1).is(Items.IRON_SHOVEL)
@@ -572,37 +560,37 @@ public final class SlabGameTests {
                         DataComponents.CUSTOM_DATA, CustomData.EMPTY).matchedBy(customData),
                 "shovel remainder lost durability or custom data");
 
-        grid.clearContent();
-        grid.setItem(0, new ItemStack(ModBlocks.GRASS_SLAB_ITEM.get()));
-        grid.setItem(3, new ItemStack(Items.DIAMOND_SHOVEL));
-        require(helper, recipe.matches(grid, helper.getLevel()),
+        CraftingInput slabGrid = craftingGrid(2, 2,
+                new ItemStack(ModBlocks.GRASS_SLAB_ITEM.get()), ItemStack.EMPTY,
+                ItemStack.EMPTY, new ItemStack(Items.DIAMOND_SHOVEL));
+        require(helper, recipe.matches(slabGrid, helper.getLevel()),
                 "grass slab and second vanilla shovel did not craft turf");
-        NonNullList<ItemStack> slabRemainders = recipe.getRemainingItems(grid);
+        NonNullList<ItemStack> slabRemainders = recipe.getRemainingItems(slabGrid);
         require(helper, slabRemainders.get(0).is(ModBlocks.DIRT_SLAB_ITEM.get())
                 && slabRemainders.get(3).is(Items.DIAMOND_SHOVEL),
                 "grass slab recipe remainders are incorrect");
 
-        grid.clearContent();
-        grid.setItem(0, new ItemStack(Blocks.GRASS_BLOCK));
-        grid.setItem(1, new ItemStack(Items.NETHERITE_SHOVEL));
-        require(helper, recipe.matches(grid, helper.getLevel())
-                && recipe.getRemainingItems(grid).get(1).is(Items.NETHERITE_SHOVEL),
+        CraftingInput netheriteGrid = craftingGrid(2, 2,
+                new ItemStack(Blocks.GRASS_BLOCK), new ItemStack(Items.NETHERITE_SHOVEL));
+        require(helper, recipe.matches(netheriteGrid, helper.getLevel())
+                && recipe.getRemainingItems(netheriteGrid).get(1).is(Items.NETHERITE_SHOVEL),
                 "third compatible shovel did not match and return unchanged");
-        grid.setItem(2, new ItemStack(Items.WHEAT_SEEDS));
-        require(helper, !recipe.matches(grid, helper.getLevel()),
+        CraftingInput extraGrid = craftingGrid(2, 2,
+                new ItemStack(Blocks.GRASS_BLOCK), new ItemStack(Items.NETHERITE_SHOVEL),
+                new ItemStack(Items.WHEAT_SEEDS));
+        require(helper, !recipe.matches(extraGrid, helper.getLevel()),
                 "turf recipe accepted an extra ingredient");
-        grid.clearContent();
-        grid.setItem(0, new ItemStack(Blocks.GRASS_BLOCK));
-        grid.setItem(1, new ItemStack(Items.STICK));
-        require(helper, !recipe.matches(grid, helper.getLevel()),
+        CraftingInput invalidGrid = craftingGrid(2, 2,
+                new ItemStack(Blocks.GRASS_BLOCK), new ItemStack(Items.STICK));
+        require(helper, !recipe.matches(invalidGrid, helper.getLevel()),
                 "turf recipe accepted a non-shovel");
-        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf")
+        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
                 .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.TURF.get())),
                 "turf block registry ID changed");
-        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf")
+        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
                 .equals(BuiltInRegistries.ITEM.getKey(ModBlocks.TURF_ITEM.get())),
                 "turf item registry ID changed");
-        require(helper, new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf_cutting")
+        require(helper, ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf_cutting")
                 .equals(BuiltInRegistries.RECIPE_SERIALIZER.getKey(ModRecipes.TURF_CUTTING.get())),
                 "turf recipe serializer ID changed");
         helper.succeed();
@@ -693,28 +681,21 @@ public final class SlabGameTests {
         helper.succeed();
     }
 
-    private static boolean matchesSeedRecipe(CraftingContainer grid, CraftingRecipe recipe,
-            GameTestHelper helper, net.minecraft.world.item.Item seed) {
-        grid.clearContent();
-        grid.setItem(0, new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get()));
-        grid.setItem(1, new ItemStack(seed));
+    private static boolean matchesSeedRecipe(CraftingRecipe recipe, GameTestHelper helper,
+            net.minecraft.world.item.Item seed) {
+        CraftingInput grid = craftingGrid(2, 2,
+                new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get()), new ItemStack(seed));
         return recipe.matches(grid, helper.getLevel())
                 && recipe.assemble(grid, helper.getLevel().registryAccess())
                         .is(ModBlocks.GRASS_SLAB_ITEM.get());
     }
 
-    private static CraftingContainer craftingGrid(int width, int height) {
-        return new TransientCraftingContainer(new AbstractContainerMenu(null, -1) {
-            @Override
-            public boolean stillValid(Player player) {
-                return true;
-            }
-
-            @Override
-            public ItemStack quickMoveStack(Player player, int index) {
-                return ItemStack.EMPTY;
-            }
-        }, width, height);
+    private static CraftingInput craftingGrid(int width, int height, ItemStack... stacks) {
+        NonNullList<ItemStack> items = NonNullList.withSize(width * height, ItemStack.EMPTY);
+        for (int slot = 0; slot < stacks.length; ++slot) {
+            items.set(slot, stacks[slot]);
+        }
+        return CraftingInput.of(width, height, items);
     }
 
     private static ItemStack useTurfOn(Player player, BlockPos pos) {

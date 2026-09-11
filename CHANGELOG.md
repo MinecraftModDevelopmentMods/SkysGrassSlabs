@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0.121012 - Minecraft 1.21.1 (NeoForge)
+
+- Added the NeoForge 1.21.1 build with the same blocks, recipes, world
+  smoothing and supported world upgrade behaviour as the Forge build.
+- Updated recipes, loot, tags and advancements for Minecraft 1.21.1.
+
 ## 1.1.0.120062 - Minecraft 1.20.6 (NeoForge)
 
 - Added the NeoForge 1.20.6 build with the same blocks, recipes, world

@@ -1,0 +1,8 @@
+fixture=skysgrassslabs-1.20.6-forward-world.zip
+fixture_sha256=16E70B7449AE601348947306982E01C363F32B76010E177885507BB00B76AC9B
+fixture_bytes=86633
+fixture_entries=7
+source_minecraft=1.20.6
+source_mod_version=1.1.0.120061
+source_jar_sha256=580D359BD3D37184120D75C78BDF84523EDAF1C79AC517D4587FFCB1CD866D79
+generator=Normal packaged 1.20.1 world upgrade and reload using the accepted 1.20.6 jar

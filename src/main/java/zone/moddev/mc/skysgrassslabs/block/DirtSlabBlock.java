@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.neoforged.neoforge.common.ToolAction;
+import net.neoforged.neoforge.common.ItemAbility;
 
 /** Dirt slab with snow presentation and target-aware grass growth. */
 public final class DirtSlabBlock extends SlabBlock {
@@ -57,7 +57,7 @@ public final class DirtSlabBlock extends SlabBlock {
     @Override
     @Nullable
     public BlockState getToolModifiedState(BlockState state, UseOnContext context,
-            ToolAction action, boolean simulate) {
+            ItemAbility action, boolean simulate) {
         return SlabTransitions.flatten(state, action);
     }
 }
