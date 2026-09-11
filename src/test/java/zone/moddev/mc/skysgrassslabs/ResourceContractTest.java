@@ -1,6 +1,7 @@
 package zone.moddev.mc.skysgrassslabs;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class ResourceContractTest {
     }
 
     @Test
-    public void recipesUseStableIdsAndCommonSeedTag() throws Exception {
+    public void recipesUseStableIdsAndForgeSeedTag() throws Exception {
         String slab = Files.readString(Path.of(
                 "src/main/resources/data/skysgrassslabs/recipe/grass_slab_from_seeds.json"));
         String block = Files.readString(Path.of(
@@ -72,7 +73,8 @@ public class ResourceContractTest {
             String model = Files.readString(Path.of(
                     "src/main/resources/assets/skysgrassslabs/models/block/"
                             + modelName + ".json"));
-            assertTrue(modelName, model.contains("\"render_type\": \"cutout_mipped\""));
+            assertTrue(modelName, model.contains("\"render_type\": \"minecraft:cutout\""));
+            assertFalse(modelName, model.contains("cutout_mipped"));
         }
     }
 

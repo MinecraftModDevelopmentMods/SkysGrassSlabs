@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/stacking_normalizes_grass_and_path",
+  "max_ticks": 100,
+  "structure": "minecraft:empty"
+}

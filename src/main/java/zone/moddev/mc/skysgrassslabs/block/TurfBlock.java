@@ -7,8 +7,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CarpetBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -34,12 +34,14 @@ public final class TurfBlock extends CarpetBlock {
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
-            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
+    protected BlockState updateShape(BlockState state, LevelReader level,
+            ScheduledTickAccess tickAccess, BlockPos pos, Direction direction,
+            BlockPos neighbourPos, BlockState neighbour, RandomSource random) {
         if (level instanceof Level concreteLevel) {
             dirtifyGrassSupport(concreteLevel, pos);
         }
-        return super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+        return super.updateShape(state, level, tickAccess, pos, direction, neighbourPos,
+                neighbour, random);
     }
 
     @Override
@@ -63,7 +65,7 @@ public final class TurfBlock extends CarpetBlock {
     }
 
     private static void dirtifyGrassSupport(Level level, BlockPos pos) {
-        if (!level.isClientSide && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
+        if (!level.isClientSide() && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
             level.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), 2);
         }
     }

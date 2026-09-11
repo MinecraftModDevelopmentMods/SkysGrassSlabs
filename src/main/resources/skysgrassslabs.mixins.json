@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8.7",
+  "package": "zone.moddev.mc.skysgrassslabs.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockStateDataAccessor",
+    "BlockStateDataMixin",
+    "CommonHooksMixin",
+    "SimpleRegionStorageMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

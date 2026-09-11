@@ -1,7 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
 import java.util.List;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -10,19 +9,14 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Runtime checks for the optional Grass Slabs content migration. */
-@GameTestHolder(value = SkysGrassSlabs.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class GrassSlabsMigrationGameTests {
     private GrassSlabsMigrationGameTests() {
     }
 
-    @GameTest(template = "empty", batch = "grassslabscompat001")
     public static void slabStatesConvertWithoutLosingNativeProperties(GameTestHelper helper) {
         require(helper, GrassSlabsCompat.hasLegacyAliases(),
                 "the absent source mod did not register compatibility holders");
@@ -77,7 +71,6 @@ public final class GrassSlabsMigrationGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", batch = "grassslabscompat002")
     public static void carpetAndItemConversionRespectTheSafeBoundary(GameTestHelper helper) {
         BlockState carpet = GrassSlabsCompat.grassCarpet().defaultBlockState();
         BlockState safe = GrassSlabsMigrationHandler.replacement(carpet,
@@ -107,12 +100,12 @@ public final class GrassSlabsMigrationGameTests {
                 "skysgrassslabs:dirt_slab", "skysgrassslabs:path_slab",
                 "skysgrassslabs:turf");
         for (int index = 0; index < items.size(); ++index) {
-            CompoundTag item = items.getCompound(index);
-            require(helper, expected.get(index).equals(item.getString("id")),
+            CompoundTag item = items.getCompoundOrEmpty(index);
+            require(helper, expected.get(index).equals(item.getStringOr("id", "")),
                     "wrong migrated item ID at index " + index);
-            require(helper, item.getByte("Count") == 3,
+            require(helper, item.getByteOr("Count", (byte) 0) == 3,
                     "item count changed at index " + index);
-            require(helper, item.getCompound("tag").contains("migration_test"),
+            require(helper, item.getCompoundOrEmpty("tag").contains("migration_test"),
                     "custom item data was lost at index " + index);
         }
         helper.succeed();

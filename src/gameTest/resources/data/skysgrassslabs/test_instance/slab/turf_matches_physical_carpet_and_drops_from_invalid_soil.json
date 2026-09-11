@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/turf_matches_physical_carpet_and_drops_from_invalid_soil",
+  "max_ticks": 100,
+  "structure": "minecraft:empty"
+}

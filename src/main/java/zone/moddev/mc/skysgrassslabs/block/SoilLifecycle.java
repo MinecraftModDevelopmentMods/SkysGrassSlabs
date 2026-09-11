@@ -38,10 +38,10 @@ final class SoilLifecycle {
         BlockState lightState = state.is(ModBlocks.GRASS_SLAB.get())
                 || state.is(ModBlocks.TURF.get())
                 ? Blocks.AIR.defaultBlockState() : state;
-        int blocked = LightEngine.getLightBlockInto(level, lightState, pos, cover, above,
-                Direction.UP, cover.getLightBlock(level, above));
+        int blocked = LightEngine.getLightBlockInto(lightState, cover,
+                Direction.UP, cover.getLightBlock());
 
-        return blocked < level.getMaxLightLevel();
+        return blocked < 15;
     }
 
     static boolean canPropagate(BlockState futureGrass, LevelReader level, BlockPos pos) {

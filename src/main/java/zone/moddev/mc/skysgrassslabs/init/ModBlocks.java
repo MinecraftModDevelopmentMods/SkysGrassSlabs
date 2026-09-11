@@ -1,15 +1,17 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
@@ -21,6 +23,7 @@ import zone.moddev.mc.skysgrassslabs.block.TurfBlockItem;
 import zone.moddev.mc.skysgrassslabs.item.NormalizingSlabItem;
 
 /** Stable block and item registrations. */
+@EventBusSubscriber(modid = SkysGrassSlabs.MOD_ID)
 public final class ModBlocks {
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(BuiltInRegistries.BLOCK, SkysGrassSlabs.MOD_ID);
@@ -28,13 +31,17 @@ public final class ModBlocks {
             DeferredRegister.create(BuiltInRegistries.ITEM, SkysGrassSlabs.MOD_ID);
 
     public static final DeferredHolder<Block, Block> DIRT_SLAB = BLOCKS.register("dirt_slab",
-            () -> new DirtSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT).randomTicks()));
+            () -> new DirtSlabBlock(RegistrationProperties.block(
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT).randomTicks(), "dirt_slab")));
     public static final DeferredHolder<Block, Block> GRASS_SLAB = BLOCKS.register("grass_slab",
-            () -> new GrassSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).randomTicks()));
+            () -> new GrassSlabBlock(RegistrationProperties.block(
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).randomTicks(), "grass_slab")));
     public static final DeferredHolder<Block, Block> PATH_SLAB = BLOCKS.register("path_slab",
-            () -> new PathSlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH)));
+            () -> new PathSlabBlock(RegistrationProperties.block(
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH), "path_slab")));
     public static final DeferredHolder<Block, Block> TURF = BLOCKS.register("turf",
-            () -> new TurfBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GREEN_CARPET).randomTicks()));
+            () -> new TurfBlock(RegistrationProperties.block(
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.GREEN_CARPET).randomTicks(), "turf")));
 
     public static final DeferredHolder<Item, Item> DIRT_SLAB_ITEM = slabItem(
             "dirt_slab", DIRT_SLAB, Blocks.DIRT);
@@ -43,15 +50,15 @@ public final class ModBlocks {
     public static final DeferredHolder<Item, Item> PATH_SLAB_ITEM = slabItem(
             "path_slab", PATH_SLAB, Blocks.DIRT_PATH);
     public static final DeferredHolder<Item, Item> TURF_ITEM = ITEMS.register("turf",
-            () -> new TurfBlockItem(TURF.get(), new Item.Properties()));
+            () -> new TurfBlockItem(TURF.get(), RegistrationProperties.item(
+                    new Item.Properties(), "turf")));
 
     private ModBlocks() {
     }
 
-    public static void register(IEventBus eventBus) {
-        BLOCKS.register(eventBus);
-        ITEMS.register(eventBus);
-        eventBus.addListener(ModBlocks::buildCreativeTab);
+    public static void register(IEventBus modBus) {
+        BLOCKS.register(modBus);
+        ITEMS.register(modBus);
     }
 
     public static BlockState dirtStateLike(BlockState source) {
@@ -79,10 +86,11 @@ public final class ModBlocks {
     private static DeferredHolder<Item, Item> slabItem(String name, DeferredHolder<Block, Block> block,
             Block combinedBlock) {
         return ITEMS.register(name, () -> new NormalizingSlabItem(block.get(), combinedBlock,
-                new Item.Properties()));
+                RegistrationProperties.item(new Item.Properties(), name)));
     }
 
-    private static void buildCreativeTab(BuildCreativeModeTabContentsEvent event) {
+    @SubscribeEvent
+    public static void buildCreativeTab(BuildCreativeModeTabContentsEvent event) {
         if (CreativeModeTabs.BUILDING_BLOCKS.equals(event.getTabKey())) {
             event.accept(DIRT_SLAB_ITEM.get());
             event.accept(GRASS_SLAB_ITEM.get());

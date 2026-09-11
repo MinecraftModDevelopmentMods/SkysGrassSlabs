@@ -3,13 +3,13 @@ package zone.moddev.mc.skysgrassslabs.world;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import net.minecraft.util.datafix.DataFixTypes;
 
 /** Persistent schema and aggregate historical-slab migration totals. */
@@ -17,6 +17,10 @@ public final class ModWorldState extends SavedData {
     public static final String DATA_NAME = "skysgrassslabs_world_state";
     public static final int SCHEMA_VERSION = 1;
     public static final int MIGRATION_VERSION = 1;
+    private static final SavedDataType<ModWorldState> TYPE = new SavedDataType<>(
+            DATA_NAME, ModWorldState::new,
+            CompoundTag.CODEC.xmap(ModWorldState::new, ModWorldState::saveTag),
+            DataFixTypes.SAVED_DATA_MAP_DATA);
 
     private long migratedChunks;
     private long migratedGrassBlocks;
@@ -47,7 +51,7 @@ public final class ModWorldState extends SavedData {
     }
 
     public static ModWorldState get(Level level) {
-        if (!level.isClientSide && level.dimension() != Level.OVERWORLD && level.getServer() != null) {
+        if (!level.isClientSide() && level.dimension() != Level.OVERWORLD && level.getServer() != null) {
             ServerLevel overworld = level.getServer().getLevel(Level.OVERWORLD);
             if (overworld != null) {
                 level = overworld;
@@ -56,10 +60,7 @@ public final class ModWorldState extends SavedData {
         if (!(level instanceof ServerLevel serverLevel)) {
             return new ModWorldState();
         }
-        SavedData.Factory<ModWorldState> factory = new SavedData.Factory<>(
-                ModWorldState::new, (tag, registries) -> new ModWorldState(tag),
-                DataFixTypes.SAVED_DATA_MAP_DATA);
-        return serverLevel.getDataStorage().computeIfAbsent(factory, DATA_NAME);
+        return serverLevel.getDataStorage().computeIfAbsent(TYPE);
     }
 
     public void recordChunk() {
@@ -251,42 +252,43 @@ public final class ModWorldState extends SavedData {
     }
 
     private void load(CompoundTag tag) {
-        migratedChunks = tag.getLong("migrated_chunks");
-        migratedGrassBlocks = tag.getLong("migrated_grass_blocks");
-        migratedGrassBlocksTop = tag.getLong("migrated_grass_blocks_top");
-        migratedGrassBlocksBottom = tag.getLong("migrated_grass_blocks_bottom");
-        migratedDirtBlocks = tag.getLong("migrated_dirt_blocks");
-        migratedDirtBlocksTop = tag.getLong("migrated_dirt_blocks_top");
-        migratedDirtBlocksBottom = tag.getLong("migrated_dirt_blocks_bottom");
-        migratedGrassItems = tag.getLong("migrated_grass_items");
-        migratedDirtItems = tag.getLong("migrated_dirt_items");
-        grassSlabsMigratedChunks = tag.getLong("grassslabs_migrated_chunks");
+        migratedChunks = tag.getLongOr("migrated_chunks", 0L);
+        migratedGrassBlocks = tag.getLongOr("migrated_grass_blocks", 0L);
+        migratedGrassBlocksTop = tag.getLongOr("migrated_grass_blocks_top", 0L);
+        migratedGrassBlocksBottom = tag.getLongOr("migrated_grass_blocks_bottom", 0L);
+        migratedDirtBlocks = tag.getLongOr("migrated_dirt_blocks", 0L);
+        migratedDirtBlocksTop = tag.getLongOr("migrated_dirt_blocks_top", 0L);
+        migratedDirtBlocksBottom = tag.getLongOr("migrated_dirt_blocks_bottom", 0L);
+        migratedGrassItems = tag.getLongOr("migrated_grass_items", 0L);
+        migratedDirtItems = tag.getLongOr("migrated_dirt_items", 0L);
+        grassSlabsMigratedChunks = tag.getLongOr("grassslabs_migrated_chunks", 0L);
         grassSlabsMigratedGrassSlabBlocks =
-                tag.getLong("grassslabs_migrated_grass_slab_blocks");
+                tag.getLongOr("grassslabs_migrated_grass_slab_blocks", 0L);
         grassSlabsMigratedDirtSlabBlocks =
-                tag.getLong("grassslabs_migrated_dirt_slab_blocks");
+                tag.getLongOr("grassslabs_migrated_dirt_slab_blocks", 0L);
         grassSlabsMigratedPathSlabBlocks =
-                tag.getLong("grassslabs_migrated_path_slab_blocks");
-        grassSlabsMigratedTurfBlocks = tag.getLong("grassslabs_migrated_turf_blocks");
+                tag.getLongOr("grassslabs_migrated_path_slab_blocks", 0L);
+        grassSlabsMigratedTurfBlocks = tag.getLongOr(
+                "grassslabs_migrated_turf_blocks", 0L);
         grassSlabsMigratedGrassSlabItems =
-                tag.getLong("grassslabs_migrated_grass_slab_items");
+                tag.getLongOr("grassslabs_migrated_grass_slab_items", 0L);
         grassSlabsMigratedDirtSlabItems =
-                tag.getLong("grassslabs_migrated_dirt_slab_items");
+                tag.getLongOr("grassslabs_migrated_dirt_slab_items", 0L);
         grassSlabsMigratedPathSlabItems =
-                tag.getLong("grassslabs_migrated_path_slab_items");
-        grassSlabsMigratedTurfItems = tag.getLong("grassslabs_migrated_turf_items");
+                tag.getLongOr("grassslabs_migrated_path_slab_items", 0L);
+        grassSlabsMigratedTurfItems = tag.getLongOr("grassslabs_migrated_turf_items", 0L);
         grassSlabsRetainedGrassCarpets =
-                tag.getLong("grassslabs_retained_grass_carpet_blocks");
+                tag.getLongOr("grassslabs_retained_grass_carpet_blocks", 0L);
         unsupported.clear();
-        ListTag list = tag.getList("unsupported", Tag.TAG_COMPOUND);
+        ListTag list = tag.getListOrEmpty("unsupported");
         for (int index = 0; index < list.size(); ++index) {
-            CompoundTag entry = list.getCompound(index);
-            unsupported.put(entry.getString("id"), entry.getLong("count"));
+            CompoundTag entry = list.getCompoundOrEmpty(index);
+            unsupported.put(entry.getStringOr("id", ""), entry.getLongOr("count", 0L));
         }
     }
 
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    private CompoundTag saveTag() {
+        CompoundTag tag = new CompoundTag();
         tag.putInt("schema_version", SCHEMA_VERSION);
         tag.putInt("buildingbricks_migration_version", MIGRATION_VERSION);
         tag.putInt("grassslabs_migration_version", MIGRATION_VERSION);

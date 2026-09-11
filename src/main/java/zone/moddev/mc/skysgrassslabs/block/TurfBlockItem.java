@@ -66,6 +66,6 @@ public final class TurfBlockItem extends BlockItem {
             held.shrink(1);
         }
 
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 }

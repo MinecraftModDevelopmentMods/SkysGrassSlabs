@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/snow_plants_bonemeal_and_water_are_top_aware",
+  "max_ticks": 100,
+  "structure": "minecraft:empty"
+}

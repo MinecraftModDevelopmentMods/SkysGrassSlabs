@@ -5,8 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,15 +15,16 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import com.mojang.serialization.Dynamic;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.datafix.fixes.BlockStateData;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowyDirtBlock;
@@ -33,20 +32,21 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.storage.LevelStorageSource;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
+import zone.moddev.mc.skysgrassslabs.mixin.BlockStateDataAccessor;
 
 /** Bridges supported pre-flattening slab states before vanilla chunk data fixing. */
 public final class LegacyWorldDataHook {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final BitSet SUPPORTED_BLOCK_IDS = new BitSet();
     private static final Set<Long> LEGACY_CHUNKS = ConcurrentHashMap.newKeySet();
-    private static final Set<ResourceLocation> SKY_IDS = new LinkedHashSet<>();
-    private static final Set<ResourceLocation> HISTORICAL_IDS = new LinkedHashSet<>();
+    private static final Set<Identifier> SKY_IDS = new LinkedHashSet<>();
+    private static final Set<Identifier> HISTORICAL_IDS = new LinkedHashSet<>();
     private static final String PRESERVE_CHUNK_MARKER =
             "SkysGrassSlabsLegacyPreserveChunk";
     private static final String SIDECAR_NAME = "skysgrassslabs_legacy_registry.dat";
@@ -77,10 +77,10 @@ public final class LegacyWorldDataHook {
             return;
         }
         Path levelPath = levelDirectory.path();
-        if (root.contains("FML", Tag.TAG_COMPOUND)) {
-            prepareLegacyWorld(levelPath.toFile(), root.getCompound("FML"));
-        } else if (root.contains("fml", Tag.TAG_COMPOUND)) {
-            prepareLegacyWorld(levelPath.toFile(), root.getCompound("fml"));
+        if (root.contains("FML")) {
+            prepareLegacyWorld(levelPath.toFile(), root.getCompoundOrEmpty("FML"));
+        } else if (root.contains("fml")) {
+            prepareLegacyWorld(levelPath.toFile(), root.getCompoundOrEmpty("fml"));
         } else {
             prepareLegacyWorld(levelPath.resolve("level.dat").toFile());
         }
@@ -99,10 +99,11 @@ public final class LegacyWorldDataHook {
         }
         try (FileInputStream input = new FileInputStream(levelDat)) {
             CompoundTag root = NbtIo.readCompressed(input, NbtAccounter.unlimitedHeap());
-            if (root.contains("FML", Tag.TAG_COMPOUND)) {
-                CompoundTag registries = root.getCompound("FML").getCompound("Registries");
-                if (registries.contains("minecraft:blocks", Tag.TAG_COMPOUND)) {
-                    CompoundTag blocks = registries.getCompound("minecraft:blocks");
+            if (root.contains("FML")) {
+                CompoundTag registries = root.getCompoundOrEmpty("FML")
+                        .getCompoundOrEmpty("Registries");
+                if (registries.contains("minecraft:blocks")) {
+                    CompoundTag blocks = registries.getCompoundOrEmpty("minecraft:blocks");
                     install(levelDat.getParentFile(), blocks);
                     writeSidecar(levelDat.getParentFile(), blocks);
                     return;
@@ -119,10 +120,10 @@ public final class LegacyWorldDataHook {
     private static synchronized void prepareLegacyWorld(File worldDirectory, CompoundTag fmlData) {
         legacyWorldActive = false;
         LEGACY_CHUNKS.clear();
-        if (fmlData.contains("Registries", Tag.TAG_COMPOUND)) {
-            CompoundTag registries = fmlData.getCompound("Registries");
-            if (registries.contains("minecraft:blocks", Tag.TAG_COMPOUND)) {
-                CompoundTag blocks = registries.getCompound("minecraft:blocks");
+        if (fmlData.contains("Registries")) {
+            CompoundTag registries = fmlData.getCompoundOrEmpty("Registries");
+            if (registries.contains("minecraft:blocks")) {
+                CompoundTag blocks = registries.getCompoundOrEmpty("minecraft:blocks");
                 install(worldDirectory, blocks);
                 writeSidecar(worldDirectory, blocks);
                 return;
@@ -138,7 +139,7 @@ public final class LegacyWorldDataHook {
         }
         try (FileInputStream input = new FileInputStream(sidecar)) {
             install(worldDirectory, NbtIo.readCompressed(input,
-                    NbtAccounter.unlimitedHeap()).getCompound("Blocks"));
+                    NbtAccounter.unlimitedHeap()).getCompoundOrEmpty("Blocks"));
         } catch (IOException exception) {
             LOGGER.warn("Could not read legacy Sky's Grass Slabs registry sidecar '{}'",
                     sidecar, exception);
@@ -188,14 +189,14 @@ public final class LegacyWorldDataHook {
 
     /** Called by the chunk-loader coremod immediately before vanilla data fixing. */
     public static void prepareLegacyChunk(CompoundTag root) {
-        if (!legacyWorldActive || root == null || !root.contains("Level", Tag.TAG_COMPOUND)) {
+        if (!legacyWorldActive || root == null || !root.contains("Level")) {
             return;
         }
-        CompoundTag level = root.getCompound("Level");
+        CompoundTag level = root.getCompoundOrEmpty("Level");
         if (!containsSupportedBlock(level)) {
             return;
         }
-        LEGACY_CHUNKS.add(chunkKey(level.getInt("xPos"), level.getInt("zPos")));
+        LEGACY_CHUNKS.add(chunkKey(level.getIntOr("xPos", 0), level.getIntOr("zPos", 0)));
         level.putBoolean("TerrainPopulated", true);
         level.putBoolean("LightPopulated", true);
         level.putBoolean(PRESERVE_CHUNK_MARKER, true);
@@ -206,10 +207,11 @@ public final class LegacyWorldDataHook {
         if (root == null) {
             return null;
         }
-        CompoundTag level = root.contains("Level", Tag.TAG_COMPOUND)
-                ? root.getCompound("Level") : root;
-        if (level.getBoolean(PRESERVE_CHUNK_MARKER)
-                || LEGACY_CHUNKS.contains(chunkKey(level.getInt("xPos"), level.getInt("zPos")))) {
+        CompoundTag level = root.contains("Level")
+                ? root.getCompoundOrEmpty("Level") : root;
+        if (level.getBooleanOr(PRESERVE_CHUNK_MARKER, false)
+                || LEGACY_CHUNKS.contains(chunkKey(level.getIntOr("xPos", 0),
+                        level.getIntOr("zPos", 0)))) {
             level.putString("Status", "full");
             level.remove(PRESERVE_CHUNK_MARKER);
         }
@@ -223,16 +225,19 @@ public final class LegacyWorldDataHook {
 
     private static int installLegacyBlockStates(CompoundTag blockSnapshot) {
         SUPPORTED_BLOCK_IDS.clear();
-        Map<ResourceLocation, Integer> supported = new LinkedHashMap<>();
-        Set<ResourceLocation> unsupported = new LinkedHashSet<>();
-        ListTag savedIds = blockSnapshot.getList("ids", Tag.TAG_COMPOUND);
+        Map<Identifier, Integer> supported = new LinkedHashMap<>();
+        Set<Identifier> unsupported = new LinkedHashSet<>();
+        ListTag savedIds = blockSnapshot.getListOrEmpty("ids");
         for (int index = 0; index < savedIds.size(); ++index) {
-            CompoundTag savedId = savedIds.getCompound(index);
-            ResourceLocation id = ResourceLocation.tryParse(savedId.getString("K"));
+            CompoundTag savedId = savedIds.getCompoundOrEmpty(index);
+            Identifier id = Identifier.tryParse(savedId.getStringOr("K", ""));
             if (id == null) {
                 continue;
             }
-            int numericId = savedId.getInt("V");
+            int numericId = savedId.getIntOr("V", -1);
+            if (numericId < 0) {
+                continue;
+            }
             if (SKY_IDS.contains(id) || HISTORICAL_IDS.contains(id)) {
                 supported.put(id, numericId);
             } else if (BuildingBricksCompat.MOD_ID.equals(id.getNamespace())
@@ -247,27 +252,25 @@ public final class LegacyWorldDataHook {
         if (supported.isEmpty()) {
             return 0;
         }
-        Method registerState = findLegacyStateRegistrationMethod();
+        Dynamic<?>[] legacyStates = BlockStateDataAccessor.skysgrassslabs$getLegacyStateMap();
         int mapped = 0;
-        for (Map.Entry<ResourceLocation, Integer> entry : supported.entrySet()) {
+        for (Map.Entry<Identifier, Integer> entry : supported.entrySet()) {
             SUPPORTED_BLOCK_IDS.set(entry.getValue());
             for (int metadata = 0; metadata < 16; ++metadata) {
                 int stateId = entry.getValue() << 4 | metadata;
-                try {
-                    registerState.invoke(null, stateId,
-                            NbtUtils.writeBlockState(legacyState(entry.getKey(), metadata)).toString(),
-                            new String[0]);
-                } catch (ReflectiveOperationException exception) {
-                    throw new IllegalStateException("Could not register legacy block state "
-                            + entry.getKey() + ":" + metadata, exception);
+                if (stateId >= legacyStates.length) {
+                    throw new IllegalStateException("Legacy block-state table was not expanded; "
+                            + "cannot register " + entry.getKey() + ":" + metadata);
                 }
+                legacyStates[stateId] = new Dynamic<>(NbtOps.INSTANCE,
+                        NbtUtils.writeBlockState(legacyState(entry.getKey(), metadata)));
                 ++mapped;
             }
         }
         return mapped;
     }
 
-    static BlockState legacyState(ResourceLocation id, int metadata) {
+    static BlockState legacyState(Identifier id, int metadata) {
         if (id.equals(id("turf"))) {
             return ModBlocks.TURF.get().defaultBlockState();
         }
@@ -286,14 +289,14 @@ public final class LegacyWorldDataHook {
     }
 
     private static boolean containsSupportedBlock(CompoundTag level) {
-        ListTag sections = level.getList("Sections", Tag.TAG_COMPOUND);
+        ListTag sections = level.getListOrEmpty("Sections");
         for (int sectionIndex = 0; sectionIndex < sections.size(); ++sectionIndex) {
-            CompoundTag section = sections.getCompound(sectionIndex);
-            byte[] blocks = section.getByteArray("Blocks");
+            CompoundTag section = sections.getCompoundOrEmpty(sectionIndex);
+            byte[] blocks = section.getByteArray("Blocks").orElseGet(() -> new byte[0]);
             if (blocks.length != 4096) {
                 continue;
             }
-            byte[] add = section.getByteArray("Add");
+            byte[] add = section.getByteArray("Add").orElseGet(() -> new byte[0]);
             for (int blockIndex = 0; blockIndex < blocks.length; ++blockIndex) {
                 int highBits = add.length == 2048
                         ? add[blockIndex >> 1] >> ((blockIndex & 1) * 4) & 15 : 0;
@@ -353,22 +356,8 @@ public final class LegacyWorldDataHook {
         return LEGACY_CHUNKS.size();
     }
 
-    private static Method findLegacyStateRegistrationMethod() {
-        for (Method method : BlockStateData.class.getDeclaredMethods()) {
-            Class<?>[] parameters = method.getParameterTypes();
-            if (Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers())
-                    && method.getReturnType() == void.class && parameters.length == 3
-                    && parameters[0] == int.class && parameters[1] == String.class
-                    && parameters[2] == String[].class) {
-                return method;
-            }
-        }
-        throw new IllegalStateException("Could not find the NeoForge 21.1 legacy block-state "
-                + "registration method; the coremod was not applied");
-    }
-
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, path);
+    private static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, path);
     }
 
     private static long chunkKey(int chunkX, int chunkZ) {

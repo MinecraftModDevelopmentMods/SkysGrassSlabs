@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/turf_spreads_outward_and_acts_as_slab_source",
+  "max_ticks": 100,
+  "structure": "minecraft:empty"
+}

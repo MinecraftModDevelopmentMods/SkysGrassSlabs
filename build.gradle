@@ -107,12 +107,10 @@ runs {
     }
 
     client {
-        systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
         modSource project.sourceSets.main
     }
 
     server {
-        systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
         argument '--nogui'
         modSource project.sourceSets.main
     }
@@ -123,7 +121,7 @@ runs {
         modSource project.sourceSets.gameTest
     }
 
-    data {
+    clientData {
         workingDirectory project.layout.projectDirectory.dir('run-data')
         modSource project.sourceSets.main
         arguments.addAll '--mod', mod_id, '--all', '--output',
@@ -147,7 +145,20 @@ tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
             minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
             neo_version: neo_version, neo_version_range: neo_version_range,
-            loader_version_range: loader_version_range,
+            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+            mod_authors: mod_authors, mod_description: mod_description,
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.named('processGameTestResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
+            neo_version: neo_version, neo_version_range: neo_version_range,
             mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
             mod_authors: mod_authors, mod_description: mod_description,
     ]
@@ -202,11 +213,11 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '1.21.1' || project.neo_version != '21.1.247' ||
+        if (project.minecraft_version != '1.21.11' || project.neo_version != '21.11.45' ||
                 project.loader_name != 'neoforge' || project.loader_code != '2' ||
                 project.java_version != '21' || project.java_toolchain_version != '21.0.7+6' ||
                 project.gradle_java_version != '21' || project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 1.21.1 release metadata')
+            throw new GradleException('Unexpected 1.21.11 release metadata')
         }
     }
 }
@@ -237,8 +248,11 @@ tasks.register('verifyReleaseArtifacts') {
             Set<String> names = zip.entries().collect { it.name } as Set<String>
             ['META-INF/neoforge.mods.toml', 'META-INF/LICENSE', 'META-INF/LICENSE.spdx',
              'META-INF/NOTICE',
-             'META-INF/coremods.json',
-             'coremods/skysgrassslabs_legacy_world.js',
+             'skysgrassslabs.mixins.json',
+             'zone/moddev/mc/skysgrassslabs/mixin/BlockStateDataMixin.class',
+             'zone/moddev/mc/skysgrassslabs/mixin/CommonHooksMixin.class',
+             'assets/skysgrassslabs/items/grass_slab.json',
+             'assets/skysgrassslabs/items/turf.json',
              'assets/skysgrassslabs/lang/en_us.json',
              'assets/skysgrassslabs/lang/zh_cn.json',
              'assets/grassslabs/blockstates/grass_slab.json',
@@ -284,8 +298,8 @@ tasks.register('verifyReleaseArtifacts') {
 
             String metadata = zip.getInputStream(zip.getEntry('META-INF/neoforge.mods.toml'))
                     .getText(StandardCharsets.UTF_8.name())
-            if (!metadata.contains('versionRange="[1.21.1,1.22)"') ||
-                    !metadata.contains('versionRange="[21.1.247,21.2)"')) {
+            if (!metadata.contains('versionRange="[1.21.11]"') ||
+                    !metadata.contains('versionRange="[21.11.45,21.12)"')) {
                 throw new GradleException('Packaged NeoForge metadata targets the wrong version')
             }
 

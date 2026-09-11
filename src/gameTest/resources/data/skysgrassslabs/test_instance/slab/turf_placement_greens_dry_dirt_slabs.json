@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/turf_placement_greens_dry_dirt_slabs",
+  "max_ticks": 100,
+  "structure": "minecraft:empty"
+}

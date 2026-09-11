@@ -2,6 +2,6 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "pattern": ["###"],
-  "key": { "#": { "item": "minecraft:dirt" } },
+  "key": { "#": "minecraft:dirt" },
   "result": { "id": "skysgrassslabs:dirt_slab", "count": 6 }
 }

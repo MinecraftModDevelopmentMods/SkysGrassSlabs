@@ -2,8 +2,8 @@
   "type": "minecraft:crafting_shapeless",
   "category": "building",
   "ingredients": [
-    { "item": "skysgrassslabs:dirt_slab" },
-    { "tag": "c:seeds" }
+    "skysgrassslabs:dirt_slab",
+    "#c:seeds"
   ],
   "result": { "id": "skysgrassslabs:grass_slab" }
 }

@@ -7,9 +7,9 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.fml.ModContainer;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 
 /** Common configuration and one-time migration from the 1.10 configuration file. */
@@ -31,8 +31,8 @@ public final class SkysGrassSlabsConfig {
         SPEC = pair.getRight();
     }
 
-    public static void register(ModContainer modContainer) {
-        modContainer.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+    public static void register(ModContainer container) {
+        container.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
     }
 
     public static void migrateLegacyConfig() {
@@ -65,7 +65,7 @@ public final class SkysGrassSlabsConfig {
             return true;
         } catch (IOException exception) {
             SkysGrassSlabs.LOGGER.warn("Could not migrate the legacy Sky's Grass Slabs config; "
-                    + "built-in defaults will be used", exception);
+                    + "Forge defaults will be used", exception);
             return false;
         }
     }

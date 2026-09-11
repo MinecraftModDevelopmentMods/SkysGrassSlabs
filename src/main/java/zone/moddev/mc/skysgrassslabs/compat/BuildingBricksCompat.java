@@ -1,12 +1,13 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.RegisterEvent;
@@ -14,12 +15,12 @@ import net.neoforged.neoforge.registries.RegisterEvent;
 /** Narrow compatibility boundary for supported historical slab IDs. */
 public final class BuildingBricksCompat {
     public static final String MOD_ID = "buildingbricks";
-    public static final ResourceLocation GRASS_SLAB_ID =
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "grass_slab");
-    public static final ResourceLocation DIRT_SLAB_ID =
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "dirt_slab");
-    public static final ResourceLocation HISTORICAL_GRASS_SLAB_ID =
-            ResourceLocation.fromNamespaceAndPath("buildingbrickscompatvanilla", "grass_slab");
+    public static final Identifier GRASS_SLAB_ID =
+            Identifier.fromNamespaceAndPath(MOD_ID, "grass_slab");
+    public static final Identifier DIRT_SLAB_ID =
+            Identifier.fromNamespaceAndPath(MOD_ID, "dirt_slab");
+    public static final Identifier HISTORICAL_GRASS_SLAB_ID =
+            Identifier.fromNamespaceAndPath("buildingbrickscompatvanilla", "grass_slab");
 
     private static Block grassSlab;
     private static Block dirtSlab;
@@ -71,30 +72,33 @@ public final class BuildingBricksCompat {
         }
         if (event.getRegistryKey().equals(Registries.BLOCK)) {
             event.register(Registries.BLOCK, GRASS_SLAB_ID,
-                    () -> grassSlab = alias(true));
+                    () -> grassSlab = alias(true, GRASS_SLAB_ID));
             event.register(Registries.BLOCK, DIRT_SLAB_ID,
-                    () -> dirtSlab = alias(false));
+                    () -> dirtSlab = alias(false, DIRT_SLAB_ID));
             event.register(Registries.BLOCK, HISTORICAL_GRASS_SLAB_ID,
-                    () -> historicalGrassSlab = alias(true));
+                    () -> historicalGrassSlab = alias(true, HISTORICAL_GRASS_SLAB_ID));
             legacyAliasesRegistered = true;
         } else if (event.getRegistryKey().equals(Registries.ITEM) && legacyAliasesRegistered) {
-            event.register(Registries.ITEM, GRASS_SLAB_ID, () -> aliasItem(grassSlab));
-            event.register(Registries.ITEM, DIRT_SLAB_ID, () -> aliasItem(dirtSlab));
+            event.register(Registries.ITEM, GRASS_SLAB_ID,
+                    () -> aliasItem(grassSlab, GRASS_SLAB_ID));
+            event.register(Registries.ITEM, DIRT_SLAB_ID,
+                    () -> aliasItem(dirtSlab, DIRT_SLAB_ID));
             event.register(Registries.ITEM, HISTORICAL_GRASS_SLAB_ID,
-                    () -> aliasItem(historicalGrassSlab));
+                    () -> aliasItem(historicalGrassSlab, HISTORICAL_GRASS_SLAB_ID));
         }
     }
 
-    private static Block alias(boolean grass) {
-        return new LegacySlabAliasBlock(grass);
+    private static Block alias(boolean grass, Identifier id) {
+        return new LegacySlabAliasBlock(grass, ResourceKey.create(Registries.BLOCK, id));
     }
 
-    private static Item aliasItem(Block block) {
-        return new BlockItem(block, new Item.Properties());
+    private static Item aliasItem(Block block, Identifier id) {
+        return new BlockItem(block,
+                new Item.Properties().setId(ResourceKey.create(Registries.ITEM, id)));
     }
 
-    private static Block resolve(Block cached, ResourceLocation id) {
-        return cached != null ? cached : BuiltInRegistries.BLOCK.get(id);
+    private static Block resolve(Block cached, Identifier id) {
+        return cached != null ? cached : BuiltInRegistries.BLOCK.getValue(id);
     }
 
     private BuildingBricksCompat() {
