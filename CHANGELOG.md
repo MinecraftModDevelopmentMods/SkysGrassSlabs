@@ -1,12 +1,13 @@
 # Changelog
 
-## 1.1.0.2602001 - Minecraft 26.2
+## 1.1.1.2602001 - Minecraft 26.2
 
 - Ported the complete feature set to Minecraft 26.2 and Forge 65.
 - Preserved all blocks, items, recipes, settings and supported world upgrades.
 - Updated recipe book displays, resources, development tools and terrain
   smoothing checks for the current game and Forge APIs.
 - Kept biome colouring and the existing namespaced world state intact.
+- Corrected translated names for dirt, grass and path slabs and turf.
 
 ## 1.1.0.2601021 - Minecraft 26.1.2
 
