@@ -34,7 +34,7 @@ public final class InstalledGrassSlabsTestMod {
             "dirt_path_slab", Blocks.DIRT_PATH);
     private static final RegistryObject<Block> GRASS_CARPET = BLOCKS.register(
             "grass_carpet", () -> new CarpetBlock(blockProperties(
-                    BlockBehaviour.Properties.ofFullCopy(Blocks.GREEN_CARPET),
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.CARPET.green()),
                     "grass_carpet")));
 
     static {

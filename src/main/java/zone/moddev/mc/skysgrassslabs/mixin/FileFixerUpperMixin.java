@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 
-/** Captures legacy registry IDs before Minecraft 26.1 relocates and fixes world files. */
+/** Captures legacy registry IDs before Minecraft relocates and fixes world files. */
 @Mixin(FileFixerUpper.class)
 abstract class FileFixerUpperMixin {
     @Inject(

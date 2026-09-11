@@ -96,9 +96,13 @@ public class ResourceContractTest {
         String recipe = Files.readString(Path.of(
                 "src/main/resources/data/skysgrassslabs/recipe/turf.json"));
         assertTrue(recipe.contains("skysgrassslabs:turf_cutting"));
+        assertFalse(recipe.contains("\"category\":"));
         String implementation = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java"));
         assertTrue(implementation.contains("canPerformAction(ToolActions.SHOVEL_FLATTEN)"));
+        assertTrue(implementation.contains("Ingredient.of(ModBlocks.TURF_ITEM.get()).display()"));
+        assertTrue(implementation.contains("Ingredient.of(Blocks.CRAFTING_TABLE).display()"));
+        assertFalse(implementation.contains("SlotDisplay.ItemSlotDisplay"));
     }
 
     private static void assertParses(Path path) {

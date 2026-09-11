@@ -23,7 +23,7 @@ public final class GrassSpread {
         BlockPos above = pos.above();
         BlockState cover = level.getBlockState(above);
         return level.getMaxLocalRawBrightness(above) >= 4
-                || LightEngine.getLightBlockInto(lightSourceState(level.getBlockState(pos)), cover,
+                || LightEngine.getLightDampeningInto(lightSourceState(level.getBlockState(pos)), cover,
                         Direction.UP, cover.getLightDampening()) < 15;
     }
 
@@ -31,7 +31,7 @@ public final class GrassSpread {
         BlockPos above = pos.above();
         BlockState cover = level.getBlockState(above);
         return level.getMaxLocalRawBrightness(above) >= 9
-                && LightEngine.getLightBlockInto(lightSourceState(level.getBlockState(pos)), cover,
+                && LightEngine.getLightDampeningInto(lightSourceState(level.getBlockState(pos)), cover,
                         Direction.UP, cover.getLightDampening()) < 15
                 && !level.getFluidState(above).is(FluidTags.WATER);
     }
@@ -118,7 +118,7 @@ public final class GrassSpread {
             return false;
         }
         return level.getMaxLocalRawBrightness(above) >= 4
-                && LightEngine.getLightBlockInto(lightSourceState(state), cover,
+                && LightEngine.getLightDampeningInto(lightSourceState(state), cover,
                         Direction.UP, cover.getLightDampening()) < 15
                 && !level.getFluidState(above).is(FluidTags.WATER);
     }
