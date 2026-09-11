@@ -87,12 +87,13 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build, test, and audit release artifacts
-        run: >-
-          ./gradlew clean check build javadoc verifyReleaseArtifacts writeReleaseChecksums
-          eclipse verifyEclipseConfiguration --no-daemon --stacktrace
-          -Dorg.gradle.java.installations.paths="$JAVA_HOME"
-          -Dorg.gradle.java.installations.auto-detect=false
-          -Dorg.gradle.java.installations.auto-download=false
+        run: |
+          ./gradlew clean --no-daemon --stacktrace
+          ./gradlew check build javadoc verifyReleaseArtifacts writeReleaseChecksums \
+            eclipse verifyEclipseConfiguration --no-daemon --stacktrace \
+            -Dorg.gradle.java.installations.paths="$JAVA_HOME" \
+            -Dorg.gradle.java.installations.auto-detect=false \
+            -Dorg.gradle.java.installations.auto-download=false
 
       - name: Run NeoForge GameTests
         run: >-
