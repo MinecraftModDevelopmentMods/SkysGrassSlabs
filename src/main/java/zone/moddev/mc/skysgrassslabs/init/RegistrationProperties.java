@@ -15,7 +15,8 @@ public final class RegistrationProperties {
     }
 
     public static Item.Properties item(Item.Properties properties, String path) {
-        return properties.setId(ResourceKey.create(Registries.ITEM, id(path)));
+        return properties.setId(ResourceKey.create(Registries.ITEM, id(path)))
+                .useBlockDescriptionPrefix();
     }
 
     public static Identifier id(String path) {
