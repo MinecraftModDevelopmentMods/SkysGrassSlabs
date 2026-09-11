@@ -88,7 +88,13 @@ public class ProjectContractTest {
     public void codeQlCannotReuseCachedCompilationOutput() throws Exception {
         String workflow = Files.readString(
                 Path.of(".github/workflows/codeql-analysis.yml"), StandardCharsets.UTF_8);
-        assertTrue(workflow.contains("clean classes --rerun-tasks --no-daemon"));
+        String ci = Files.readString(
+                Path.of(".github/workflows/ci.yml"), StandardCharsets.UTF_8);
+        assertTrue(workflow.contains("./gradlew clean --no-daemon"));
+        assertTrue(workflow.contains("./gradlew classes --rerun-tasks --no-daemon"));
+        assertFalse(workflow.contains("./gradlew clean classes"));
+        assertTrue(ci.contains("./gradlew clean --no-daemon"));
+        assertFalse(ci.contains("./gradlew clean check"));
     }
 
 
