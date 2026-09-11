@@ -1,4 +1,4 @@
-# Sky's Grass Slabs 1.1.0 for Minecraft 1.21.11
+# Sky's Grass Slabs 1.1.1 for Minecraft 1.21.11
 
 Sky's Grass Slabs adds dirt, grass and lowered dirt path slabs, together with
 a thin layer of turf. Grass moves naturally between full blocks, slabs and
@@ -15,6 +15,7 @@ grass slab for a smoother slope.
 - Grass spreading between full blocks, slabs and turf.
 - Optional recovery for supported blocks and items from older worlds.
 - Names in 18 supported language variants.
+- Corrected translated names for all four items.
 
 World smoothing changes only newly generated chunks and can be disabled in
 the common configuration. Make a complete backup before upgrading an existing

@@ -68,6 +68,23 @@ public final class SlabGameTests {
     }
 
     @GameTest(structure = EMPTY)
+    public static void blockItemsUseTranslatedBlockDescriptionIds(GameTestHelper helper) {
+        require(helper, ModBlocks.DIRT_SLAB_ITEM.get().getDescriptionId()
+                .equals("block.skysgrassslabs.dirt_slab"),
+                "dirt slab item did not use its translated block description");
+        require(helper, ModBlocks.GRASS_SLAB_ITEM.get().getDescriptionId()
+                .equals("block.skysgrassslabs.grass_slab"),
+                "grass slab item did not use its translated block description");
+        require(helper, ModBlocks.PATH_SLAB_ITEM.get().getDescriptionId()
+                .equals("block.skysgrassslabs.path_slab"),
+                "path slab item did not use its translated block description");
+        require(helper, ModBlocks.TURF_ITEM.get().getDescriptionId()
+                .equals("block.skysgrassslabs.turf"),
+                "turf item did not use its translated block description");
+        helper.succeed();
+    }
+
+    @GameTest(structure = EMPTY)
     public static void shovelFlatteningPreservesOrientation(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
         UseOnContext context = context(helper, pos, new ItemStack(Items.IRON_SHOVEL));

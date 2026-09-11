@@ -5,7 +5,7 @@ thin layer of turf. Grass spreads naturally between full blocks and slabs,
 while new Overworld terrain uses grass slabs to soften suitable one block
 steps.
 
-This branch is for Minecraft 1.21.11. Version `1.1.0.121111` requires Forge
+This branch is for Minecraft 1.21.11. Version `1.1.1.121111` requires Forge
 61.1.0 or a compatible Forge 61 build and Java 21.
 
 ## Installation
@@ -34,7 +34,7 @@ or updating world changing mods.
 - [Gameplay and recipes](docs/GAMEPLAY.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Upgrading an older world](docs/WORLD-UPGRADES.md)
-- [Release notes](docs/RELEASE-1.1.0.121111.md)
+- [Release notes](docs/RELEASE-1.1.1.121111.md)
 
 ## License
 
