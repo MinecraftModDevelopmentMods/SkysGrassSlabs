@@ -36,14 +36,14 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
         assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.0.2601021.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.1.2601021.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void releaseIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.1.0.2601021"));
+        assertTrue(properties.contains("mod_version=1.1.1.2601021"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -111,10 +111,18 @@ public class ProjectContractTest {
         assertTrue(config.contains("push(\"compat\")"));
         assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
         assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
-        assertTrue(main.contains("VERSION = \"1.1.0.2601021\""));
+        assertTrue(main.contains("VERSION = \"1.1.1.2601021\""));
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
         assertTrue(state.contains("schema_version"));
+    }
+
+    @Test
+    public void blockItemsUseTheTranslatedBlockDescriptionPrefix() throws Exception {
+        String properties = Files.readString(Path.of(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/init/RegistrationProperties.java"),
+                StandardCharsets.UTF_8);
+        assertTrue(properties.contains(".useBlockDescriptionPrefix()"));
     }
 
     @Test
@@ -288,9 +296,9 @@ public class ProjectContractTest {
         }
         String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
                 StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.2601021.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.2601021-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.0.2601021-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2601021.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2601021-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.2601021-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
         assertEquals(0, ci.lines()
                 .filter(line -> line.contains("java-version: '8.0.502+7'"))

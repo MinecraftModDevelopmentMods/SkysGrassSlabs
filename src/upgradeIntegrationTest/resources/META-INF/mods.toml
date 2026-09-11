@@ -18,7 +18,7 @@ side="SERVER"
 [[dependencies.skysgrassslabsupgradeprobe]]
 modId="skysgrassslabs"
 mandatory=true
-versionRange="[1.1.0.2601021]"
+versionRange="[1.1.1.2601021]"
 ordering="AFTER"
 side="SERVER"
 

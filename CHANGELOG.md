@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0.2601021 - Minecraft 26.1.2
+## 1.1.1.2601021 - Minecraft 26.1.2
 
 - Ported the complete feature set to Minecraft 26.1.2 and Forge 64.
 - Preserved all blocks, items, recipes, settings and supported world upgrades.
@@ -9,6 +9,7 @@
 - Moved the persistent world state to Minecraft's namespaced data directory
   while preserving existing state files on upgrade.
 - Corrected biome colouring for grass slabs and turf on Forge 64.
+- Corrected translated names for dirt, grass and path slabs and turf.
 
 ## 1.1.0.121111 - Minecraft 1.21.11
 

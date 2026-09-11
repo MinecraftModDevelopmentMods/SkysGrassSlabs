@@ -67,6 +67,23 @@ public final class SlabGameTests {
     private SlabGameTests() {
     }
 
+    @GameTest(structure = EMPTY)
+    public static void blockItemsUseTranslatedBlockDescriptionIds(GameTestHelper helper) {
+        require(helper, ModBlocks.DIRT_SLAB_ITEM.get().getDescriptionId()
+                .equals("block.skysgrassslabs.dirt_slab"),
+                "dirt slab item did not use its translated block description");
+        require(helper, ModBlocks.GRASS_SLAB_ITEM.get().getDescriptionId()
+                .equals("block.skysgrassslabs.grass_slab"),
+                "grass slab item did not use its translated block description");
+        require(helper, ModBlocks.PATH_SLAB_ITEM.get().getDescriptionId()
+                .equals("block.skysgrassslabs.path_slab"),
+                "path slab item did not use its translated block description");
+        require(helper, ModBlocks.TURF_ITEM.get().getDescriptionId()
+                .equals("block.skysgrassslabs.turf"),
+                "turf item did not use its translated block description");
+        helper.succeed();
+    }
+
     private static void setClockTime(GameTestHelper helper, int time) {
         helper.getLevel().getServer().clockManager().setTotalTicks(
                 helper.getLevel().dimensionTypeRegistration().value().defaultClock()
