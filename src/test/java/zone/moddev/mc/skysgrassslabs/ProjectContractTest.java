@@ -212,8 +212,13 @@ public class ProjectContractTest {
         assertTrue(recipe.contains("return false;"));
         assertTrue(recipe.contains("canPerformAction(ToolActions.SHOVEL_FLATTEN)"));
         assertFalse(client.contains("ItemBlockRenderTypes"));
-        assertTrue(client.contains("RegisterColorHandlersEvent.Block.BUS.addListener(colorEvent ->"));
-        assertFalse(client.contains("registerBlockColors(RegisterColorHandlersEvent.Block"));
+        assertTrue(client.contains("@SubscribeEvent\n"
+                + "    public static void registerBlockColors(RegisterColorHandlersEvent.Block event)"));
+        assertTrue(client.contains("@Mod.EventBusSubscriber(modid = SkysGrassSlabs.MOD_ID, "
+                + "value = Dist.CLIENT)"));
+        assertFalse(client.contains("bus = Mod.EventBusSubscriber.Bus.MOD"));
+        assertFalse(client.contains("FMLClientSetupEvent"));
+        assertFalse(client.contains("RegisterColorHandlersEvent.Block.BUS.addListener"));
         for (String modelName : new String[] {"grass_slab", "grass_slab_top",
                 "grass_slab_snow", "grass_slab_top_snow"}) {
             String model = Files.readString(Path.of(

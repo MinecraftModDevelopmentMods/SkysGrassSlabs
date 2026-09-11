@@ -8,6 +8,7 @@
   game and Forge APIs.
 - Moved the persistent world state to Minecraft's namespaced data directory
   while preserving existing state files on upgrade.
+- Corrected biome colouring for grass slabs and turf on Forge 64.
 
 ## 1.1.0.121111 - Minecraft 1.21.11
 
