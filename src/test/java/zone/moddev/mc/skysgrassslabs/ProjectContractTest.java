@@ -41,6 +41,22 @@ public class ProjectContractTest {
     }
 
     @Test
+    public void eclipseAndNeoGradleUseOneGradleCache() throws Exception {
+        String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
+        int eclipseTask = build.indexOf("tasks.named('eclipse').configure {");
+
+        assertTrue(eclipseTask >= 0);
+        assertTrue(build.contains("preferences.setProperty('override.workspace.settings', 'true')"));
+        assertTrue(build.indexOf("doLast writeEclipseBuildshipPreferences", eclipseTask)
+                > eclipseTask);
+        assertTrue(build.contains("it.name == 'idePostSync'"));
+        assertTrue(build.contains("dependsOn 'idePostSync'"));
+        assertTrue(build.contains("it.name.startsWith('writeMinecraftClasspath')"));
+        assertTrue(build.contains("inputs.property('skysGrassSlabsGradleUserHome')"));
+        assertTrue(build.contains("gradle.gradleUserHomeDir.canonicalPath"));
+    }
+
+    @Test
     public void playerAndMaintainerDocumentsExist() {
         assertTrue(Files.isRegularFile(Path.of("docs/CONFIGURATION.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));

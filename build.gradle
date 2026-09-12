@@ -444,31 +444,6 @@ def prepareEclipseResources = tasks.register('prepareEclipseResources') {
     }
 }
 
-def configureEclipseBuildship = tasks.register('configureEclipseBuildship') {
-    group = 'ide'
-    description = 'Pins Eclipse Buildship to the Gradle home used for NeoForge.'
-    doLast {
-        String requestedGradleHome = System.getenv('GRADLE_USER_HOME')
-        File gradleHome = requestedGradleHome == null || requestedGradleHome.trim().isEmpty()
-                ? gradle.gradleUserHomeDir : file(requestedGradleHome)
-        File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
-        Properties preferences = new Properties()
-        if (preferencesFile.isFile()) {
-            preferencesFile.withInputStream { preferences.load(it) }
-        }
-        preferences.setProperty('eclipse.preferences.version', '1')
-        preferences.setProperty('connection.gradle.distribution', 'GRADLE_DISTRIBUTION(WRAPPER)')
-        preferences.setProperty('connection.gradle.user.home', gradleHome.canonicalPath)
-        preferences.setProperty('connection.project.dir', '')
-        preferences.setProperty('gradle.user.home', gradleHome.canonicalPath)
-        preferences.setProperty('java.home', System.getProperty('java.home'))
-        preferences.setProperty('override.workspace.settings', 'true')
-        preferencesFile.parentFile.mkdirs()
-        preferencesFile.withOutputStream { preferences.store(it,
-                'Generated Buildship configuration for the NeoForge development environment.') }
-    }
-}
-
 eclipse {
     project {
         natures 'org.eclipse.buildship.core.gradleprojectnature'
@@ -496,15 +471,47 @@ eclipse {
     synchronizationTasks 'prepareEclipseResources'
 }
 
+def writeEclipseBuildshipPreferences = {
+    String requestedGradleHome = System.getenv('GRADLE_USER_HOME')
+    File gradleHome = requestedGradleHome == null || requestedGradleHome.trim().isEmpty()
+            ? gradle.gradleUserHomeDir : file(requestedGradleHome)
+    File preferencesFile = file('.settings/org.eclipse.buildship.core.prefs')
+    Properties preferences = new Properties()
+    if (preferencesFile.isFile()) {
+        preferencesFile.withInputStream { preferences.load(it) }
+    }
+    preferences.setProperty('eclipse.preferences.version', '1')
+    preferences.setProperty('connection.gradle.distribution', 'GRADLE_DISTRIBUTION(WRAPPER)')
+    preferences.setProperty('connection.gradle.user.home', gradleHome.canonicalPath)
+    preferences.setProperty('connection.project.dir', '')
+    preferences.setProperty('gradle.user.home', gradleHome.canonicalPath)
+    preferences.setProperty('java.home', System.getProperty('java.home'))
+    preferences.setProperty('override.workspace.settings', 'true')
+    preferencesFile.parentFile.mkdirs()
+    preferencesFile.withOutputStream { preferences.store(it,
+            'Generated Buildship configuration for the NeoForge development environment.') }
+}
+
 tasks.named('eclipse').configure {
     dependsOn prepareEclipseResources
-    dependsOn configureEclipseBuildship
+    doLast writeEclipseBuildshipPreferences
+}
+
+tasks.matching { it.name == 'idePostSync' }.configureEach {
+    doLast writeEclipseBuildshipPreferences
+}
+
+tasks.matching { it.name.startsWith('writeMinecraftClasspath') }.configureEach {
+    inputs.property('skysGrassSlabsGradleUserHome') {
+        gradle.gradleUserHomeDir.canonicalPath
+    }
 }
 
 def verifyEclipseConfiguration = tasks.register('verifyEclipseConfiguration') {
     group = 'verification'
     description = 'Rejects duplicate Eclipse dependencies and production/test classpath leakage.'
     dependsOn tasks.named('eclipse')
+    dependsOn 'idePostSync'
     doLast {
         File classpathFile = file('.classpath')
         if (!classpathFile.isFile()) throw new GradleException('Eclipse .classpath was not generated')
