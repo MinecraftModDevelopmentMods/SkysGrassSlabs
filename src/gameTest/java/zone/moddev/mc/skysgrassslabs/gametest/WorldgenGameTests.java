@@ -1,5 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.gametest;
 
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Random;
 
@@ -9,6 +10,8 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -27,7 +30,7 @@ public final class WorldgenGameTests {
     @GameTest(template = "empty", batch = "worldgen001", timeoutTicks = 300)
     public static void smoothingIsBorderSafeAndIdempotent(GameTestHelper helper) {
         ChunkPos owner = new ChunkPos(helper.absolutePos(new BlockPos(1, 2, 1)));
-        int y = 120;
+        int y = testSurfaceY(helper, owner);
 
         BlockPos center = new BlockPos(owner.getMinBlockX() + 8, y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, center, center.east());
@@ -47,6 +50,8 @@ public final class WorldgenGameTests {
 
         BlockPos chest = new BlockPos(owner.getMinBlockX() + 4, y + 1, owner.getMinBlockZ() + 12);
         helper.getLevel().setBlock(chest, Blocks.CHEST.defaultBlockState(), Block.UPDATE_ALL);
+        primeWorldgenSurface(helper, owner);
+        primeWorldgenSurface(helper, new ChunkPos(owner.x - 1, owner.z));
 
         helper.runAfterDelay(5, () -> {
             GrassSlabSmoothingFeature feature = new GrassSlabSmoothingFeature(
@@ -81,6 +86,25 @@ public final class WorldgenGameTests {
                 helper.succeed();
             });
         });
+    }
+
+    private static int testSurfaceY(GameTestHelper helper, ChunkPos owner) {
+        int highest = helper.getLevel().getMinBuildHeight();
+        for (int localZ = -1; localZ <= 16; ++localZ) {
+            for (int localX = -1; localX <= 16; ++localX) {
+                int blockX = owner.getMinBlockX() + localX;
+                int blockZ = owner.getMinBlockZ() + localZ;
+                ChunkAccess chunk = helper.getLevel().getChunk(blockX >> 4, blockZ >> 4);
+                highest = Math.max(highest, chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
+                        Math.floorMod(blockX, 16), Math.floorMod(blockZ, 16)));
+            }
+        }
+        return Math.min(highest + 4, helper.getLevel().getMaxBuildHeight() - 4);
+    }
+
+    private static void primeWorldgenSurface(GameTestHelper helper, ChunkPos chunk) {
+        Heightmap.primeHeightmaps(helper.getLevel().getChunk(chunk.x, chunk.z),
+                EnumSet.of(Heightmap.Types.WORLD_SURFACE_WG));
     }
 
     private static int countGrassSlabs(GameTestHelper helper, ChunkPos chunk) {
