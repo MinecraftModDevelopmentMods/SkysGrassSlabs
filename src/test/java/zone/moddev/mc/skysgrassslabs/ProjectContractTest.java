@@ -65,6 +65,12 @@ public class ProjectContractTest {
         assertTrue(workflow.contains("MAVEN_UPLOAD_PASSWORD: ${{ secrets.MAVEN_UPLOAD_PASSWORD }}"));
         assertTrue(workflow.contains("-PpreparedReleaseDir="));
         assertTrue(workflow.contains("MinecraftModDevelopmentMods/SkysGrassSlabs"));
+        int neoForgeBuild = workflow.indexOf("if [[ \"$LOADER_NAME\" == \"neoforge\" ]]");
+        int separateClean = workflow.indexOf("./gradlew clean --no-daemon", neoForgeBuild);
+        int releaseBuild = workflow.indexOf("./gradlew check build javadoc", separateClean);
+        assertTrue(neoForgeBuild >= 0);
+        assertTrue(separateClean > neoForgeBuild);
+        assertTrue(releaseBuild > separateClean);
         assertTrue(workflow.indexOf("  publish_maven:") <
                 workflow.indexOf("  publish_curseforge:"));
         assertTrue(workflow.indexOf("  publish_curseforge:") <
