@@ -82,7 +82,7 @@ sourceSets {
     gameTest {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
-        resources.srcDirs = ['src/main/resources', 'src/generated/resources', 'src/gameTest/resources']
+        resources.srcDirs = ['src/gameTest/resources']
     }
 }
 
