@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2.2602002 - Minecraft 26.2 (NeoForge)
+
+- Corrected snowy grass slabs so their top surface uses snow instead of green
+  grass while the snowy side edges are showing.
+
 ## 1.1.1.2602002 - Minecraft 26.2 (NeoForge)
 
 - Added the NeoForge 26.2 build with the same blocks, recipes, world
