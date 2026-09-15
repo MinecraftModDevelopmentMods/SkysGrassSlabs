@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2.121112 - Minecraft 1.21.11 (NeoForge)
+
+- Corrected snowy grass slabs so their exposed top uses the snow texture
+  instead of remaining biome coloured green.
+- Preserved the existing snowy side edges and all world data.
+
 ## 1.1.1.121112 - Minecraft 1.21.11 (NeoForge)
 
 - Added the NeoForge 1.21.11 build with the same blocks, recipes, world
