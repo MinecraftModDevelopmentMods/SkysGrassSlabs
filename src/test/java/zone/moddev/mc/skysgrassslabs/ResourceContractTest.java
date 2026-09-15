@@ -79,6 +79,24 @@ public class ResourceContractTest {
     }
 
     @Test
+    public void snowyGrassSlabModelsUseUntintedSnowCaps() throws Exception {
+        for (String modelName : new String[] {"grass_slab_snow", "grass_slab_top_snow"}) {
+            JsonElement model = JsonParser.parseString(Files.readString(Path.of(
+                    "src/main/resources/assets/skysgrassslabs/models/block/"
+                            + modelName + ".json")));
+            var object = model.getAsJsonObject();
+            assertEquals("minecraft:block/snow",
+                    object.getAsJsonObject("textures").get("top").getAsString());
+            assertEquals("minecraft:block/grass_block_snow",
+                    object.getAsJsonObject("textures").get("side").getAsString());
+            var up = object.getAsJsonArray("elements").get(0).getAsJsonObject()
+                    .getAsJsonObject("faces").getAsJsonObject("up");
+            assertEquals("#top", up.get("texture").getAsString());
+            assertFalse(up.has("tintindex"));
+        }
+    }
+
+    @Test
     public void grassSlabUsesComponentAwareSilkTouchPredicate() throws Exception {
         String loot = Files.readString(Path.of(
                 "src/main/resources/data/skysgrassslabs/loot_table/blocks/grass_slab.json"));

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2.121111 - Minecraft 1.21.11
+
+- Corrected snowy grass slabs so their exposed top uses the snow texture
+  instead of remaining biome coloured green.
+- Preserved the existing snowy side edges and all world data.
+
 ## 1.1.1.121111 - Minecraft 1.21.11
 
 - Ported the complete feature set to Minecraft 1.21.11 and Forge 61.
