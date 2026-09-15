@@ -40,7 +40,10 @@ public final class WorldgenGameTests {
     @GameTest(template = "empty", batch = "worldgen001", timeoutTicks = 300)
     public static void smoothingIsBorderSafeAndIdempotent(GameTestHelper helper) {
         ChunkPos owner = new ChunkPos(helper.absolutePos(new BlockPos(1, 2, 1)));
-        int y = 120;
+        // Build the controlled surface above every naturally generated column. The
+        // hosted runner can choose a mountain spawn whose terrain reaches past the
+        // old fixed Y=120 test surface, causing the heightmap to ignore the fixture.
+        int y = helper.getLevel().getMaxBuildHeight() - 8;
 
         BlockPos center = new BlockPos(owner.getMinBlockX() + 8, y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, center, center.east());
