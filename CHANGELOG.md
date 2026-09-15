@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1.118021 - Minecraft 1.18.2
+
+- Corrected snowy grass slabs so their exposed top uses the snow texture
+  instead of remaining biome coloured green.
+- Preserved the existing snowy side edges and all world data.
+
 ## 1.1.0.118021 - Minecraft 1.18.2
 
 - Added an automatic upgrade path for matching grass, dirt and dirt path slabs
