@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1.119041 - Minecraft 1.19.4
+
+- Corrected snowy grass slabs so their exposed top uses the snow texture
+  instead of remaining biome coloured green.
+- Preserved the existing snowy side edges and all world data.
+
 ## 1.1.0.119041 - Minecraft 1.19.4
 
 - Ported slabs, turf, recipes, sheep interaction and terrain smoothing to
