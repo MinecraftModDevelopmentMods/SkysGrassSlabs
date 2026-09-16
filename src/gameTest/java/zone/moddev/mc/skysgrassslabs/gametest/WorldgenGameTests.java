@@ -1,6 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.gametest;
 
-import java.util.Optional;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.Identifier;
@@ -9,11 +9,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.GenerationStep;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import net.neoforged.neoforge.common.world.BiomeModifier;
-import net.neoforged.neoforge.common.world.ModifiableBiomeInfo.BiomeInfo;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
@@ -34,14 +31,11 @@ public final class WorldgenGameTests {
         require(helper, modifier instanceof zone.moddev.mc.skysgrassslabs.world.SmoothingBiomeModifier,
                 "registered smoothing biome modifier is missing");
 
-        BiomeInfo.Builder builder = BiomeInfo.Builder.copyOf(
-                biome.value().modifiableBiomeInfo().getOriginalBiomeInfo());
-        modifier.modify(biome, BiomeModifier.Phase.AFTER_EVERYTHING, builder);
-        var vegetation = builder.build().generationSettings().features()
+        var vegetation = biome.value().getGenerationSettings().features()
                 .get(GenerationStep.Decoration.VEGETAL_DECORATION.ordinal());
         require(helper, vegetation.size() > 0, "biome has no vegetation features");
         PlacedFeature first = vegetation.get(0).value();
-        require(helper, first.feature().value().feature() instanceof GrassSlabSmoothingFeature,
+        require(helper, first.feature().value() instanceof GrassSlabSmoothingFeature,
                 "smoother is not the first vegetation feature");
         helper.succeed();
     }
@@ -70,14 +64,12 @@ public final class WorldgenGameTests {
         helper.getLevel().setBlock(chest, Blocks.CHEST.defaultBlockState(), Block.UPDATE_ALL);
 
         helper.runAfterDelay(5, () -> {
-            GrassSlabSmoothingFeature feature = new GrassSlabSmoothingFeature(
-                    NoneFeatureConfiguration.CODEC);
-            FeaturePlaceContext<NoneFeatureConfiguration> context = new FeaturePlaceContext<>(
-                    Optional.empty(), helper.getLevel(),
+            primeLoadedHeightmaps(helper, owner);
+            GrassSlabSmoothingFeature feature = new GrassSlabSmoothingFeature();
+            require(helper, feature.place(helper.getLevel(),
                     helper.getLevel().getChunkSource().getGenerator(),
-                    RandomSource.create(19780401L),
-                    center, NoneFeatureConfiguration.INSTANCE);
-            require(helper, feature.place(context), "controlled feature pass made no changes");
+                    RandomSource.create(19780401L), center),
+                    "controlled feature pass made no changes");
             require(helper, helper.getLevel().getBlockState(center.above())
                     .is(ModBlocks.GRASS_SLAB.get()), "one-block transition was not smoothed");
             require(helper, helper.getLevel().getBlockState(border.above())
@@ -95,7 +87,9 @@ public final class WorldgenGameTests {
                     "block entity was overwritten");
             int firstCount = countGrassSlabs(helper, owner);
             helper.runAfterDelay(10, () -> {
-                boolean secondChanged = feature.place(context);
+                boolean secondChanged = feature.place(helper.getLevel(),
+                        helper.getLevel().getChunkSource().getGenerator(),
+                        RandomSource.create(19780401L), center);
                 int secondCount = countGrassSlabs(helper, owner);
                 require(helper, !secondChanged && secondCount == firstCount,
                         "settled second pass changed output: before=" + firstCount
@@ -103,6 +97,17 @@ public final class WorldgenGameTests {
                 helper.succeed();
             });
         });
+    }
+
+    private static void primeLoadedHeightmaps(GameTestHelper helper, ChunkPos owner) {
+        for (int chunkX = owner.x() - 1; chunkX <= owner.x() + 1; chunkX++) {
+            for (int chunkZ = owner.z() - 1; chunkZ <= owner.z() + 1; chunkZ++) {
+                var chunk = helper.getLevel().getChunkSource().getChunkNow(chunkX, chunkZ);
+                if (chunk != null) {
+                    Heightmap.primeHeightmaps(chunk, Set.of(Heightmap.Types.WORLD_SURFACE_WG));
+                }
+            }
+        }
     }
 
     private static int countGrassSlabs(GameTestHelper helper, ChunkPos chunk) {

@@ -8,7 +8,7 @@
     },
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
-      "conditions": { "recipe": "skysgrassslabs:dirt_slab" }
+      "conditions": { "recipes": "skysgrassslabs:dirt_slab" }
     }
   },
   "requirements": [["has_dirt", "has_the_recipe"]]

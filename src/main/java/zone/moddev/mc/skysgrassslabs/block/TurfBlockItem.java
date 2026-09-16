@@ -56,7 +56,7 @@ public final class TurfBlockItem extends BlockItem {
             CriteriaTriggers.PLACED_BLOCK.trigger(serverPlayer, pos, held);
         }
 
-        var sound = grass.getSoundType(level, pos, player);
+        var sound = grass.getSoundType();
 
         level.playSound(player, pos, sound.getPlaceSound(), SoundSource.BLOCKS,
                 (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);

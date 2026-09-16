@@ -101,12 +101,11 @@ public class ResourceContractTest {
     }
 
     @Test
-    public void grassSlabUsesComponentAwareSilkTouchPredicate() throws Exception {
+    public void grassSlabUsesTargetNativeSilkTouchCondition() throws Exception {
         String loot = Files.readString(Path.of(
                 "src/main/resources/data/skysgrassslabs/loot_table/blocks/grass_slab.json"));
-        assertTrue(loot.contains("\"predicates\""));
-        assertTrue(loot.contains("\"minecraft:enchantments\""));
-        assertTrue(loot.contains("\"enchantments\": \"minecraft:silk_touch\""));
+        assertTrue(loot.contains("\"condition\": \"minecraft:tool/can_silk_touch\""));
+        assertFalse(loot.contains("\"predicates\""));
     }
 
     @Test
@@ -116,7 +115,7 @@ public class ResourceContractTest {
         assertTrue(recipe.contains("skysgrassslabs:turf_cutting"));
         String implementation = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java"));
-        assertTrue(implementation.contains("canPerformAction(ItemAbilities.SHOVEL_FLATTEN)"));
+        assertTrue(implementation.contains("ShovelSupport.isShovel(stack)"));
     }
 
     private static void assertParses(Path path) {

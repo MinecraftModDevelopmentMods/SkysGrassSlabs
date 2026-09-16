@@ -8,7 +8,7 @@
     },
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
-      "conditions": { "recipe": "skysgrassslabs:grass_slab_from_seeds" }
+      "conditions": { "recipes": "skysgrassslabs:grass_slab_from_seeds" }
     }
   },
   "requirements": [["has_dirt_slab", "has_the_recipe"]]
