@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2.2603002 - Minecraft 26.3 (NeoForge)
+
+- Ported the accepted NeoForge release to Minecraft 26.3.
+- Preserved blocks, recipes, configuration, world data and legacy upgrades.
+
 ## 1.1.2.2602002 - Minecraft 26.2 (NeoForge)
 
 - Corrected snowy grass slabs so their top surface uses snow instead of green

@@ -1,52 +1,48 @@
 {
   "type": "minecraft:block",
-  "pools": [{
-    "rolls": 1.0,
-    "bonus_rolls": 0.0,
-    "entries": [{
-      "type": "minecraft:alternatives",
-      "children": [
+  "pools": [
+    {
+      "entries": [
         {
-          "type": "minecraft:item",
-          "name": "skysgrassslabs:grass_slab",
-          "conditions": [{
-            "condition": "minecraft:match_tool",
-            "predicate": {
-              "predicates": {
-                "minecraft:enchantments": [{
-                  "enchantments": "minecraft:silk_touch",
-                  "levels": { "min": 1 }
-                }]
-              }
+          "type": "minecraft:alternatives",
+          "children": [
+            {
+              "type": "minecraft:item",
+              "condition": "minecraft:tool/can_silk_touch",
+              "modifier": [
+                {
+                  "type": "minecraft:set_count",
+                  "condition": {
+                    "type": "minecraft:match_block",
+                    "blocks": "skysgrassslabs:grass_slab",
+                    "state": { "type": "double" }
+                  },
+                  "count": 2
+                }
+              ],
+              "name": "skysgrassslabs:grass_slab"
+            },
+            {
+              "type": "minecraft:item",
+              "condition": { "type": "minecraft:survives_explosion" },
+              "modifier": [
+                {
+                  "type": "minecraft:set_count",
+                  "condition": {
+                    "type": "minecraft:match_block",
+                    "blocks": "skysgrassslabs:grass_slab",
+                    "state": { "type": "double" }
+                  },
+                  "count": 2
+                }
+              ],
+              "name": "skysgrassslabs:dirt_slab"
             }
-          }],
-          "functions": [{
-            "function": "minecraft:set_count",
-            "conditions": [{
-              "condition": "minecraft:block_state_property",
-              "block": "skysgrassslabs:grass_slab",
-              "properties": { "type": "double" }
-            }],
-            "count": 2.0,
-            "add": false
-          }]
-        },
-        {
-          "type": "minecraft:item",
-          "name": "skysgrassslabs:dirt_slab",
-          "conditions": [{ "condition": "minecraft:survives_explosion" }],
-          "functions": [{
-            "function": "minecraft:set_count",
-            "conditions": [{
-              "condition": "minecraft:block_state_property",
-              "block": "skysgrassslabs:grass_slab",
-              "properties": { "type": "double" }
-            }],
-            "count": 2.0,
-            "add": false
-          }]
+          ]
         }
-      ]
-    }]
-  }]
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "skysgrassslabs:blocks/grass_slab"
 }

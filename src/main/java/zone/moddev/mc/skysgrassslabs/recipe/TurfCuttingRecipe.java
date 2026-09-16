@@ -19,10 +19,10 @@ import net.minecraft.world.item.crafting.display.RecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.common.ItemAbilities;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
+import zone.moddev.mc.skysgrassslabs.item.ShovelSupport;
 
 /** Cuts turf while returning the matching dirt and an unchanged shovel. */
 public final class TurfCuttingRecipe extends CustomRecipe {
@@ -121,7 +121,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     private static boolean isShovel(ItemStack stack) {
-        return stack.canPerformAction(ItemAbilities.SHOVEL_FLATTEN);
+        return ShovelSupport.isShovel(stack);
     }
 
     private static NonNullList<Ingredient> createIngredients() {

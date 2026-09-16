@@ -59,7 +59,7 @@ public final class NormalizingSlabItem extends BlockItem {
         if (!level.setBlock(pos, combined, Block.UPDATE_ALL_IMMEDIATE)) {
             return InteractionResult.FAIL;
         }
-        SoundType sound = combined.getSoundType(level, pos, player);
+        SoundType sound = combined.getSoundType();
         level.playSound(player, pos, sound.getPlaceSound(), SoundSource.BLOCKS,
                 (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
         if (!player.getAbilities().instabuild) {

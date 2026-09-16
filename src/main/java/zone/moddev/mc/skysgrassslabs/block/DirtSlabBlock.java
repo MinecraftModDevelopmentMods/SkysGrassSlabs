@@ -6,7 +6,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
@@ -14,7 +13,6 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.neoforged.neoforge.common.ItemAbility;
 
 /** Dirt slab with snow presentation and target-aware grass growth. */
 public final class DirtSlabBlock extends SlabBlock {
@@ -57,10 +55,4 @@ public final class DirtSlabBlock extends SlabBlock {
         GrassSpread.tickDirtSlab(level, pos, repaired, random);
     }
 
-    @Override
-    @Nullable
-    public BlockState getToolModifiedState(BlockState state, UseOnContext context,
-            ItemAbility action, boolean simulate) {
-        return SlabTransitions.flatten(state, action);
-    }
 }

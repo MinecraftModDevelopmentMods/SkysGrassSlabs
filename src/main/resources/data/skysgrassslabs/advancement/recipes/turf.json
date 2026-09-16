@@ -12,7 +12,7 @@
     },
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
-      "conditions": { "recipe": "skysgrassslabs:turf" }
+      "conditions": { "recipes": "skysgrassslabs:turf" }
     }
   },
   "requirements": [["has_grass_block", "has_grass_slab", "has_the_recipe"]]

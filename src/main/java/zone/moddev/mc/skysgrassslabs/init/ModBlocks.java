@@ -2,7 +2,7 @@ package zone.moddev.mc.skysgrassslabs.init;
 
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -25,6 +25,8 @@ import zone.moddev.mc.skysgrassslabs.item.NormalizingSlabItem;
 /** Stable block and item registrations. */
 @EventBusSubscriber(modid = SkysGrassSlabs.MOD_ID)
 public final class ModBlocks {
+    private static final Identifier BUILDING_BLOCKS_TAB =
+            Identifier.withDefaultNamespace("building_blocks");
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(BuiltInRegistries.BLOCK, SkysGrassSlabs.MOD_ID);
     public static final DeferredRegister<Item> ITEMS =
@@ -91,7 +93,7 @@ public final class ModBlocks {
 
     @SubscribeEvent
     public static void buildCreativeTab(BuildCreativeModeTabContentsEvent event) {
-        if (CreativeModeTabs.BUILDING_BLOCKS.equals(event.getTabKey())) {
+        if (BUILDING_BLOCKS_TAB.equals(event.getTabKey().identifier())) {
             event.accept(DIRT_SLAB_ITEM.get());
             event.accept(GRASS_SLAB_ITEM.get());
             event.accept(PATH_SLAB_ITEM.get());

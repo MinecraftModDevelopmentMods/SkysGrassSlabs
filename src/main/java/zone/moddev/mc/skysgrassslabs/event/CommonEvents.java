@@ -6,6 +6,8 @@ import java.util.WeakHashMap;
 import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import zone.moddev.mc.skysgrassslabs.block.SlabFlattening;
 import zone.moddev.mc.skysgrassslabs.entity.ai.TurfEatingGoal;
 
 /** Server gameplay event registrations. */
@@ -15,6 +17,7 @@ public final class CommonEvents {
 
     public static void register() {
         NeoForge.EVENT_BUS.addListener(CommonEvents::addTurfEatingGoal);
+        NeoForge.EVENT_BUS.addListener(CommonEvents::flattenSlab);
     }
 
     public static void addTurfEatingGoal(EntityJoinLevelEvent event) {
@@ -22,8 +25,12 @@ public final class CommonEvents {
             return;
         }
         if (TURF_GOAL_SHEEP.add(sheep)) {
-            sheep.goalSelector.addGoal(5, new TurfEatingGoal(sheep));
+            sheep.getGoalSelector().addGoal(5, new TurfEatingGoal(sheep));
         }
+    }
+
+    private static void flattenSlab(PlayerInteractEvent.RightClickBlock event) {
+        SlabFlattening.handle(event);
     }
 
     private CommonEvents() {

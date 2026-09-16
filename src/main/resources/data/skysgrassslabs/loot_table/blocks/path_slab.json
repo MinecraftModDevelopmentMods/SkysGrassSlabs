@@ -1,22 +1,27 @@
 {
   "type": "minecraft:block",
-  "pools": [{
-    "rolls": 1.0,
-    "bonus_rolls": 0.0,
-    "entries": [{
-      "type": "minecraft:item",
-      "name": "skysgrassslabs:dirt_slab",
-      "conditions": [{ "condition": "minecraft:survives_explosion" }],
-      "functions": [{
-        "function": "minecraft:set_count",
-        "conditions": [{
-          "condition": "minecraft:block_state_property",
-          "block": "skysgrassslabs:path_slab",
-          "properties": { "type": "double" }
-        }],
-        "count": 2.0,
-        "add": false
-      }]
-    }]
-  }]
+  "pools": [
+    {
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "condition": { "type": "minecraft:survives_explosion" },
+          "modifier": [
+            {
+              "type": "minecraft:set_count",
+              "condition": {
+                "type": "minecraft:match_block",
+                "blocks": "skysgrassslabs:path_slab",
+                "state": { "type": "double" }
+              },
+              "count": 2
+            }
+          ],
+          "name": "skysgrassslabs:dirt_slab"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "skysgrassslabs:blocks/path_slab"
 }
