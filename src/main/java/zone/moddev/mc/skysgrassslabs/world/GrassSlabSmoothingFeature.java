@@ -1,6 +1,6 @@
 package zone.moddev.mc.skysgrassslabs.world;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import java.util.Arrays;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
@@ -14,35 +14,38 @@ import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.util.RandomSource;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Deterministic two-pass slope smoothing for newly generated Overworld chunks. */
-public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
+public final class GrassSlabSmoothingFeature implements Feature {
+    public static final MapCodec<GrassSlabSmoothingFeature> CODEC =
+            MapCodec.unit(GrassSlabSmoothingFeature::new);
     private static final int HALO_WIDTH = 18;
     private static final int MISSING = Integer.MIN_VALUE;
     private static final ThreadLocal<DecisionBuffer> BUFFERS =
             ThreadLocal.withInitial(DecisionBuffer::new);
 
-    public GrassSlabSmoothingFeature(Codec<NoneFeatureConfiguration> codec) {
-        super(codec);
+    @Override
+    public MapCodec<GrassSlabSmoothingFeature> codec() {
+        return CODEC;
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        WorldGenLevel level = context.level();
+    public boolean place(WorldGenLevel level, ChunkGenerator generator, RandomSource random,
+            BlockPos origin) {
         if (!SkysGrassSlabsConfig.isSmoothingActive()
                 || level.getLevel().dimension() != Level.OVERWORLD) {
             return false;
         }
         ChunkAccess owner = level instanceof WorldGenRegion region
                 ? level.getChunk(region.getCenter().x(), region.getCenter().z())
-                : level.getChunk(context.origin());
+                : level.getChunk(origin);
         ChunkPos ownerPos = owner.getPos();
         if (LegacyWorldDataHook.isLegacyChunk(ownerPos.x(), ownerPos.z())) {
             return false;

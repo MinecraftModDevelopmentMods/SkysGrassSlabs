@@ -6,8 +6,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
-import net.minecraftforge.common.ToolAction;
-import net.minecraftforge.common.ToolActions;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Lossless state transitions shared by soil slabs. */
@@ -16,8 +14,8 @@ final class SlabTransitions {
     }
 
     @Nullable
-    static BlockState flatten(BlockState state, ToolAction action) {
-        if (action != ToolActions.SHOVEL_FLATTEN || state.getValue(SlabBlock.WATERLOGGED)) {
+    static BlockState flatten(BlockState state) {
+        if (state.getValue(SlabBlock.WATERLOGGED)) {
             return null;
         }
 

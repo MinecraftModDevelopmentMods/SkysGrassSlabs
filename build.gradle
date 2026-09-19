@@ -37,15 +37,15 @@ def mavenizerLicense = mavenizerToolsDirectory.file('LICENSE-MAVENIZER.txt')
 def mavenizerReadme = mavenizerToolsDirectory.file('README.md')
 def mavenizerFixtureChecksums = [
         (mavenizerCompatibilityJar.asFile):
-                '5ABAB52A3F1BE115381C3CE80D5FD38DBE6C9F4C0B9ECF70A957700EC90FB88B',
+                '4150926F33A696B2088AB2675C1C3B45745CE4F9F2DEB31CCD88C9ADC834062F',
         (mavenizerRuleManifest.asFile):
-                '9437E03FC5E1CB5D605D72F0538C4DF4417B64DB0A57D0AABDC5184781517AC1',
+                '829400D74ECB1BF0CC6107D9980B8328365E3F56D9A5342002D8DF340571BDB7',
         (mavenizerSourcePatch.asFile):
-                '2DA8DD0FD5F112F5B7591113AED06D9A58C584A25F8705E26445A6D2E9D5C78E',
+                '9F0C34529D41C9CD5804C32608FE548D09A0AC3A95D337EE2EF4377680C1B2DD',
         (mavenizerLicense.asFile):
                 '20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331',
         (mavenizerReadme.asFile):
-                'EAD1477F393897C491A10FB86178213A99C360571A8063D551DA0579DF65BA6F'
+                'A35B80BA8D7557A31E0378787C06FE86C8C627061BF313A6886205F62A46C09F'
 ]
 
 // ForgeGradle invokes Mavenizer while configuring the project. Verify the
@@ -87,7 +87,7 @@ java {
     withJavadocJar()
 }
 
-// ForgeGradle declares Slime Launcher as Java 8-compatible, but Forge 65 and
+// ForgeGradle declares Slime Launcher as Java 8-compatible, but Forge 66 and
 // this project run entirely on Java 25. Bind the launcher explicitly so a
 // clean setup does not depend on an unrelated legacy JDK.
 fgtools.configure('slimelauncher') {
@@ -261,7 +261,7 @@ tasks.named('check').configure {
 
 // A Forge process is not green merely because it returns exit code zero. The
 // loader can log a worldgen or linkage failure and still shut down normally.
-def acceptedForge65LogNoise = [
+def acceptedForge66LogNoise = [
         ~/FML appears to be missing any signature data/,
         ~/Found multiple arguments for option fml\.mcVersion/,
         ~/Found multiple arguments for option fml\.forgeVersion/,
@@ -281,7 +281,7 @@ def packagedOfflineAuthenticationNoise = [
         ~/\/ERROR\] \[com\.mojang\.realmsclient\.RealmsAvailability\/\]: Couldn't connect to realms$/,
         ~/^com\.mojang\.realmsclient\.exception\.RealmsServiceException: Realms authentication error with message 'java\.lang\.RuntimeException: Failed to parse into SignedJWT: validation-token'$/
 ]
-// Forge 65 asks OSHI for Windows performance counters while preloading its
+// Forge 66 asks OSHI for Windows performance counters while preloading its
 // system report. Control Forge runtimes reproduced these exact signatures and
 // continued to Done. Keep the exception scoped to Windows runs that opt in.
 def windowsOshiSystemReportNoise = [
@@ -319,7 +319,7 @@ def assertRuntimeLogsClean = { File runDirectory, String context, Set priorCrash
         log.eachLine('UTF-8') { String line ->
             lineNumber++
             boolean unexpectedSeverity = line ==~ /.*\/(?:ERROR|FATAL)\].*/
-            boolean knownNoise = acceptedForge65LogNoise.any { line =~ it }
+            boolean knownNoise = acceptedForge66LogNoise.any { line =~ it }
                     || contextNoise.any { line =~ it }
             boolean exceptionRoot = line ==~ /^(?:Caused by: )?[A-Za-z_$][A-Za-z0-9_.$]*(?:Exception|Error)(?::.*)?$/
             boolean fatalText = line.contains('Encountered an unexpected exception') ||
@@ -359,7 +359,7 @@ tasks.register('runtimeLogScannerTest') {
                 'java.lang.UnsupportedOperationException: sun.misc.Unsafe unavailable\n'
                 + 'java.lang.UnsupportedOperationException: Native access (restricted methods) is not enabled for the io.netty.common module.\n',
                 'UTF-8')
-        assertRuntimeLogsClean(probe, 'scanner-forge65-netty-noise-probe', [] as Set)
+        assertRuntimeLogsClean(probe, 'scanner-forge66-netty-noise-probe', [] as Set)
         new File(logs, 'debug.log').delete()
         new File(logs, 'latest.log').setText(
                 '[Download-2/ERROR] [net.minecraft.client.Minecraft/]: Failed to fetch user properties\n'
@@ -430,7 +430,7 @@ def processedMainResourcesPath = {
     project.relativePath(processedMainResourcesDirectory()).replace('\\', '/')
 }
 
-// ForgeGradle 7 models Forge 65 source sets as merged output directories.
+// ForgeGradle 7 models Forge 66 source sets as merged output directories.
 // Compile through staging so Gradle and Eclipse never write classes and
 // processed resources to the same location at the same time.
 def compiledMainClasses = layout.buildDirectory.dir('compiled-classes/main')
@@ -529,13 +529,13 @@ repositories {
 dependencies {
     implementation minecraft.dependency(
             "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}")
-    testImplementation 'net.minecraftforge:eventbus-validator:7.0.1'
+    testImplementation 'net.minecraftforge:eventbus-validator:7.0.6'
     testImplementation 'junit:junit:4.13.2'
 }
 
 def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompatibilityFixture') {
     group = 'verification'
-    description = 'Verifies the checksum-sealed Forge 26.2 Mavenizer compatibility fixture.'
+    description = 'Verifies the checksum-sealed Forge 26.3 Mavenizer compatibility fixture.'
     inputs.files mavenizerFixtureChecksums.keySet()
     doLast {
         mavenizerFixtureChecksums.each { File fixture, String expected ->
@@ -550,13 +550,13 @@ def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompati
         }
 
         def parsed = new JsonSlurper().parse(mavenizerRuleManifest.asFile)
-        String target = 'net.minecraftforge:forge:26.2-65.1.0'
+        String target = 'net.minecraftforge:forge:26.3-66.0.0'
         if (parsed.schema != 1 || parsed.targets.keySet() != [target] as Set) {
             throw new GradleException('Mavenizer target-rule manifest has unexpected targets or schema')
         }
         def forgeRules = parsed.targets[target]
         if (forgeRules.expectedApplications != 0 || !forgeRules.rules.isEmpty()) {
-            throw new GradleException('Forge 65 Mavenizer target must be an explicit zero-rule qualification')
+            throw new GradleException('Forge 66 Mavenizer target must be an explicit zero-rule qualification')
         }
 
         ZipFile fixtureJar = new ZipFile(mavenizerCompatibilityJar.asFile)
@@ -605,7 +605,7 @@ def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompati
         String licenseText = mavenizerLicense.asFile.getText('UTF-8')
         if (!readme.contains('6968241ce7a0a902cdc1c534b976e8373a423091')
                 || !readme.contains('Temurin `25.0.3+9`')
-                || !readme.contains('26.2-65.1.0')) {
+                || !readme.contains('26.3-66.0.0')) {
             throw new GradleException('Mavenizer provenance, target, or Java 25 build instructions are incomplete')
         }
         if (!patchText.contains('SourceCompatibilityPatcher.java')
@@ -686,12 +686,12 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '26.2' || project.forge_version != '65.1.0' ||
-                project.mapping_channel != 'official' || project.mapping_version != '26.2' ||
+        if (project.minecraft_version != '26.3' || project.forge_version != '66.0.0' ||
+                project.mapping_channel != 'official' || project.mapping_version != '26.3' ||
                 project.loader_name != 'forge' || project.loader_code != '1' ||
                 project.java_version != '25' || project.java_toolchain_version != '25.0.3+9' ||
                 project.gradle_java_version != '25' || project.curseforge_project_id != '1677588') {
-            throw new GradleException('Unexpected 26.2 release metadata')
+            throw new GradleException('Unexpected 26.3 release metadata')
         }
     }
 }
@@ -769,8 +769,8 @@ tasks.register('verifyReleaseArtifacts') {
 
             String metadata = zip.getInputStream(zip.getEntry('META-INF/mods.toml'))
                     .getText(StandardCharsets.UTF_8.name())
-            if (!metadata.contains('versionRange="[26.2,26.3,)"') ||
-                    !metadata.contains('versionRange="[65,)"')) {
+            if (!metadata.contains('versionRange="[26.3,26.4,)"') ||
+                    !metadata.contains('versionRange="[66,)"')) {
                 throw new GradleException('Packaged Forge metadata targets the wrong version')
             }
 
@@ -987,9 +987,9 @@ eclipse {
     synchronizationTasks 'isolateEclipseProductionRuns'
 }
 
-def syncForge65EclipseLaunches = tasks.register('syncForge65EclipseLaunches') {
+def syncForge66EclipseLaunches = tasks.register('syncForge66EclipseLaunches') {
     group = 'ide'
-    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 65.'
+    description = 'Normalizes ForgeGradle 7 Eclipse launch outputs for Forge 66.'
     doLast {
         String mainOutput = new File(projectDir, 'bin/main').absolutePath
         String gameTestOutput = new File(projectDir, 'bin/gameTest').absolutePath
@@ -1059,14 +1059,14 @@ def syncForge65EclipseLaunches = tasks.register('syncForge65EclipseLaunches') {
 }
 
 tasks.matching { it.name == 'genEclipseRuns' }.configureEach {
-    finalizedBy syncForge65EclipseLaunches
+    finalizedBy syncForge66EclipseLaunches
 }
 
 def isolateEclipseProductionRuns = tasks.register('isolateEclipseProductionRuns') {
     group = 'ide'
     description = 'Prepares the complete ForgeGradle 7 Eclipse project configuration.'
     dependsOn tasks.named('genEclipseRuns')
-    dependsOn syncForge65EclipseLaunches
+    dependsOn syncForge66EclipseLaunches
     dependsOn configureEclipseBuildship
     dependsOn prepareEclipseResources
 }

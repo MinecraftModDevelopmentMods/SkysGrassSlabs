@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2.2603001 - Minecraft 26.3
+
+- Ported the complete feature set to Minecraft 26.3 and Forge 66.
+- Preserved all blocks, recipes, settings and supported world upgrades.
+- Updated shovel handling, bonemeal growth, world generation and data files
+  for Minecraft 26.3.
+
 ## 1.1.2.2602001 - Minecraft 26.2
 
 - Corrected snowy grass slabs so their exposed top uses the snow texture
