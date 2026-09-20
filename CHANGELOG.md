@@ -6,6 +6,8 @@
 - Preserved all blocks, recipes, settings and supported world upgrades.
 - Updated shovel handling, bonemeal growth, world generation and data files
   for Minecraft 26.3.
+- Corrected grass, snowy dirt and path slab models so their exposed inner
+  surfaces remain visible beside blocks.
 
 ## 1.1.2.2602001 - Minecraft 26.2
 

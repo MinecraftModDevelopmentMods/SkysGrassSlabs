@@ -83,6 +83,25 @@ public class ResourceContractTest {
     }
 
     @Test
+    public void partialSlabModelsKeepTheirInteriorHorizontalFacesVisible() throws Exception {
+        for (String modelName : new String[] {"grass_slab", "grass_slab_snow",
+                "dirt_slab_snow", "path_slab"}) {
+            var faces = modelFaces(modelName);
+            assertFalse(modelName, faces.getAsJsonObject("up").has("cullface"));
+            assertEquals(modelName, "down",
+                    faces.getAsJsonObject("down").get("cullface").getAsString());
+        }
+
+        for (String modelName : new String[] {"grass_slab_top", "grass_slab_top_snow",
+                "dirt_slab_top_snow", "path_slab_top"}) {
+            var faces = modelFaces(modelName);
+            assertFalse(modelName, faces.getAsJsonObject("down").has("cullface"));
+            assertEquals(modelName, "up",
+                    faces.getAsJsonObject("up").get("cullface").getAsString());
+        }
+    }
+
+    @Test
     public void snowyGrassSlabModelsUseUntintedSnowCaps() throws Exception {
         for (String modelName : new String[] {"grass_slab_snow", "grass_slab_top_snow"}) {
             JsonElement model = JsonParser.parseString(Files.readString(Path.of(
@@ -127,5 +146,13 @@ public class ResourceContractTest {
         } catch (IOException | RuntimeException exception) {
             throw new AssertionError("Invalid JSON: " + path, exception);
         }
+    }
+
+    private static com.google.gson.JsonObject modelFaces(String modelName) throws IOException {
+        return JsonParser.parseString(Files.readString(Path.of(
+                "src/main/resources/assets/skysgrassslabs/models/block/"
+                        + modelName + ".json")))
+                .getAsJsonObject().getAsJsonArray("elements").get(0).getAsJsonObject()
+                .getAsJsonObject("faces");
     }
 }
