@@ -83,6 +83,25 @@ public class ResourceContractTest {
     }
 
     @Test
+    public void partialSlabModelsKeepTheirInteriorHorizontalFacesVisible() throws Exception {
+        for (String modelName : new String[] {"grass_slab", "grass_slab_snow",
+                "dirt_slab_snow", "path_slab"}) {
+            var faces = modelFaces(modelName);
+            assertFalse(modelName, faces.getAsJsonObject("up").has("cullface"));
+            assertEquals(modelName, "down",
+                    faces.getAsJsonObject("down").get("cullface").getAsString());
+        }
+
+        for (String modelName : new String[] {"grass_slab_top", "grass_slab_top_snow",
+                "dirt_slab_top_snow", "path_slab_top"}) {
+            var faces = modelFaces(modelName);
+            assertFalse(modelName, faces.getAsJsonObject("down").has("cullface"));
+            assertEquals(modelName, "up",
+                    faces.getAsJsonObject("up").get("cullface").getAsString());
+        }
+    }
+
+    @Test
     public void snowyGrassSlabModelsUseUntintedSnowCaps() throws Exception {
         for (String modelName : new String[] {"grass_slab_snow", "grass_slab_top_snow"}) {
             JsonElement model = JsonParser.parseString(Files.readString(Path.of(
@@ -104,9 +123,7 @@ public class ResourceContractTest {
     public void grassSlabUsesComponentAwareSilkTouchPredicate() throws Exception {
         String loot = Files.readString(Path.of(
                 "src/main/resources/data/skysgrassslabs/loot_table/blocks/grass_slab.json"));
-        assertTrue(loot.contains("\"predicates\""));
-        assertTrue(loot.contains("\"minecraft:enchantments\""));
-        assertTrue(loot.contains("\"enchantments\": \"minecraft:silk_touch\""));
+        assertTrue(loot.contains("\"condition\": \"minecraft:tool/can_silk_touch\""));
     }
 
     @Test
@@ -117,7 +134,7 @@ public class ResourceContractTest {
         assertFalse(recipe.contains("\"category\":"));
         String implementation = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java"));
-        assertTrue(implementation.contains("canPerformAction(ToolActions.SHOVEL_FLATTEN)"));
+        assertTrue(implementation.contains("ShovelSupport.isShovel(stack)"));
         assertTrue(implementation.contains("Ingredient.of(ModBlocks.TURF_ITEM.get()).display()"));
         assertTrue(implementation.contains("Ingredient.of(Blocks.CRAFTING_TABLE).display()"));
         assertFalse(implementation.contains("SlotDisplay.ItemSlotDisplay"));
@@ -129,5 +146,13 @@ public class ResourceContractTest {
         } catch (IOException | RuntimeException exception) {
             throw new AssertionError("Invalid JSON: " + path, exception);
         }
+    }
+
+    private static com.google.gson.JsonObject modelFaces(String modelName) throws IOException {
+        return JsonParser.parseString(Files.readString(Path.of(
+                "src/main/resources/assets/skysgrassslabs/models/block/"
+                        + modelName + ".json")))
+                .getAsJsonObject().getAsJsonArray("elements").get(0).getAsJsonObject()
+                .getAsJsonObject("faces");
     }
 }

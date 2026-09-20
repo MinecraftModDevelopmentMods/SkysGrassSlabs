@@ -26,7 +26,7 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
                 || biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END)) {
             return;
         }
-        BiomeGenerationSettings.PlainBuilder generation = builder.getGenerationSettings();
+        BiomeGenerationSettings.PlainBuilder generation = builder.generationSettings();
         List<Holder<PlacedFeature>> features = generation.getFeatures(
                 GenerationStep.Decoration.VEGETAL_DECORATION);
         if (features.stream().noneMatch(existing -> existing.value() == smoothing.value())) {

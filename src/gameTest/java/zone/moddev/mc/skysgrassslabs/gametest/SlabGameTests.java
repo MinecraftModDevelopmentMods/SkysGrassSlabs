@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -29,6 +30,7 @@ import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BonemealSource;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.gamerules.GameRules;
@@ -39,17 +41,17 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraftforge.common.Tags;
-import net.minecraftforge.common.ToolActions;
 import net.minecraftforge.gametest.GameTest;
 import net.minecraftforge.gametest.GameTestNamespace;
 import net.minecraftforge.gametest.GameTestPrefix;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSpread;
 import zone.moddev.mc.skysgrassslabs.block.PathSlabBlock;
+import zone.moddev.mc.skysgrassslabs.block.SlabFlattening;
 import zone.moddev.mc.skysgrassslabs.block.TurfBlock;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
@@ -94,7 +96,6 @@ public final class SlabGameTests {
     @GameTest(structure = EMPTY)
     public static void shovelFlatteningPreservesOrientation(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
-        UseOnContext context = context(helper, pos, new ItemStack(Items.IRON_SHOVEL));
         BlockState dirtTop = ModBlocks.DIRT_SLAB.get().defaultBlockState()
                 .setValue(SlabBlock.TYPE, SlabType.TOP);
         BlockState grassBottom = ModBlocks.GRASS_SLAB.get().defaultBlockState();
@@ -102,29 +103,33 @@ public final class SlabGameTests {
         BlockState doubled = dirtTop.setValue(SlabBlock.TYPE, SlabType.DOUBLE)
                 .setValue(SlabBlock.WATERLOGGED, false);
 
-        BlockState topPath = dirtTop.getToolModifiedState(context, ToolActions.SHOVEL_FLATTEN, false);
-        BlockState bottomPath = grassBottom.getToolModifiedState(context, ToolActions.SHOVEL_FLATTEN, false);
-        require(helper, topPath != null && topPath.is(ModBlocks.PATH_SLAB.get())
-                && topPath.getValue(SlabBlock.TYPE) == SlabType.TOP, "top orientation was lost");
-        require(helper, bottomPath != null && bottomPath.is(ModBlocks.PATH_SLAB.get())
-                && bottomPath.getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
-                "bottom orientation was lost");
-        require(helper, waterlogged.getToolModifiedState(context,
-                ToolActions.SHOVEL_FLATTEN, false) == null, "waterlogged dirt flattened");
-        BlockState fullPath = doubled.getToolModifiedState(context, ToolActions.SHOVEL_FLATTEN, false);
-        require(helper, fullPath != null && fullPath.is(Blocks.DIRT_PATH),
-                "double dirt slab did not normalize to vanilla path");
-
-        helper.getLevel().setBlock(pos, dirtTop, Block.UPDATE_ALL);
-        Player player = helper.makeMockPlayer(GameType.CREATIVE);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         ItemStack shovel = new ItemStack(Items.IRON_SHOVEL);
         player.setItemInHand(InteractionHand.MAIN_HAND, shovel);
-        shovel.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
-                new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false)));
-        require(helper, helper.getLevel().getBlockState(pos).is(ModBlocks.PATH_SLAB.get())
-                && helper.getLevel().getBlockState(pos).getValue(SlabBlock.TYPE) == SlabType.TOP,
-                "vanilla shovel use did not create a top path slab");
-        require(helper, shovel.getDamageValue() == 1, "shovel durability was not consumed");
+
+        helper.getLevel().setBlock(pos, dirtTop, Block.UPDATE_ALL);
+        flatten(player, pos);
+        BlockState topPath = helper.getLevel().getBlockState(pos);
+        require(helper, topPath != null && topPath.is(ModBlocks.PATH_SLAB.get())
+                && topPath.getValue(SlabBlock.TYPE) == SlabType.TOP, "top orientation was lost");
+        helper.getLevel().setBlock(pos, grassBottom, Block.UPDATE_ALL);
+        flatten(player, pos);
+        BlockState bottomPath = helper.getLevel().getBlockState(pos);
+        require(helper, bottomPath.is(ModBlocks.PATH_SLAB.get())
+                && bottomPath.getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
+                "bottom orientation was lost");
+        helper.getLevel().setBlock(pos, waterlogged, Block.UPDATE_ALL);
+        flatten(player, pos);
+        require(helper, helper.getLevel().getBlockState(pos).equals(waterlogged),
+                "waterlogged dirt flattened");
+
+        helper.getLevel().setBlock(pos, doubled, Block.UPDATE_ALL);
+        flatten(player, pos);
+        BlockState fullPath = helper.getLevel().getBlockState(pos);
+        require(helper, fullPath.is(Blocks.DIRT_PATH),
+                "double dirt slab did not normalize to vanilla path");
+        require(helper, shovel.getDamageValue() == 3,
+                "successful slab flattening did not consume durability exactly once");
         helper.succeed();
     }
 
@@ -288,9 +293,11 @@ public final class SlabGameTests {
         BlockState bottom = grass.defaultBlockState();
         BlockState top = bottom.setValue(SlabBlock.TYPE, SlabType.TOP);
 
-        require(helper, !grass.isValidBonemealTarget(helper.getLevel(), pos, bottom),
+        require(helper, !grass.isValidBonemealTarget(helper.getLevel(), pos, bottom,
+                BonemealSource.INTERACTION),
                 "bottom grass slab accepted bonemeal");
-        require(helper, grass.isValidBonemealTarget(helper.getLevel(), pos, top),
+        require(helper, grass.isValidBonemealTarget(helper.getLevel(), pos, top,
+                BonemealSource.INTERACTION),
                 "top grass slab rejected bonemeal");
         require(helper, !grass.canSustainPlant(bottom, helper.getLevel(), pos, Direction.UP,
                 (net.minecraftforge.common.IPlantable) Blocks.DANDELION),
@@ -345,15 +352,15 @@ public final class SlabGameTests {
         require(helper, SkysGrassSlabsConfig.generateGrassSlabs(),
                 "fresh common config did not default worldgen to true");
         require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "dirt_slab")
-                .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.DIRT_SLAB.get())),
+                .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.DIRT_SLAB.get())),
                 "dirt slab registry ID changed");
         require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "grass_slab")
-                .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.GRASS_SLAB.get())),
+                .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.GRASS_SLAB.get())),
                 "grass slab registry ID changed");
         require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "path_slab")
-                .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.PATH_SLAB.get())),
+                .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.PATH_SLAB.get())),
                 "path slab registry ID changed");
-        require(helper, ForgeRegistries.FEATURES.containsKey(
+        require(helper, BuiltInRegistries.FEATURE_TYPE.containsKey(
                 Identifier.fromNamespaceAndPath(
                         SkysGrassSlabs.MOD_ID, "grass_slab_smoothing")),
                 "worldgen feature registry ID changed");
@@ -597,13 +604,13 @@ public final class SlabGameTests {
         require(helper, !recipe.matches(invalidGrid, helper.getLevel()),
                 "turf recipe accepted a non-shovel");
         require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
-                .equals(ForgeRegistries.BLOCKS.getKey(ModBlocks.TURF.get())),
+                .equals(BuiltInRegistries.BLOCK.getKey(ModBlocks.TURF.get())),
                 "turf block registry ID changed");
         require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf")
-                .equals(ForgeRegistries.ITEMS.getKey(ModBlocks.TURF_ITEM.get())),
+                .equals(BuiltInRegistries.ITEM.getKey(ModBlocks.TURF_ITEM.get())),
                 "turf item registry ID changed");
         require(helper, Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, "turf_cutting")
-                .equals(ForgeRegistries.RECIPE_SERIALIZERS.getKey(ModRecipes.TURF_CUTTING.get())),
+                .equals(BuiltInRegistries.RECIPE_SERIALIZER.getKey(ModRecipes.TURF_CUTTING.get())),
                 "turf recipe serializer ID changed");
         helper.succeed();
     }
@@ -661,7 +668,7 @@ public final class SlabGameTests {
         sheep.setSheared(true);
         CommonEvents.addTurfEatingGoal(new EntityJoinLevelEvent(sheep, helper.getLevel()));
         CommonEvents.addTurfEatingGoal(new EntityJoinLevelEvent(sheep, helper.getLevel()));
-        long goalCount = sheep.goalSelector.getAvailableGoals().stream()
+        long goalCount = sheep.getGoalSelector().getAvailableGoals().stream()
                 .filter(goal -> goal.getGoal() instanceof TurfEatingGoal).count();
         require(helper, goalCount == 1, "sheep received duplicate turf eating goals");
 
@@ -718,15 +725,16 @@ public final class SlabGameTests {
         return turf;
     }
 
-    private static UseOnContext context(GameTestHelper helper, BlockPos pos, ItemStack stack) {
-        return new UseOnContext(helper.getLevel(), null, InteractionHand.MAIN_HAND, stack,
-                new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
-    }
-
     private static BlockPlaceContext placeContext(GameTestHelper helper, BlockPos pos,
             ItemStack stack) {
         return new BlockPlaceContext(helper.getLevel(), null, InteractionHand.MAIN_HAND, stack,
                 new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
+    }
+
+    private static void flatten(Player player, BlockPos pos) {
+        SlabFlattening.handle(new PlayerInteractEvent.RightClickBlock(player,
+                InteractionHand.MAIN_HAND, pos,
+                new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false)));
     }
 
     private static void require(GameTestHelper helper, boolean condition, String message) {

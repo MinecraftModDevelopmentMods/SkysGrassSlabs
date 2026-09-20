@@ -5,6 +5,8 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import zone.moddev.mc.skysgrassslabs.block.SlabFlattening;
 import zone.moddev.mc.skysgrassslabs.entity.ai.TurfEatingGoal;
 
 /** Server gameplay event registrations. */
@@ -14,6 +16,7 @@ public final class CommonEvents {
 
     public static void register() {
         EntityJoinLevelEvent.BUS.addListener(CommonEvents::addTurfEatingGoal);
+        PlayerInteractEvent.RightClickBlock.BUS.addListener(CommonEvents::flattenSlab);
     }
 
     public static void addTurfEatingGoal(EntityJoinLevelEvent event) {
@@ -21,8 +24,12 @@ public final class CommonEvents {
             return;
         }
         if (TURF_GOAL_SHEEP.add(sheep)) {
-            sheep.goalSelector.addGoal(5, new TurfEatingGoal(sheep));
+            sheep.getGoalSelector().addGoal(5, new TurfEatingGoal(sheep));
         }
+    }
+
+    private static boolean flattenSlab(PlayerInteractEvent.RightClickBlock event) {
+        return SlabFlattening.handle(event);
     }
 
     private CommonEvents() {

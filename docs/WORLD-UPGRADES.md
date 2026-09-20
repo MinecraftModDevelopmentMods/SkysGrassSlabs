@@ -6,7 +6,7 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.1.2.2602001.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.1.2.2603001.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -70,8 +70,8 @@ When both mods remain installed, their content is left alone by default. See
 ## Modpack checklist
 
 1. Back up the complete instance and world.
-2. Update Forge and every required mod to a matching Minecraft 26.2 build.
-3. Install the 26.2 Sky's Grass Slabs jar before the first upgraded start.
+2. Update Forge and every required mod to a matching Minecraft 26.3 build.
+3. Install the 26.3 Sky's Grass Slabs jar before the first upgraded start.
 4. Read the complete Forge missing content list before confirming it.
 5. Check representative slabs, turf, paths, inventories and old terrain.
 6. Stop and start the upgraded copy once more, then repeat the checks.

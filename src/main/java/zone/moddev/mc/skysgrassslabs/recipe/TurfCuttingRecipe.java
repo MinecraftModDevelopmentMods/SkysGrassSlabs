@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.Item;
@@ -18,11 +19,10 @@ import net.minecraft.world.item.crafting.display.RecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.common.ToolActions;
-import net.minecraftforge.registries.ForgeRegistries;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
+import zone.moddev.mc.skysgrassslabs.item.ShovelSupport;
 
 /** Cuts turf while returning the matching dirt and an unchanged shovel. */
 public final class TurfCuttingRecipe extends CustomRecipe {
@@ -121,14 +121,14 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     private static boolean isShovel(ItemStack stack) {
-        return stack.canPerformAction(ToolActions.SHOVEL_FLATTEN);
+        return ShovelSupport.isShovel(stack);
     }
 
     private static NonNullList<Ingredient> createIngredients() {
         NonNullList<Ingredient> result = NonNullList.create();
         result.add(Ingredient.of(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB.get()));
         List<Item> shovels = new ArrayList<>();
-        for (Item item : ForgeRegistries.ITEMS.getValues()) {
+        for (Item item : BuiltInRegistries.ITEM.stream().toList()) {
             ItemStack candidate = new ItemStack(item);
             if (isShovel(candidate)) {
                 shovels.add(item);
