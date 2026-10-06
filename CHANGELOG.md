@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0.110021 - Minecraft 1.10.2
+
+- Added optional shared grass rules for Building Pieces and safe generation
+  ownership for Terrain Smoother. Standalone grass smoothing is retained.
+- Fixed legacy slab recovery in worlds containing both old and Sky slabs.
+- Preserved slab orientation, saved item data and earlier migration history.
+
 ## 1.0.1.110021 - Minecraft 1.10.2
 
 - Corrected the side texture alignment on top and bottom path slabs so it

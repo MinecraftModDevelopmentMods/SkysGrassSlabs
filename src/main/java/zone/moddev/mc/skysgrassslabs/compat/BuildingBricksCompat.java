@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Loader;
@@ -26,6 +27,8 @@ public final class BuildingBricksCompat {
 
     private static Block grassSlab;
     private static Block dirtSlab;
+    private static Block historicalGrassSlab;
+    private static boolean legacyAliasesRegistered;
     private static boolean bridgeRecipesRegistered;
     private static final Map<Block, String> buildingBricksBlocks =
             Collections.synchronizedMap(new IdentityHashMap<Block, String>());
@@ -33,13 +36,14 @@ public final class BuildingBricksCompat {
     public static void preInit(File configDirectory) {
         boolean installed = Loader.isModLoaded(MOD_ID);
         if (!installed) {
+            registerLegacyAliases();
             return;
         }
         SkysGrassSlabs.logger.info("BuildingBricks slab replacement is {}",
                 SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs()
                         ? "enabled" : "disabled");
         if (!BuildingBricksPolicy.shouldArbitrateWorldgen(installed,
-                SkysGrassSlabsConfig.generateGrassSlabs())) return;
+                SkysGrassSlabsConfig.isSmoothingActive())) return;
 
         File configFile = new File(configDirectory, "BuildingBricks/general.cfg");
         try {
@@ -62,6 +66,8 @@ public final class BuildingBricksCompat {
                 ? Block.REGISTRY.getObject(GRASS_SLAB_ID) : null;
         dirtSlab = Block.REGISTRY.containsKey(DIRT_SLAB_ID)
                 ? Block.REGISTRY.getObject(DIRT_SLAB_ID) : null;
+        historicalGrassSlab = Block.REGISTRY.containsKey(HISTORICAL_GRASS_SLAB_ID)
+                ? Block.REGISTRY.getObject(HISTORICAL_GRASS_SLAB_ID) : null;
         buildingBricksBlocks.clear();
         for (ResourceLocation id : Block.REGISTRY.getKeys()) {
             if (MOD_ID.equals(id.getResourceDomain())) {
@@ -84,6 +90,40 @@ public final class BuildingBricksCompat {
         return Loader.isModLoaded(MOD_ID);
     }
 
+    public static Block historicalGrassSlab() {
+        if (historicalGrassSlab == null) resolveBlocks();
+        return historicalGrassSlab;
+    }
+
+    public static boolean hasLegacyAliases() {
+        return legacyAliasesRegistered;
+    }
+
+    public static Block[] legacyAliases() {
+        return legacyAliasesRegistered ? new Block[] {grassSlab(), dirtSlab(), historicalGrassSlab()}
+                : new Block[0];
+    }
+
+    private static void registerLegacyAliases() {
+        registerLegacyAlias(GRASS_SLAB_ID, true);
+        registerLegacyAlias(DIRT_SLAB_ID, false);
+        registerLegacyAlias(HISTORICAL_GRASS_SLAB_ID, true);
+        legacyAliasesRegistered = true;
+        resolveBlocks();
+    }
+
+    private static void registerLegacyAlias(ResourceLocation id, boolean grass) {
+        LegacySlabAliasBlock block = new LegacySlabAliasBlock(grass);
+        block.setRegistryName(id).setUnlocalizedName(SkysGrassSlabs.MOD_ID + ".legacy_" + id.getResourcePath());
+        ItemBlock item = new ItemBlock(block) {
+            @Override public int getMetadata(int damage) { return damage & 1; }
+        };
+        item.setHasSubtypes(true);
+        item.setRegistryName(id);
+        GameRegistry.register(block);
+        GameRegistry.register(item);
+    }
+
     static boolean shouldReplaceSlabs() {
         return BuildingBricksPolicy.shouldReplaceSlabs(isInstalled(),
                 SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs());
@@ -104,8 +144,9 @@ public final class BuildingBricksCompat {
     }
 
     public static boolean isGrassSlabItem(ItemStack stack) {
-        return stack != null && grassSlab() != null &&
-                stack.getItem() == Item.getItemFromBlock(grassSlab());
+        return stack != null && ((grassSlab() != null &&
+                stack.getItem() == Item.getItemFromBlock(grassSlab())) ||
+                (historicalGrassSlab() != null && stack.getItem() == Item.getItemFromBlock(historicalGrassSlab())));
     }
 
     static boolean isDirtSlabItem(ItemStack stack) {

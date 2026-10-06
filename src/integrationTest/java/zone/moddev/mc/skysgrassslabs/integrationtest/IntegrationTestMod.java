@@ -104,6 +104,7 @@ public final class IntegrationTestMod {
             if ("fresh".equals(phase)) {
                 int gameplayChecks = verifyGameplay(server, world);
                 int worldgenChecks = verifyWorldgen(world);
+                if(BuildingBricksCompat.hasLegacyAliases())AliasRecoveryChecks.fresh(world);
                 evidence.setProperty("gameplay_checks", Integer.toString(gameplayChecks));
                 evidence.setProperty("worldgen_checks", Integer.toString(worldgenChecks));
                 if (Loader.isModLoaded(BuildingBricksCompat.MOD_ID)) {
@@ -122,6 +123,7 @@ public final class IntegrationTestMod {
                 require(ModWorldState.SCHEMA_VERSION == 1,
                         "World-state schema changed during reload");
                 require(ModWorldState.get(world) != null, "World state did not reload");
+                if(BuildingBricksCompat.hasLegacyAliases())AliasRecoveryChecks.reload(world);
                 if ("true".equals(evidence.getProperty("compat_fixture_seeded"))) {
                     require(!SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs(),
                             "Default coexistence reload unexpectedly enabled replacement");

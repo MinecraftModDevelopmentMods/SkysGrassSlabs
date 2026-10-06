@@ -16,6 +16,10 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
+import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
+import net.minecraft.client.renderer.block.statemap.StateMapperBase;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockSlab;
 
 @SideOnly(Side.CLIENT)
 public final class ClientProxy extends CommonProxy {
@@ -25,6 +29,22 @@ public final class ClientProxy extends CommonProxy {
         registerModel(ModBlocks.GRASS_SLAB, "grass_slab");
         registerModel(ModBlocks.PATH_SLAB, "path_slab");
         registerModel(ModBlocks.TURF, "turf");
+        registerLegacyModels();
+    }
+
+    private static void registerLegacyModels() {
+        for (Block alias : BuildingBricksCompat.legacyAliases()) {
+            final String path = alias == BuildingBricksCompat.dirtSlab() ? "dirt_slab" : "grass_slab";
+            ModelLoader.setCustomStateMapper(alias, new StateMapperBase() {
+                @Override protected ModelResourceLocation getModelResourceLocation(IBlockState state) {
+                    return new ModelResourceLocation(new ResourceLocation(SkysGrassSlabs.MOD_ID, path),
+                            "half=" + state.getValue(BlockSlab.HALF).getName() + ",snowy=false");
+                }
+            });
+            registerModel(alias, path);
+            ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(alias), 1,
+                    new ModelResourceLocation(new ResourceLocation(SkysGrassSlabs.MOD_ID, path), "inventory"));
+        }
     }
 
     @Override
@@ -39,6 +59,12 @@ public final class ClientProxy extends CommonProxy {
         blockColors.registerBlockColorHandler(grassBlockColor, ModBlocks.GRASS_SLAB, ModBlocks.TURF);
         itemColors.registerItemColorHandler(grassItemColor,
                 Item.getItemFromBlock(ModBlocks.GRASS_SLAB), Item.getItemFromBlock(ModBlocks.TURF));
+        if (BuildingBricksCompat.hasLegacyAliases()) {
+            blockColors.registerBlockColorHandler(grassBlockColor, BuildingBricksCompat.grassSlab(),
+                    BuildingBricksCompat.historicalGrassSlab());
+            itemColors.registerItemColorHandler(grassItemColor, Item.getItemFromBlock(BuildingBricksCompat.grassSlab()),
+                    Item.getItemFromBlock(BuildingBricksCompat.historicalGrassSlab()));
+        }
     }
 
     private static void registerModel(Block block, String path) {
