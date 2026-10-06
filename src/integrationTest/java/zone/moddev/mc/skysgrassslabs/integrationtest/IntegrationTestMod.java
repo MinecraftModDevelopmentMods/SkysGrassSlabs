@@ -101,7 +101,10 @@ public final class IntegrationTestMod {
         String phase = System.getProperty("skysgrassslabs.integrationPhase", "fresh");
         try {
             Properties evidence = load(marker);
-            if ("fresh".equals(phase)) {
+            if ("upgrade-seed".equals(phase) || "upgrade-reload".equals(phase)) {
+                ReleasedUpgradeChecks.run(world,"upgrade-seed".equals(phase));
+                evidence.setProperty(phase+"_complete","true");
+            } else if ("fresh".equals(phase)) {
                 int gameplayChecks = verifyGameplay(server, world);
                 int worldgenChecks = verifyWorldgen(world);
                 if(BuildingBricksCompat.hasLegacyAliases())AliasRecoveryChecks.fresh(world);
