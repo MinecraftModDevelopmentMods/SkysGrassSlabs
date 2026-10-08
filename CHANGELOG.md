@@ -6,6 +6,8 @@
   ownership for Terrain Smoother. Standalone grass smoothing is retained.
 - Fixed legacy slab recovery in worlds containing both old and Sky slabs.
 - Preserved slab orientation, saved item data and earlier migration history.
+- Added slab recombination recipes and optional native soil rules for terrain
+  add-ons.
 
 ## 1.0.1.110021 - Minecraft 1.10.2
 

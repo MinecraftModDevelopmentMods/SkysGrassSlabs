@@ -38,6 +38,9 @@ jobs:
           distribution: microsoft
           java-version: '17'
 
+      - name: Pin production Java
+        run: echo "SGS_JAVA8_HOME=$JAVA_HOME_8_X64" >> "$GITHUB_ENV"
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
 
@@ -46,7 +49,7 @@ jobs:
 
       - name: Build, test, and audit release artifacts
         run: >-
-          ./gradlew clean check build javadoc verifyReleaseArtifacts writeReleaseChecksums
+          ./gradlew clean check integrationTest build javadoc verifyReleaseArtifacts writeReleaseChecksums
           verifyEclipseProductionClasspath --no-daemon --stacktrace
 
       - name: Upload audited release candidate

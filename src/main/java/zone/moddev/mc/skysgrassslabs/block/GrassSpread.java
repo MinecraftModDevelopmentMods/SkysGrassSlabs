@@ -38,7 +38,7 @@ public final class GrassSpread {
             if (target.getY() < 0 || target.getY() >= 256 || !world.isBlockLoaded(target)) {
                 return;
             }
-            growTarget(world, target);
+            growTarget(world, target, world.getBlockState(source));
         }
     }
 
@@ -53,7 +53,7 @@ public final class GrassSpread {
                 return;
             }
             if (isViableSource(world, source)) {
-                IBlockState grass = GrassSlabsApi.grassFor(state);
+                IBlockState grass = GrassSlabsApi.grassFor(state,world.getBlockState(source));
                 if (grass != null) world.setBlockState(target, grass, 3);
                 return;
             }
@@ -61,15 +61,19 @@ public final class GrassSpread {
     }
 
     public static boolean growTarget(World world, BlockPos target) {
+        return growTarget(world,target,Blocks.GRASS.getDefaultState());
+    }
+    private static boolean growTarget(World world, BlockPos target,IBlockState source) {
         if (!targetIsViable(world, target)) {
             return false;
         }
         IBlockState state = world.getBlockState(target);
         if (state.getBlock() == Blocks.DIRT &&
                 state.getValue(BlockDirt.VARIANT) == BlockDirt.DirtType.DIRT) {
-            return world.setBlockState(target, Blocks.GRASS.getDefaultState(), 3);
+            IBlockState mapped=GrassSlabsApi.grassFor(state,source);
+            return world.setBlockState(target,mapped==null?Blocks.GRASS.getDefaultState():mapped,3);
         }
-        IBlockState grass = GrassSlabsApi.grassFor(state);
+        IBlockState grass = GrassSlabsApi.grassFor(state,source);
         if (grass != null) return world.setBlockState(target, grass, 3);
         return false;
     }
@@ -79,7 +83,7 @@ public final class GrassSpread {
         if (!canRemainGrass(world, pos) || !hasSpreadLight(world, pos)) {
             return false;
         }
-        if (state.getBlock() == Blocks.GRASS || GrassSlabsApi.isGrassForm(state)) {
+        if (state.getBlock() == Blocks.GRASS || GrassSlabsApi.isSpreadingGrassForm(state)) {
             return true;
         }
         return state.getBlock() == ModBlocks.TURF && world.getBlockState(pos.down()).getBlock() == Blocks.DIRT;

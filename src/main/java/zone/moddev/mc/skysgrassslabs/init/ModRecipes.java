@@ -20,6 +20,10 @@ public final class ModRecipes {
                 "DDD", 'D', Blocks.DIRT);
         GameRegistry.addShapedRecipe(new ItemStack(ModBlocks.GRASS_SLAB, 6),
                 "GGG", 'G', Blocks.GRASS);
+        GameRegistry.addShapedRecipe(new ItemStack(Blocks.DIRT), "SS", 'S',
+                new ItemStack(ModBlocks.DIRT_SLAB, 1, OreDictionary.WILDCARD_VALUE));
+        GameRegistry.addShapedRecipe(new ItemStack(Blocks.GRASS), "SS", 'S',
+                new ItemStack(ModBlocks.GRASS_SLAB, 1, OreDictionary.WILDCARD_VALUE));
         GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(Blocks.GRASS),
                 new ItemStack(Blocks.DIRT), SEED_ORE));
         GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ModBlocks.GRASS_SLAB),
