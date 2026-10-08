@@ -15,12 +15,27 @@ import org.junit.jupiter.api.Test;
 
 class ProjectContractTest {
     @Test
+    void absentRecoveryKeepsHistoricalIdentitiesSeparate() throws Exception {
+        String compat = read("src/main/java/zone/moddev/mc/skysgrassslabs/compat/BuildingBricksCompat.java");
+        for (String registration : new String[] {"GRASS_SLAB_ID, true", "DIRT_SLAB_ID, false",
+                "HISTORICAL_GRASS_SLAB_ID, true"}) {
+            assertTrue(compat.contains("registerLegacyAlias(" + registration + ")"));
+        }
+        String migration = read("src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyMigrationHandler.java");
+        assertTrue(migration.contains("BuildingBricksCompat.hasLegacyAliases()"));
+        assertTrue(migration.indexOf("if (BuildingBricksCompat.hasLegacyAliases())") <
+                migration.indexOf("if (!shouldMigrateChunk("));
+        String client = read("src/main/java/zone/moddev/mc/skysgrassslabs/proxy/ClientProxy.java");
+        assertTrue(client.contains("registerLegacyModels"));
+    }
+
+    @Test
     void releaseIdentityAndToolchainArePinned() throws Exception {
         String properties = read("gradle.properties");
         assertTrue(properties.contains("minecraft_version=1.10.2"));
         assertTrue(properties.contains("forge_version=12.18.3.2511"));
         assertTrue(properties.contains("mapping_version=29-1.10.2"));
-        assertTrue(properties.contains("mod_version=1.0.1.110021"));
+        assertTrue(properties.contains("mod_version=1.1.0.110021"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
@@ -69,7 +84,7 @@ class ProjectContractTest {
         assertFalse(workflow.contains("release_ref:"));
         assertFalse(workflow.contains("curseforge_channel:"));
         assertFalse(workflow.contains("confirm_version:"));
-        assertTrue(new File("docs/RELEASE-1.0.1.110021.md").isFile());
+        assertTrue(new File("docs/RELEASE-1.1.0.110021.md").isFile());
     }
 
     @Test

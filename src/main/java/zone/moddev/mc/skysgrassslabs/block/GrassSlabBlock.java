@@ -165,8 +165,6 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     }
 
     private static void dirtifyGrassSupport(World world, BlockPos pos) {
-        if (!world.isRemote && world.getBlockState(pos.down()).getBlock() == Blocks.GRASS) {
-            world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
-        }
+        zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.repairSupport(world,pos);
     }
 }

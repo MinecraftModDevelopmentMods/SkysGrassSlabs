@@ -49,6 +49,12 @@ historical grass slab IDs are recovered automatically as Sky slabs. Forge may
 still warn about unsupported BuildingBricks content and may remove that
 content after offering its normal backup and missing block confirmation.
 
+Recovery also works in mixed worlds containing both legacy and permanent Sky
+IDs, including chunks already marked by a previous migration. Hidden recovery
+holders keep those identities separate while loading; they are not creative
+items or normal recipe ingredients. Existing migration counters and reports
+remain historical and are not reset during absent-mod recovery.
+
 Do not continue past that warning unless the listed unsupported blocks are no
 longer needed. Keeping BuildingBricks installed is the safest choice for a
 world that still uses its other shapes.

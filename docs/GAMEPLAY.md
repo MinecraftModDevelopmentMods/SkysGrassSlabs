@@ -40,6 +40,7 @@ enabled is removed without dropping an item.
 
 - Three dirt blocks in a horizontal row make six dirt slabs.
 - Three grass blocks in a horizontal row make six grass slabs.
+- Two matching dirt or grass slabs side by side make the matching full block.
 - A dirt block and a recognised seed make a grass block.
 - A dirt slab and a recognised seed make a grass slab.
 - A grass block or grass slab together with a compatible shovel makes one

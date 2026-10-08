@@ -13,6 +13,11 @@ When enabled, suitable one block slopes in newly generated Overworld chunks
 may receive grass slabs. Set this to `false` to leave new terrain unchanged.
 The setting never adds or removes slabs in chunks that already exist.
 
+With Sky's Terrain Smoother installed, this setting controls its grass material.
+Terrain Smoother owns the only Sky terrain pass and has its own master switch.
+Removing Terrain Smoother restores the standalone grass slab generator; no
+configuration file needs to be changed.
+
 When the supported legacy slab mod is also installed, enabling Sky's world
 smoothing turns off its overlapping grass slab generator. A backup of the
 legacy configuration is made before it is changed. This affects generation
