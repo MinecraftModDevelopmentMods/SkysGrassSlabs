@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.ModContainer;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
@@ -32,7 +31,7 @@ public final class SkysGrassSlabsConfig {
     }
 
     public static void register(ModContainer container) {
-        container.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+        container.registerConfig(NeoForgeConfigType.local(), SPEC, FILE_NAME);
     }
 
     public static void migrateLegacyConfig() {

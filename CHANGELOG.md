@@ -1,8 +1,15 @@
 # Changelog
 
+## 1.1.3.2603002 - Minecraft 26.3 (NeoForge)
+
+- Fixed crashes when starting the mod or loading a world with newer NeoForge
+  26.3 builds. Earlier 26.3 builds still work.
+- You can keep your existing worlds and `skysgrassslabs-common.toml`. Blocks,
+  recipes and terrain smoothing are unchanged.
+
 ## 1.1.2.2603002 - Minecraft 26.3 (NeoForge)
 
-- Ported the accepted NeoForge release to Minecraft 26.3.
+- Added the Minecraft 26.3 NeoForge build.
 - Preserved blocks, recipes, configuration, world data and legacy upgrades.
 
 ## 1.1.2.2602002 - Minecraft 26.2 (NeoForge)
@@ -13,7 +20,7 @@
 ## 1.1.1.2602002 - Minecraft 26.2 (NeoForge)
 
 - Added the NeoForge 26.2 build with the same blocks, recipes, world
-  smoothing and upgrade support as the accepted 26.1.2 build.
+  smoothing and upgrade support as the 26.1.2 build.
 - Updated grass light checks, carpet references and recipe-book displays for
   Minecraft 26.2.
 - Retained translated names for all four items in 18 language variants.
@@ -81,7 +88,7 @@
 
 ## 1.0.1.118021 - Minecraft 1.18.2
 
-- Brought the accepted dirt, grass and dirt path slabs, turf and terrain
+- Brought dirt, grass and dirt path slabs, turf and terrain
   smoothing forward to Minecraft 1.18.2.
 - Kept both slab orientations, waterlogging, snowy caps, path alignment,
   grass spreading, turf recipes and sheep interaction.

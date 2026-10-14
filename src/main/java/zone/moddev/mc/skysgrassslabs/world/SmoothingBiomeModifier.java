@@ -3,6 +3,7 @@ package zone.moddev.mc.skysgrassslabs.world;
 import com.mojang.serialization.MapCodec;
 import java.util.List;
 import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.GenerationStep;
@@ -32,6 +33,12 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
         if (features.stream().noneMatch(existing -> existing.value() == smoothing.value())) {
             features.add(0, smoothing);
         }
+    }
+
+    /** Newer NeoForge builds provide registry access alongside the biome. */
+    public void modify(RegistryAccess registries, Holder<Biome> biome,
+            Phase phase, BiomeInfo.Builder builder) {
+        modify(biome, phase, builder);
     }
 
     @Override
