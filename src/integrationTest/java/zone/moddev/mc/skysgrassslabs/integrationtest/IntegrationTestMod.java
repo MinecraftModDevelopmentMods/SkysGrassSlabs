@@ -109,7 +109,10 @@ public final class IntegrationTestMod {
         String phase = System.getProperty("skysgrassslabs.integrationPhase", "fresh");
         try {
             Properties evidence = load(marker);
-            if ("upgrade-110-first".equals(phase) ||
+            if ("released-seed".equals(phase) || "released-upgrade".equals(phase)) {
+                ReleasedUpgradeChecks.run(world, "released-seed".equals(phase));
+                evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
+            } else if ("upgrade-110-first".equals(phase) ||
                     "upgrade-110-reload".equals(phase)) {
                 verifyForwardUpgradeFixture(world, "1.10.2", "1.0.0.110021",
                         "2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861");

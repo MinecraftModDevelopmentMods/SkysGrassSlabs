@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0.112021 - Minecraft 1.12.2
+
+- Added optional shared grass behaviour with Sky's Building Pieces.
+- Let Sky's Terrain Smoother own the combined generation pass when installed.
+- Preserved mixed legacy and Sky saves, custom item data and migration history.
+- Added recipes to combine two dirt or grass slabs into their full block.
+
 ## 1.0.1.112021 - Minecraft 1.12.2
 
 - Ported the complete dirt, grass, path slab and turf feature set to Minecraft

@@ -8,6 +8,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
 public final class GrassSpread {
     private static final int SPREAD_ATTEMPTS = 4;
@@ -37,7 +38,7 @@ public final class GrassSpread {
             if (target.getY() < 0 || target.getY() >= 256 || !world.isBlockLoaded(target)) {
                 return;
             }
-            growTarget(world, target);
+            growTarget(world, target, world.getBlockState(source));
         }
     }
 
@@ -52,26 +53,28 @@ public final class GrassSpread {
                 return;
             }
             if (isViableSource(world, source)) {
-                world.setBlockState(target, ModBlocks.GRASS_SLAB.getDefaultState()
-                        .withProperty(BlockSlab.HALF, state.getValue(BlockSlab.HALF)), 3);
+                IBlockState grass = GrassSlabsApi.grassFor(state,world.getBlockState(source));
+                if (grass != null) world.setBlockState(target, grass, 3);
                 return;
             }
         }
     }
 
     public static boolean growTarget(World world, BlockPos target) {
+        return growTarget(world,target,Blocks.GRASS.getDefaultState());
+    }
+    private static boolean growTarget(World world, BlockPos target,IBlockState source) {
         if (!targetIsViable(world, target)) {
             return false;
         }
         IBlockState state = world.getBlockState(target);
         if (state.getBlock() == Blocks.DIRT &&
                 state.getValue(BlockDirt.VARIANT) == BlockDirt.DirtType.DIRT) {
-            return world.setBlockState(target, Blocks.GRASS.getDefaultState(), 3);
+            IBlockState mapped=GrassSlabsApi.grassFor(state,source);
+            return world.setBlockState(target,mapped==null?Blocks.GRASS.getDefaultState():mapped,3);
         }
-        if (state.getBlock() == ModBlocks.DIRT_SLAB) {
-            return world.setBlockState(target, ModBlocks.GRASS_SLAB.getDefaultState()
-                    .withProperty(BlockSlab.HALF, state.getValue(BlockSlab.HALF)), 3);
-        }
+        IBlockState grass = GrassSlabsApi.grassFor(state,source);
+        if (grass != null) return world.setBlockState(target, grass, 3);
         return false;
     }
 
@@ -80,7 +83,7 @@ public final class GrassSpread {
         if (!canRemainGrass(world, pos) || !hasSpreadLight(world, pos)) {
             return false;
         }
-        if (state.getBlock() == Blocks.GRASS || state.getBlock() == ModBlocks.GRASS_SLAB) {
+        if (state.getBlock() == Blocks.GRASS || GrassSlabsApi.isSpreadingGrassForm(state)) {
             return true;
         }
         return state.getBlock() == ModBlocks.TURF && world.getBlockState(pos.down()).getBlock() == Blocks.DIRT;
@@ -88,7 +91,7 @@ public final class GrassSpread {
 
     private static boolean targetIsViable(World world, BlockPos target) {
         IBlockState state = world.getBlockState(target);
-        boolean dirt = state.getBlock() == ModBlocks.DIRT_SLAB ||
+        boolean dirt = GrassSlabsApi.grassFor(state) != null ||
                 (state.getBlock() == Blocks.DIRT &&
                         state.getValue(BlockDirt.VARIANT) == BlockDirt.DirtType.DIRT);
         if (!dirt) {
@@ -96,7 +99,7 @@ public final class GrassSpread {
         }
         BlockPos above = target.up();
         IBlockState cover = world.getBlockState(above);
-        if (cover.getBlock() == ModBlocks.TURF || cover.getBlock() == ModBlocks.GRASS_SLAB) {
+        if (cover.getBlock() == ModBlocks.TURF || GrassSlabsApi.isGrassForm(cover)) {
             return false;
         }
         return world.getLightFromNeighbors(above) >= 4 &&

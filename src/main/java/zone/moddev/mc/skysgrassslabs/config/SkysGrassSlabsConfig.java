@@ -2,6 +2,7 @@ package zone.moddev.mc.skysgrassslabs.config;
 
 import java.io.File;
 import net.minecraftforge.common.config.Configuration;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
 public final class SkysGrassSlabsConfig {
     public static final String COMPAT_CATEGORY = "compat";
@@ -27,6 +28,7 @@ public final class SkysGrassSlabsConfig {
         if (config.hasChanged()) {
             config.save();
         }
+        GrassSlabsApi.configurationLoaded();
     }
 
     public static boolean generateGrassSlabs() {
@@ -38,7 +40,7 @@ public final class SkysGrassSlabsConfig {
     }
 
     public static boolean isSmoothingActive() {
-        return generateGrassSlabs && !compatibilitySuppressed;
+        return generateGrassSlabs && !compatibilitySuppressed && GrassSlabsApi.ownerAllowsGeneration();
     }
 
     public static void suppressSmoothingForThisRun() {
