@@ -7,6 +7,9 @@ new Overworld terrain uses grass slabs to soften suitable one block steps.
 This branch is for Minecraft 1.10.2. Version `1.1.0.110021` requires Forge
 12.18.3.2511 or a compatible Forge 12.18.3 build and Java 8.
 
+The mod works on its own. Sky's Building Pieces and Sky's Terrain Smoother are
+optional; neither is needed to update an existing Grass Slabs world.
+
 ## Installation
 
 Place the mod jar in the `mods` folder. It must be installed on both the client
