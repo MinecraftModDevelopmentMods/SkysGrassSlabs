@@ -25,6 +25,10 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.EnumFacing;
+import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.NibbleArray;
@@ -32,6 +36,7 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.ChunkDataEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
@@ -43,8 +48,9 @@ public final class LegacyMigrationHandler {
     private static final String CHUNK_MARKER = "skysgrassslabs";
     private static final String CHUNK_MIGRATION_VERSION = "buildingbricks_migration_version";
 
-    private final Map<ChunkKey, Integer> chunkMarkersToSave =
-            new HashMap<ChunkKey, Integer>();
+    private final Map<ChunkKey, NBTTagCompound> chunkMarkersToSave =
+            new HashMap<ChunkKey, NBTTagCompound>();
+    private final java.util.Queue<Chunk> pendingHandlers = new java.util.concurrent.ConcurrentLinkedQueue<Chunk>();
 
     @SubscribeEvent
     public void loadChunk(ChunkDataEvent.Load event) {
@@ -54,14 +60,17 @@ public final class LegacyMigrationHandler {
         int markerVersion = marker.getInteger(CHUNK_MIGRATION_VERSION);
         Chunk chunk = event.getChunk();
         ChunkKey chunkKey = ChunkKey.of(world, chunk);
+        if (shouldPreserveChunkMarker(markerVersion)) {
+            chunkMarkersToSave.put(chunkKey, marker.copy());
+        }
         if (BuildingBricksCompat.hasLegacyAliases()) {
             boolean changed = migrateBlocks(chunk, event.getData(), null);
             changed |= migrateChunkInventories(chunk, null);
+            pendingHandlers.add(chunk);
             if (changed) chunk.setModified(true);
             return;
         }
         if (shouldPreserveChunkMarker(markerVersion)) {
-            chunkMarkersToSave.put(chunkKey, markerVersion);
             return;
         }
         if (!shouldMigrateChunk(BuildingBricksCompat.shouldReplaceSlabs(), markerVersion)) return;
@@ -74,52 +83,60 @@ public final class LegacyMigrationHandler {
         ModWorldState state = ModWorldState.get(world);
         migrateBlocks(chunk, event.getData(), state);
         migrateChunkInventories(chunk, state);
+        pendingHandlers.add(chunk);
         state.recordChunk();
         chunk.setModified(true);
-        chunkMarkersToSave.put(chunkKey, ModWorldState.MIGRATION_VERSION);
+        NBTTagCompound migratedMarker=marker.copy();
+        migratedMarker.setInteger(CHUNK_MIGRATION_VERSION,ModWorldState.MIGRATION_VERSION);
+        chunkMarkersToSave.put(chunkKey,migratedMarker);
     }
 
     @SubscribeEvent
     public void saveChunk(ChunkDataEvent.Save event) {
-        Integer markerVersion = chunkMarkersToSave.get(
+        NBTTagCompound savedMarker = chunkMarkersToSave.get(
                 ChunkKey.of(event.getWorld(), event.getChunk()));
-        if (markerVersion == null) return;
-        NBTTagCompound marker = event.getData().hasKey(CHUNK_MARKER, 10)
-                ? event.getData().getCompoundTag(CHUNK_MARKER) : new NBTTagCompound();
-        marker.setInteger(CHUNK_MIGRATION_VERSION, markerVersion.intValue());
+        if (savedMarker == null) return;
+        NBTTagCompound marker = savedMarker.copy();
+        if(event.getData().hasKey(CHUNK_MARKER,10))marker.merge(event.getData().getCompoundTag(CHUNK_MARKER));
         event.getData().setTag(CHUNK_MARKER, marker);
     }
 
     @SubscribeEvent
     public void convertPlacedBlock(BlockEvent.PlaceEvent event) {
         World world = event.getWorld();
-        if (world.isRemote || (!BuildingBricksCompat.shouldReplaceSlabs() &&
-                !BuildingBricksCompat.hasLegacyAliases())) {
+        if (world.isRemote || (!BuildingBricksCompat.shouldReplaceSlabs() && !BuildingBricksCompat.hasLegacyAliases())) {
             return;
         }
         IBlockState placed = event.getPlacedBlock();
         IBlockState replacement = replacementFor(placed);
         if (replacement != null && world.setBlockState(event.getPos(), replacement, 3)) {
-            ModWorldState state = ModWorldState.get(world);
+            ModWorldState state = BuildingBricksCompat.hasLegacyAliases() ? null : ModWorldState.get(world);
             int metadata = placed.getBlock().getMetaFromState(placed) & 1;
-            if (placed.getBlock() == BuildingBricksCompat.grassSlab()) {
+            if (state != null && placed.getBlock() == BuildingBricksCompat.grassSlab()) {
                 state.recordGrassBlocks(1, metadata);
             }
-            if (placed.getBlock() == BuildingBricksCompat.dirtSlab()) {
+            if (state != null && placed.getBlock() == BuildingBricksCompat.dirtSlab()) {
                 state.recordDirtBlocks(1, metadata);
             }
         }
     }
 
     @SubscribeEvent
+    public void joinEntity(EntityJoinWorldEvent event) {
+        if (event.getWorld().isRemote || (!BuildingBricksCompat.hasLegacyAliases() &&
+                !BuildingBricksCompat.shouldReplaceSlabs()) || event.getEntity() instanceof EntityPlayer) return;
+        NBTTagCompound serialized = event.getEntity().serializeNBT();
+        ModWorldState state = BuildingBricksCompat.hasLegacyAliases() ? null : ModWorldState.get(event.getWorld());
+        if (migrateStacksInNbt(serialized, state)) event.getEntity().deserializeNBT(serialized);
+    }
+
+    @SubscribeEvent
     public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.player instanceof EntityPlayer) || (!BuildingBricksCompat.shouldReplaceSlabs() &&
-                !BuildingBricksCompat.hasLegacyAliases())) {
+        if (!(event.player instanceof EntityPlayer) || (!BuildingBricksCompat.shouldReplaceSlabs() && !BuildingBricksCompat.hasLegacyAliases())) {
             return;
         }
         EntityPlayer player = event.player;
-        ModWorldState state = BuildingBricksCompat.hasLegacyAliases() ? null
-                : ModWorldState.get(player.getEntityWorld());
+        ModWorldState state = BuildingBricksCompat.hasLegacyAliases() ? null : ModWorldState.get(player.getEntityWorld());
         migrateInventory(player.inventory, state);
         migrateInventory(player.getInventoryEnderChest(), state);
     }
@@ -135,22 +152,22 @@ public final class LegacyMigrationHandler {
     }
 
     public static void remapMissingBlocks(RegistryEvent.MissingMappings<Block> event) {
-        if (BuildingBricksCompat.hasLegacyAliases()) return;
+        // Separate historical holders keep the saved numeric slots distinct.
+        // Do not remap several old IDs onto an already registered Sky block.
+        if (!BuildingBricksCompat.hasLegacyAliases()) return;
         for (RegistryEvent.MissingMappings.Mapping<Block> mapping : event.getAllMappings()) {
-            LegacySlabKind kind = legacySlabKind(mapping.key);
-            if (kind == null) continue;
-            mapping.remap(kind == LegacySlabKind.GRASS
-                    ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB);
+            Block holder = net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS.getValue(mapping.key);
+            if (legacySlabKind(mapping.key) != null && holder instanceof LegacySlabAliasBlock)
+                mapping.remap(holder);
         }
     }
 
     public static void remapMissingItems(RegistryEvent.MissingMappings<Item> event) {
-        if (BuildingBricksCompat.hasLegacyAliases()) return;
+        if (!BuildingBricksCompat.hasLegacyAliases()) return;
         for (RegistryEvent.MissingMappings.Mapping<Item> mapping : event.getAllMappings()) {
-            LegacySlabKind kind = legacySlabKind(mapping.key);
-            if (kind == null) continue;
-            mapping.remap(Item.getItemFromBlock(kind == LegacySlabKind.GRASS
-                    ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB));
+            Block holder = net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS.getValue(mapping.key);
+            if (legacySlabKind(mapping.key) != null && holder instanceof LegacySlabAliasBlock)
+                mapping.remap(Item.getItemFromBlock(holder));
         }
     }
 
@@ -202,8 +219,7 @@ public final class LegacyMigrationHandler {
                 if (numericId == grassId || numericId == historicalGrassId || numericId == dirtId) {
                     int slabMetadata = metadata.getFromIndex(index) & 1;
                     section.set(index & 15, index >> 8 & 15, index >> 4 & 15,
-                            skyStateFor(numericId == grassId || numericId == historicalGrassId,
-                                    slabMetadata));
+                            skyStateFor(numericId == grassId || numericId == historicalGrassId, slabMetadata));
                     if (numericId == grassId || numericId == historicalGrassId) {
                         if (slabMetadata == 0) ++grassTop;
                         else ++grassBottom;
@@ -240,8 +256,7 @@ public final class LegacyMigrationHandler {
             return null;
         }
         int metadata = oldBlock.getMetaFromState(oldState) & 1;
-        return skyStateFor(oldBlock == BuildingBricksCompat.grassSlab() ||
-                oldBlock == BuildingBricksCompat.historicalGrassSlab(), metadata);
+        return skyStateFor(oldBlock == BuildingBricksCompat.grassSlab() || oldBlock == BuildingBricksCompat.historicalGrassSlab(), metadata);
     }
 
     static IBlockState skyStateFor(boolean grass, int metadata) {
@@ -270,6 +285,31 @@ public final class LegacyMigrationHandler {
         return changed;
     }
 
+    @SubscribeEvent
+    public void migrateLoadedHandlers(net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent event) {
+        if(event.phase!=net.minecraftforge.fml.common.gameevent.TickEvent.Phase.END)return;
+        for(int count=0;count<8;count++) {
+            Chunk chunk=pendingHandlers.poll();if(chunk==null)break;
+            World world=chunk.getWorld();
+            if(!world.isBlockLoaded(new net.minecraft.util.math.BlockPos(chunk.x<<4,0,chunk.z<<4),false))continue;
+            ModWorldState state=BuildingBricksCompat.hasLegacyAliases()?null:ModWorldState.get(world);
+            for(TileEntity tile:chunk.getTileEntityMap().values()) {
+                // A loot inventory accessor generates loot and can re-enter loading.
+                if(tile.writeToNBT(new NBTTagCompound()).hasKey("LootTable",8))continue;
+                java.util.Set<IItemHandler> handled=Collections.newSetFromMap(new java.util.IdentityHashMap<IItemHandler,Boolean>());
+                for(EnumFacing face:new EnumFacing[]{null,EnumFacing.DOWN,EnumFacing.UP,EnumFacing.NORTH,EnumFacing.SOUTH,EnumFacing.WEST,EnumFacing.EAST}) {
+                    if(!tile.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY,face))continue;
+                    IItemHandler handler=tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY,face);
+                    if(!(handler instanceof IItemHandlerModifiable)||!handled.add(handler))continue;
+                    for(int slot=0;slot<handler.getSlots();slot++) {
+                        ItemStack migrated=migrateStack(handler.getStackInSlot(slot),state);
+                        if(migrated!=null){((IItemHandlerModifiable)handler).setStackInSlot(slot,migrated);tile.markDirty();}
+                    }
+                }
+            }
+        }
+    }
+
     private static void migrateInventory(IInventory inventory, ModWorldState state) {
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
             ItemStack stack = inventory.getStackInSlot(slot);
@@ -285,7 +325,7 @@ public final class LegacyMigrationHandler {
      * recursively loads the same chunk. NBT traversal also covers item-handler capabilities and
      * nested container formats while leaving unopened loot tables untouched.
      */
-    private static boolean migrateStacksInNbt(NBTBase tag, ModWorldState state) {
+    static boolean migrateStacksInNbt(NBTBase tag, ModWorldState state) {
         boolean changed = false;
         if (tag instanceof NBTTagCompound) {
             NBTTagCompound compound = (NBTTagCompound) tag;
@@ -324,15 +364,17 @@ public final class LegacyMigrationHandler {
         Item oldItem = stack.getItem();
         Item grassItem = BuildingBricksCompat.grassSlab() == null ? null
                 : Item.getItemFromBlock(BuildingBricksCompat.grassSlab());
-        Item historicalGrassItem = BuildingBricksCompat.historicalGrassSlab() == null ? null
-                : Item.getItemFromBlock(BuildingBricksCompat.historicalGrassSlab());
         Item dirtItem = BuildingBricksCompat.dirtSlab() == null ? null
                 : Item.getItemFromBlock(BuildingBricksCompat.dirtSlab());
+        Item historicalGrassItem = BuildingBricksCompat.historicalGrassSlab() == null ? null
+                : Item.getItemFromBlock(BuildingBricksCompat.historicalGrassSlab());
         if (oldItem == grassItem || oldItem == historicalGrassItem || oldItem == dirtItem) {
             boolean grass = oldItem == grassItem || oldItem == historicalGrassItem;
-            ItemStack migrated = new ItemStack(grass
-                    ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB, stack.getCount(), 0);
-            if (stack.hasTagCompound()) migrated.setTagCompound(stack.getTagCompound().copy());
+            NBTTagCompound serialized = stack.writeToNBT(new NBTTagCompound());
+            serialized.setString("id", (grass ? ModBlocks.GRASS_SLAB : ModBlocks.DIRT_SLAB)
+                    .getRegistryName().toString());
+            serialized.setShort("Damage", (short) 0);
+            ItemStack migrated = new ItemStack(serialized);
             if (state != null && grass) state.recordGrassItems(stack.getCount());
             if (state != null && !grass) state.recordDirtItems(stack.getCount());
             return migrated;

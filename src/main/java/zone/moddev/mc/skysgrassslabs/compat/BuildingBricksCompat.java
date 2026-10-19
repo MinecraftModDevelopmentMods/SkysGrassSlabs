@@ -41,7 +41,7 @@ public final class BuildingBricksCompat {
                 SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs()
                         ? "enabled" : "disabled");
         if (!BuildingBricksPolicy.shouldArbitrateWorldgen(installed,
-                SkysGrassSlabsConfig.generateGrassSlabs())) return;
+                SkysGrassSlabsConfig.isSmoothingActive())) return;
 
         File configFile = new File(configDirectory, "BuildingBricks/general.cfg");
         try {
@@ -158,6 +158,7 @@ public final class BuildingBricksCompat {
                 return damage & 1;
             }
         };
+        item.setHasSubtypes(true);
         return item.setRegistryName(block.getRegistryName());
     }
 

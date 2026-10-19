@@ -34,6 +34,11 @@ ext.functional_version = versionParts[0..2].join('.')
 ext.display_version = project.mod_version
 ext.release_tag = project.mod_version
 
+def pinnedJava8 = providers.environmentVariable('SGS_JAVA8_HOME')
+def exactJava8Spec = pinnedJava8.isPresent() ?
+        org.gradle.jvm.toolchain.internal.SpecificInstallationToolchainSpec.fromJavaHome(
+                project.services.get(org.gradle.api.internal.provider.PropertyFactory), file(pinnedJava8.get())) : null
+
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(8)
     withSourcesJar()
@@ -48,6 +53,7 @@ tasks.withType(JavaCompile).configureEach {
     targetCompatibility = JavaVersion.VERSION_1_8
     options.encoding = 'UTF-8'
     options.compilerArgs.addAll(['-Xmaxerrs', '1000'])
+    if (pinnedJava8.isPresent()) javaCompiler = javaToolchains.compilerFor(exactJava8Spec)
 }
 
 tasks.named('compileTestJava', JavaCompile) {
@@ -57,9 +63,15 @@ tasks.named('compileTestJava', JavaCompile) {
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
     workingDir = project.projectDir
+    if (pinnedJava8.isPresent()) javaLauncher = javaToolchains.launcherFor(exactJava8Spec)
+}
+
+tasks.withType(JavaExec).configureEach {
+    if (pinnedJava8.isPresent()) javaLauncher = javaToolchains.launcherFor(exactJava8Spec)
 }
 
 tasks.withType(Javadoc).configureEach {
+    if (pinnedJava8.isPresent()) javadocTool = javaToolchains.javadocToolFor(exactJava8Spec)
     failOnError = false
     options.encoding = 'UTF-8'
     options.addStringOption('Xdoclint:none', '-quiet')
@@ -404,6 +416,7 @@ tasks.register('clientIntegrationTest') {
 def java8Launcher = javaToolchains.launcherFor {
     languageVersion = JavaLanguageVersion.of(8)
 }
+if (pinnedJava8.isPresent()) java8Launcher = javaToolchains.launcherFor(exactJava8Spec)
 def forgeInstallerName =
         "forge-${project.minecraft_version}-${project.forge_version}-installer.jar"
 def forgeServerName = "forge-${project.minecraft_version}-${project.forge_version}.jar"

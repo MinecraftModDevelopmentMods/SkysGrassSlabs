@@ -20,7 +20,7 @@ class ProjectContractTest {
         assertTrue(properties.contains("minecraft_version=1.12.2"));
         assertTrue(properties.contains("forge_version=14.23.5.2859"));
         assertTrue(properties.contains("mapping_version=39-1.12"));
-        assertTrue(properties.contains("mod_version=1.0.1.112021"));
+        assertTrue(properties.contains("mod_version=1.1.0.112021"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
@@ -121,7 +121,7 @@ class ProjectContractTest {
         assertFalse(workflow.contains("release_ref:"));
         assertFalse(workflow.contains("curseforge_channel:"));
         assertFalse(workflow.contains("confirm_version:"));
-        assertTrue(new File("docs/RELEASE-1.0.1.112021.md").isFile());
+        assertTrue(new File("docs/RELEASE-1.1.0.112021.md").isFile());
     }
 
     @Test
