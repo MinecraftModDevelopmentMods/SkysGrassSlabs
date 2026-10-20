@@ -1,42 +1,54 @@
 # Sky's Grass Slabs
 
-Sky's Grass Slabs adds dirt, grass and lowered path slabs, along with a thin
-layer of turf. Grass spreads naturally between full blocks and slabs, while
-new Overworld terrain uses grass slabs to soften suitable one block steps.
+Sky's Grass Slabs adds dirt, grass and path slabs, plus a thin layer of turf.
+Use them for gentler slopes, paths around your house and grassy details where
+a full block would be too much.
 
-This branch is for Minecraft 1.12.2. Version `1.1.0.112021` requires Forge
-14.23.5.2859 or a compatible Forge 14.23.5 build and Java 8.
+## Slabs, paths and turf
 
-The mod works on its own. Sky's Building Pieces and Sky's Terrain Smoother are
-optional; neither is needed to update an existing Grass Slabs world.
+Slabs fit in either half of a block. Matching halves combine into a full block.
+Use a shovel on a dirt or grass slab to make a lowered path.
+
+Grass follows the surrounding biome colours and spreads between blocks, slabs
+and turf. Covered grass, or grass left in the dark, turns back into dirt.
+Nearby snow gives dirt and grass slabs snowy edges.
+
+Cut turf by crafting a grass block or grass slab with a shovel. You get the
+turf, keep the shovel unchanged, and leave a dirt block or slab in the grid.
+Lay turf on dirt, or use it on a dirt slab to make a grass slab. Sheep can eat
+turf and regrow their wool.
+
+Three dirt or grass blocks in a row make six matching slabs. Two matching slabs
+can be crafted back into a full block. The [gameplay guide](docs/GAMEPLAY.md)
+covers the other recipes, plant support and drops, including how to find the
+turf recipe in the recipe book.
+
+## Smoother terrain
+
+By default, grass slabs soften suitable one-block slopes in new Overworld
+chunks. Existing terrain stays as it is. You can turn generation off in
+`config/skysgrassslabs.cfg`; see [configuration](docs/CONFIGURATION.md).
+
+The mod works on its own. If you install
+[Sky's Terrain Smoother](https://github.com/MinecraftModDevelopmentMods/SkysTerrainSmoother),
+it handles smoothing instead and can include stone, sand and finer pieces.
+[Sky's Building Pieces](https://github.com/MinecraftModDevelopmentMods/SkysBuildingPieces)
+also adds dirt and grass steps and corners. Neither mod is required to use
+Grass Slabs or update an existing Grass Slabs world.
 
 ## Installation
 
-Place the mod jar in the `mods` folder. It must be installed on both the client
-and server for multiplayer. Back up an existing world before adding, removing
-or updating world changing mods.
+This branch is for **Minecraft 1.12.2**, **Forge 14.23.5.2859** and **Java 8**.
+Put the main mod jar in your instance's `mods` folder. For multiplayer, install
+it on both the client and server.
 
-## Highlights
+Back up your world before updating mods or changing Minecraft versions.
+Read [the world-upgrade guide](docs/WORLD-UPGRADES.md) before removing a mod
+whose slabs are still in the world.
 
-- Place dirt, grass and path slabs in either half of a block.
-- Combine two matching slabs into the corresponding vanilla block.
-- Let grass spread between full blocks, slabs and turf.
-- Use a shovel on dirt or grass slabs to create lowered path slabs.
-- Cut turf from grass without consuming the shovel.
-- Let sheep eat turf and regrow their wool.
-- Add grass slabs to suitable slopes in newly generated Overworld chunks.
-- Display biome colours and snowy edges that match the surrounding terrain.
-- Use translated names in 18 supported language variants.
+See the [changelog](CHANGELOG.md) for release history.
 
-## Guides
+## Licence
 
-- [Gameplay and recipes](docs/GAMEPLAY.md)
-- [Configuration](docs/CONFIGURATION.md)
-- [Upgrading an older world](docs/WORLD-UPGRADES.md)
-- [Optional content integration](docs/INTEGRATION.md)
-- [Release notes](docs/RELEASE-1.1.0.112021.md)
-
-## License
-
-Sky's Grass Slabs is licensed under `LGPL-2.1-only`; see `LICENSE`,
-`LICENSE.spdx`, and `NOTICE`. Copyright is held by SkyBlade1978.
+[LGPL-2.1-only](LICENSE). Copyright SkyBlade1978.
+See [NOTICE](NOTICE) for credits.
