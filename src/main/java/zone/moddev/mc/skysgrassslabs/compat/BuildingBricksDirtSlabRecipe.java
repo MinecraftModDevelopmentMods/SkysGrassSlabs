@@ -17,9 +17,13 @@ final class BuildingBricksDirtSlabRecipe implements IRecipe {
         boolean dirtSlab = false;
         boolean seed = false;
         List<ItemStack> seeds = OreDictionary.getOres(ModRecipes.SEED_ORE);
+
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
             ItemStack stack = inventory.getStackInSlot(slot);
-            if (stack == null) continue;
+
+            if (stack == null) {
+                continue;
+            }
             if (!dirtSlab && BuildingBricksCompat.isDirtSlabItem(stack)) {
                 dirtSlab = true;
             } else if (!seed && OreDictionary.containsMatch(false, seeds, stack)) {
@@ -28,6 +32,7 @@ final class BuildingBricksDirtSlabRecipe implements IRecipe {
                 return false;
             }
         }
+
         return dirtSlab && seed;
     }
 

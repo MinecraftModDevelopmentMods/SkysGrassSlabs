@@ -32,41 +32,33 @@ class SlabContractTest {
     void visualSnowStateIsNotPersistedInSlabMetadata() {
         for (BlockSlab.EnumBlockHalf half : BlockSlab.EnumBlockHalf.values()) {
             int expected = half == BlockSlab.EnumBlockHalf.TOP ? 0 : 1;
-            IBlockState dirt = ModBlocks.DIRT_SLAB.getDefaultState()
-                    .withProperty(BlockSlab.HALF, half)
+            IBlockState dirt = ModBlocks.DIRT_SLAB.getDefaultState().withProperty(BlockSlab.HALF, half)
                     .withProperty(BlockDirt.SNOWY, Boolean.TRUE);
-            IBlockState grass = ModBlocks.GRASS_SLAB.getDefaultState()
-                    .withProperty(BlockSlab.HALF, half)
+            IBlockState grass = ModBlocks.GRASS_SLAB.getDefaultState().withProperty(BlockSlab.HALF, half)
                     .withProperty(BlockGrass.SNOWY, Boolean.TRUE);
 
             assertEquals(expected, ModBlocks.DIRT_SLAB.getMetaFromState(dirt));
             assertEquals(expected, ModBlocks.GRASS_SLAB.getMetaFromState(grass));
-            assertFalse(ModBlocks.DIRT_SLAB.getStateFromMeta(expected)
-                    .getValue(BlockDirt.SNOWY));
-            assertFalse(ModBlocks.GRASS_SLAB.getStateFromMeta(expected)
-                    .getValue(BlockGrass.SNOWY));
+            assertFalse(ModBlocks.DIRT_SLAB.getStateFromMeta(expected).getValue(BlockDirt.SNOWY));
+            assertFalse(ModBlocks.GRASS_SLAB.getStateFromMeta(expected).getValue(BlockGrass.SNOWY));
         }
     }
 
     @Test
     void pathProfilesAreExactlySevenSixteenthsHigh() {
         IBlockState bottom = ModBlocks.PATH_SLAB.getStateFromMeta(1);
-        IBlockState top = ModBlocks.PATH_SLAB.getStateFromMeta(0);
+        IBlockState surfaceState = ModBlocks.PATH_SLAB.getStateFromMeta(0);
 
         assertEquals(0.0D, ModBlocks.PATH_SLAB.getBoundingBox(bottom, null, BlockPos.ORIGIN).minY);
-        assertEquals(7.0D / 16.0D,
-                ModBlocks.PATH_SLAB.getBoundingBox(bottom, null, BlockPos.ORIGIN).maxY);
-        assertEquals(8.0D / 16.0D,
-                ModBlocks.PATH_SLAB.getBoundingBox(top, null, BlockPos.ORIGIN).minY);
-        assertEquals(15.0D / 16.0D,
-                ModBlocks.PATH_SLAB.getBoundingBox(top, null, BlockPos.ORIGIN).maxY);
+        assertEquals(7.0D / 16.0D, ModBlocks.PATH_SLAB.getBoundingBox(bottom, null, BlockPos.ORIGIN).maxY);
+        assertEquals(8.0D / 16.0D, ModBlocks.PATH_SLAB.getBoundingBox(surfaceState, null, BlockPos.ORIGIN).minY);
+        assertEquals(15.0D / 16.0D, ModBlocks.PATH_SLAB.getBoundingBox(surfaceState, null, BlockPos.ORIGIN).maxY);
     }
 
     @Test
     void turfIsOnePixelHighAndNotAFullCube() {
         assertEquals(1.0D / 16.0D,
-                ModBlocks.TURF.getBoundingBox(ModBlocks.TURF.getDefaultState(), null,
-                        BlockPos.ORIGIN).maxY);
+                ModBlocks.TURF.getBoundingBox(ModBlocks.TURF.getDefaultState(), null, BlockPos.ORIGIN).maxY);
         assertFalse(ModBlocks.TURF.isFullCube(ModBlocks.TURF.getDefaultState()));
         assertFalse(ModBlocks.TURF.isOpaqueCube(ModBlocks.TURF.getDefaultState()));
     }
@@ -78,11 +70,12 @@ class SlabContractTest {
     }
 
     private static void assertMetadata(LegacySlabBlock slab) {
-        IBlockState top = slab.getStateFromMeta(0);
+        IBlockState surfaceState = slab.getStateFromMeta(0);
         IBlockState bottom = slab.getStateFromMeta(1);
-        assertEquals(BlockSlab.EnumBlockHalf.TOP, top.getValue(BlockSlab.HALF));
+
+        assertEquals(BlockSlab.EnumBlockHalf.TOP, surfaceState.getValue(BlockSlab.HALF));
         assertEquals(BlockSlab.EnumBlockHalf.BOTTOM, bottom.getValue(BlockSlab.HALF));
-        assertEquals(0, slab.getMetaFromState(top));
+        assertEquals(0, slab.getMetaFromState(surfaceState));
         assertEquals(1, slab.getMetaFromState(bottom));
         assertFalse(slab.isDouble());
         assertTrue(slab.getDefaultState().getValue(BlockSlab.HALF) == BlockSlab.EnumBlockHalf.BOTTOM);

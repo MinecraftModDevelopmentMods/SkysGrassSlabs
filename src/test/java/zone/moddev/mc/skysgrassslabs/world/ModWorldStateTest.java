@@ -9,6 +9,7 @@ class ModWorldStateTest {
     @Test
     void schemaAndMigrationCountersRoundTrip() {
         ModWorldState original = new ModWorldState(ModWorldState.DATA_NAME);
+
         original.recordChunk();
         original.recordGrassBlocks(3, 0);
         original.recordGrassBlocks(1, 1);
@@ -19,6 +20,7 @@ class ModWorldStateTest {
 
         NBTTagCompound nbt = original.writeToNBT(new NBTTagCompound());
         ModWorldState restored = new ModWorldState(ModWorldState.DATA_NAME);
+
         restored.readFromNBT(nbt);
 
         assertEquals(1, nbt.getInteger("schema_version"));

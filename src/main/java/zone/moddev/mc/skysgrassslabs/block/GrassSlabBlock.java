@@ -30,8 +30,7 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     public GrassSlabBlock() {
         super(Material.GRASS);
-        setDefaultState(blockState.getBaseState()
-                .withProperty(HALF, EnumBlockHalf.BOTTOM)
+        setDefaultState(blockState.getBaseState().withProperty(HALF, EnumBlockHalf.BOTTOM)
                 .withProperty(BlockGrass.SNOWY, Boolean.FALSE));
         setSoundType(SoundType.PLANT);
         setTickRandomly(true);
@@ -39,19 +38,17 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
 
     @Override
     protected BlockStateContainer createBlockState() {
-        return new BlockStateContainer(this, new IProperty<?>[] {HALF, BlockGrass.SNOWY});
+        return new BlockStateContainer(this, new IProperty<?>[] { HALF, BlockGrass.SNOWY });
     }
 
     @Override
     public IBlockState getStateFromMeta(int meta) {
-        return getDefaultState().withProperty(HALF,
-                (meta & 1) == 1 ? EnumBlockHalf.BOTTOM : EnumBlockHalf.TOP);
+        return getDefaultState().withProperty(HALF, (meta & 1) == 1 ? EnumBlockHalf.BOTTOM : EnumBlockHalf.TOP);
     }
 
     @Override
     public IBlockState getActualState(IBlockState state, IBlockAccess world, BlockPos pos) {
-        return state.withProperty(BlockGrass.SNOWY,
-                SnowySlabAppearance.hasNearbySnow(world, pos));
+        return state.withProperty(BlockGrass.SNOWY, SnowySlabAppearance.hasNearbySnow(world, pos));
     }
 
     @Override
@@ -71,18 +68,21 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
         if (world.isRemote) {
             return;
         }
+
         dirtifyGrassSupport(world, pos);
+
         if (!GrassSpread.canRemainGrass(world, pos)) {
-            world.setBlockState(pos, ModBlocks.DIRT_SLAB.getDefaultState()
-                    .withProperty(HALF, state.getValue(HALF)), 3);
+            world.setBlockState(pos, ModBlocks.DIRT_SLAB.getDefaultState().withProperty(HALF, state.getValue(HALF)), 3);
             return;
         }
+
         GrassSpread.spreadFrom(world, pos, random, pos.down());
     }
 
     @Override
     public List<ItemStack> getDrops(IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
         List<ItemStack> drops = new ArrayList<ItemStack>();
+
         drops.add(new ItemStack(ModBlocks.DIRT_SLAB));
         return drops;
     }
@@ -104,10 +104,10 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     }
 
     @Override
-    public boolean canSustainPlant(IBlockState state, IBlockAccess world, BlockPos pos,
-            EnumFacing direction, IPlantable plantable) {
-        return direction == EnumFacing.UP && state.getValue(HALF) == EnumBlockHalf.TOP &&
-                Blocks.GRASS.canSustainPlant(Blocks.GRASS.getDefaultState(), world, pos, direction, plantable);
+    public boolean canSustainPlant(IBlockState state, IBlockAccess world, BlockPos pos, EnumFacing direction,
+            IPlantable plantable) {
+        return direction == EnumFacing.UP && state.getValue(HALF) == EnumBlockHalf.TOP
+                && Blocks.GRASS.canSustainPlant(Blocks.GRASS.getDefaultState(), world, pos, direction, plantable);
     }
 
     @Override
@@ -125,34 +125,42 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
         if (state.getValue(HALF) != EnumBlockHalf.TOP) {
             return;
         }
+
         BlockPos start = pos.up();
+
         for (int attempt = 0; attempt < 128; ++attempt) {
             BlockPos target = start;
             int walk = 0;
+
             while (true) {
                 if (walk >= attempt / 16) {
                     if (world.isAirBlock(target)) {
                         if (random.nextInt(8) == 0) {
                             world.getBiome(target).plantFlower(world, random, target);
                         } else {
-                            IBlockState grass = Blocks.TALLGRASS.getDefaultState()
-                                    .withProperty(BlockTallGrass.TYPE, BlockTallGrass.EnumType.GRASS);
+                            IBlockState grass = Blocks.TALLGRASS.getDefaultState().withProperty(BlockTallGrass.TYPE,
+                                    BlockTallGrass.EnumType.GRASS);
+
                             if (Blocks.TALLGRASS.canBlockStay(world, target, grass)) {
                                 world.setBlockState(target, grass, 3);
                             }
                         }
                     }
+
                     break;
                 }
-                target = target.add(random.nextInt(3) - 1,
-                        (random.nextInt(3) - 1) * random.nextInt(3) / 2,
+
+                target = target.add(random.nextInt(3) - 1, (random.nextInt(3) - 1) * random.nextInt(3) / 2,
                         random.nextInt(3) - 1);
+
                 IBlockState support = world.getBlockState(target.down());
-                boolean suitable = support.getBlock() == Blocks.GRASS ||
-                        (support.getBlock() == this && support.getValue(HALF) == BlockSlab.EnumBlockHalf.TOP);
+                boolean suitable = support.getBlock() == Blocks.GRASS
+                        || (support.getBlock() == this && support.getValue(HALF) == BlockSlab.EnumBlockHalf.TOP);
+
                 if (!suitable || world.getBlockState(target).isNormalCube()) {
                     break;
                 }
+
                 ++walk;
             }
         }
@@ -165,6 +173,6 @@ public final class GrassSlabBlock extends LegacySlabBlock implements IGrowable {
     }
 
     private static void dirtifyGrassSupport(World world, BlockPos pos) {
-        zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.repairSupport(world,pos);
+        zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.repairSupport(world, pos);
     }
 }

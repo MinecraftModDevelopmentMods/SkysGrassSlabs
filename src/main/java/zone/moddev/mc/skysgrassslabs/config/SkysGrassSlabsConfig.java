@@ -6,8 +6,7 @@ import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
 public final class SkysGrassSlabsConfig {
     public static final String COMPAT_CATEGORY = "compat";
-    public static final String FORCE_REPLACE_BUILDINGBRICKS_SLABS =
-            "forceReplaceBuildingBricksSlabs";
+    public static final String FORCE_REPLACE_BUILDINGBRICKS_SLABS = "forceReplaceBuildingBricksSlabs";
     public static final String WORLDGEN_CATEGORY = "worldgen";
     public static final String GENERATE_GRASS_SLABS = "generateGrassSlabs";
 
@@ -17,17 +16,20 @@ public final class SkysGrassSlabsConfig {
 
     public static void load(File file) {
         compatibilitySuppressed = false;
+
         Configuration config = new Configuration(file);
+
         config.load();
-        forceReplaceBuildingBricksSlabs = config.getBoolean(
-                FORCE_REPLACE_BUILDINGBRICKS_SLABS, COMPAT_CATEGORY, false,
-                "Replace supported BuildingBricks grass and dirt slabs and items with Sky's " +
-                "versions while BuildingBricks is installed. Existing conversions cannot be undone.");
+        forceReplaceBuildingBricksSlabs = config.getBoolean(FORCE_REPLACE_BUILDINGBRICKS_SLABS, COMPAT_CATEGORY, false,
+                "Replace supported BuildingBricks grass and dirt slabs and items with Sky's "
+                        + "versions while BuildingBricks is installed. Existing conversions cannot be undone.");
         generateGrassSlabs = config.getBoolean(GENERATE_GRASS_SLABS, WORLDGEN_CATEGORY, true,
                 "Place grass slabs on suitable one-block slopes in newly generated Overworld chunks.");
+
         if (config.hasChanged()) {
             config.save();
         }
+
         GrassSlabsApi.configurationLoaded();
     }
 

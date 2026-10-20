@@ -41,20 +41,20 @@ class BuildingBricksPolicyTest {
 
     @Test
     void onlySupportedLegacyIdsAreClassifiedForMissingMappingRecovery() {
-        assertTrue(LegacyMigrationHandler.legacySlabKind(BuildingBricksCompat.GRASS_SLAB_ID)
-                == LegacyMigrationHandler.LegacySlabKind.GRASS);
+        assertTrue(LegacyMigrationHandler
+                .legacySlabKind(BuildingBricksCompat.GRASS_SLAB_ID) == LegacyMigrationHandler.LegacySlabKind.GRASS);
         assertTrue(LegacyMigrationHandler.legacySlabKind(
-                BuildingBricksCompat.HISTORICAL_GRASS_SLAB_ID)
-                == LegacyMigrationHandler.LegacySlabKind.GRASS);
-        assertTrue(LegacyMigrationHandler.legacySlabKind(BuildingBricksCompat.DIRT_SLAB_ID)
-                == LegacyMigrationHandler.LegacySlabKind.DIRT);
-        assertTrue(LegacyMigrationHandler.legacySlabKind(
-                new ResourceLocation("buildingbricks", "dirt_stairs")) == null);
+                BuildingBricksCompat.HISTORICAL_GRASS_SLAB_ID) == LegacyMigrationHandler.LegacySlabKind.GRASS);
+        assertTrue(LegacyMigrationHandler
+                .legacySlabKind(BuildingBricksCompat.DIRT_SLAB_ID) == LegacyMigrationHandler.LegacySlabKind.DIRT);
+        assertTrue(
+                LegacyMigrationHandler.legacySlabKind(new ResourceLocation("buildingbricks", "dirt_stairs")) == null);
     }
 
     @Test
     void forcedMigrationReportIdentifiesItsModeAndRetainsSchema() {
         ModWorldState state = new ModWorldState(ModWorldState.DATA_NAME);
+
         state.recordChunk();
         state.recordGrassBlocks(2, 1);
         state.recordDirtItems(3);
