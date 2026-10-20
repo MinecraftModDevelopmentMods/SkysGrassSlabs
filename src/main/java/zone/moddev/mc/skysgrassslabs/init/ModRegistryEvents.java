@@ -10,7 +10,8 @@ import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyMigrationHandler;
 
-@Mod.EventBusSubscriber(modid = SkysGrassSlabs.MOD_ID)
+@Mod.EventBusSubscriber(
+        modid = SkysGrassSlabs.MOD_ID)
 public final class ModRegistryEvents {
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {

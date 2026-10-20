@@ -12,16 +12,19 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 
 /** Matches BuildingBricks material items after its late material registry is available. */
-public final class BuildingBricksDirtSlabRecipe extends IForgeRegistryEntry.Impl<IRecipe>
-        implements IRecipe {
+public final class BuildingBricksDirtSlabRecipe extends IForgeRegistryEntry.Impl<IRecipe> implements IRecipe {
     @Override
     public boolean matches(InventoryCrafting inventory, World world) {
         boolean dirtSlab = false;
         boolean seed = false;
         NonNullList<ItemStack> seeds = OreDictionary.getOres(ModRecipes.SEED_ORE);
+
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
             ItemStack stack = inventory.getStackInSlot(slot);
-            if (stack.isEmpty()) continue;
+
+            if (stack.isEmpty()) {
+                continue;
+            }
             if (!dirtSlab && BuildingBricksCompat.isDirtSlabItem(stack)) {
                 dirtSlab = true;
             } else if (!seed && OreDictionary.containsMatch(false, seeds, stack)) {
@@ -30,6 +33,7 @@ public final class BuildingBricksDirtSlabRecipe extends IForgeRegistryEntry.Impl
                 return false;
             }
         }
+
         return dirtSlab && seed;
     }
 

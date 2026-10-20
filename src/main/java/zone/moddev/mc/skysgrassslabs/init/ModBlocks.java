@@ -25,16 +25,16 @@ public final class ModBlocks {
     }
 
     public static void registerItems(IForgeRegistry<Item> registry) {
-        registry.registerAll(
-                item(new NormalizingSlabItem(DIRT_SLAB, net.minecraft.init.Blocks.DIRT), DIRT_SLAB),
+        registry.registerAll(item(new NormalizingSlabItem(DIRT_SLAB, net.minecraft.init.Blocks.DIRT), DIRT_SLAB),
                 item(new NormalizingSlabItem(GRASS_SLAB, net.minecraft.init.Blocks.GRASS), GRASS_SLAB),
                 item(new NormalizingSlabItem(PATH_SLAB, net.minecraft.init.Blocks.GRASS_PATH), PATH_SLAB),
                 item(new TurfBlockItem(TURF), TURF));
     }
 
     private static <T extends Block> T configure(T block, String name) {
-        ResourceLocation id = new ResourceLocation(SkysGrassSlabs.MOD_ID, name);
-        block.setRegistryName(id).setTranslationKey(SkysGrassSlabs.MOD_ID + "." + name)
+        ResourceLocation registryId = new ResourceLocation(SkysGrassSlabs.MOD_ID, name);
+
+        block.setRegistryName(registryId).setTranslationKey(SkysGrassSlabs.MOD_ID + "." + name)
                 .setCreativeTab(CreativeTabs.BUILDING_BLOCKS);
         return block;
     }

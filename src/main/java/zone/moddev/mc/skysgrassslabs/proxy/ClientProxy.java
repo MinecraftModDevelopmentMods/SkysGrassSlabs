@@ -28,11 +28,11 @@ public final class ClientProxy extends CommonProxy {
         registerModel(ModBlocks.GRASS_SLAB, "grass_slab");
         registerModel(ModBlocks.PATH_SLAB, "path_slab");
         registerModel(ModBlocks.TURF, "turf");
+
         if (BuildingBricksCompat.hasLegacyAliases()) {
             registerLegacyAliasModel(BuildingBricksCompat.grassSlab(), "grass_slab");
             registerLegacyAliasModel(BuildingBricksCompat.dirtSlab(), "dirt_slab");
-            registerLegacyAliasModel(BuildingBricksCompat.historicalGrassSlab(),
-                    "grass_slab");
+            registerLegacyAliasModel(BuildingBricksCompat.historicalGrassSlab(), "grass_slab");
         }
     }
 
@@ -40,20 +40,19 @@ public final class ClientProxy extends CommonProxy {
     public void init() {
         BlockColors blockColors = Minecraft.getMinecraft().getBlockColors();
         ItemColors itemColors = Minecraft.getMinecraft().getItemColors();
-        IBlockColor grassBlockColor = (state, world, pos, tintIndex) ->
-                world == null || pos == null
-                        ? ColorizerGrass.getGrassColor(0.5D, 1.0D)
-                        : BiomeColorHelper.getGrassColorAtPos(world, pos);
+        IBlockColor grassBlockColor = (state, world, pos, tintIndex) -> world == null || pos == null
+                ? ColorizerGrass.getGrassColor(0.5D, 1.0D)
+                : BiomeColorHelper.getGrassColorAtPos(world, pos);
         IItemColor grassItemColor = (stack, tintIndex) -> ColorizerGrass.getGrassColor(0.5D, 1.0D);
+
         blockColors.registerBlockColorHandler(grassBlockColor, ModBlocks.GRASS_SLAB, ModBlocks.TURF);
-        itemColors.registerItemColorHandler(grassItemColor,
-                Item.getItemFromBlock(ModBlocks.GRASS_SLAB), Item.getItemFromBlock(ModBlocks.TURF));
+        itemColors.registerItemColorHandler(grassItemColor, Item.getItemFromBlock(ModBlocks.GRASS_SLAB),
+                Item.getItemFromBlock(ModBlocks.TURF));
+
         if (BuildingBricksCompat.hasLegacyAliases()) {
-            blockColors.registerBlockColorHandler(grassBlockColor,
-                    BuildingBricksCompat.grassSlab(),
+            blockColors.registerBlockColorHandler(grassBlockColor, BuildingBricksCompat.grassSlab(),
                     BuildingBricksCompat.historicalGrassSlab());
-            itemColors.registerItemColorHandler(grassItemColor,
-                    Item.getItemFromBlock(BuildingBricksCompat.grassSlab()),
+            itemColors.registerItemColorHandler(grassItemColor, Item.getItemFromBlock(BuildingBricksCompat.grassSlab()),
                     Item.getItemFromBlock(BuildingBricksCompat.historicalGrassSlab()));
         }
     }
@@ -65,11 +64,12 @@ public final class ClientProxy extends CommonProxy {
 
     private static void registerLegacyAliasModel(Block block, String path) {
         final ResourceLocation model = new ResourceLocation(SkysGrassSlabs.MOD_ID, path);
+
         ModelLoader.setCustomStateMapper(block, new StateMapperBase() {
             @Override
             protected ModelResourceLocation getModelResourceLocation(IBlockState state) {
-                String half = state.getValue(BlockSlab.HALF) == BlockSlab.EnumBlockHalf.BOTTOM
-                        ? "bottom" : "top";
+                String half = state.getValue(BlockSlab.HALF) == BlockSlab.EnumBlockHalf.BOTTOM ? "bottom" : "top";
+
                 return new ModelResourceLocation(model, "half=" + half + ",snowy=false");
             }
         });

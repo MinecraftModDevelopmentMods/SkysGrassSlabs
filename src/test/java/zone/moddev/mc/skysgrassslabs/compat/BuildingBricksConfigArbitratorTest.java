@@ -20,6 +20,7 @@ class BuildingBricksConfigArbitratorTest {
     @BeforeEach
     void provideForgeMinecraftHome() throws Exception {
         java.lang.reflect.Field field = FMLInjectionData.class.getDeclaredField("minecraftHome");
+
         field.setAccessible(true);
         field.set(null, temporaryDirectory.toFile());
     }
@@ -27,12 +28,15 @@ class BuildingBricksConfigArbitratorTest {
     @Test
     void enabledWorldgenIsBackedUpThenDisabled() throws Exception {
         File file = temporaryDirectory.resolve("BuildingBricks/general.cfg").toFile();
+
         write(file, true);
+
         byte[] original = Files.readAllBytes(file.toPath());
 
         assertTrue(BuildingBricksConfigArbitrator.disable(file));
 
         File backup = new File(file.getParentFile(), "general.cfg.skysgrassslabs-backup");
+
         assertTrue(backup.isFile());
         assertArrayEquals(original, Files.readAllBytes(backup.toPath()));
         assertFalse(read(file));
@@ -41,22 +45,26 @@ class BuildingBricksConfigArbitratorTest {
     @Test
     void disabledWorldgenIsLeftByteForByteUntouched() throws Exception {
         File file = temporaryDirectory.resolve("BuildingBricks/general.cfg").toFile();
+
         write(file, false);
+
         byte[] original = Files.readAllBytes(file.toPath());
 
         assertFalse(BuildingBricksConfigArbitrator.disable(file));
 
         assertArrayEquals(original, Files.readAllBytes(file.toPath()));
-        assertFalse(new File(file.getParentFile(),
-                "general.cfg.skysgrassslabs-backup").exists());
+        assertFalse(new File(file.getParentFile(), "general.cfg.skysgrassslabs-backup").exists());
     }
 
     @Test
     void existingOneTimeBackupIsNeverOverwritten() throws Exception {
         File file = temporaryDirectory.resolve("BuildingBricks/general.cfg").toFile();
+
         write(file, true);
+
         File backup = new File(file.getParentFile(), "general.cfg.skysgrassslabs-backup");
         byte[] sentinel = "first backup".getBytes("UTF-8");
+
         Files.write(backup.toPath(), sentinel);
 
         assertTrue(BuildingBricksConfigArbitrator.disable(file));
@@ -65,16 +73,18 @@ class BuildingBricksConfigArbitratorTest {
 
     private static void write(File file, boolean enabled) {
         Configuration configuration = new Configuration(file);
+
         configuration.load();
-        configuration.get(BuildingBricksConfigArbitrator.CATEGORY,
-                BuildingBricksConfigArbitrator.PROPERTY, true).set(enabled);
+        configuration.get(BuildingBricksConfigArbitrator.CATEGORY, BuildingBricksConfigArbitrator.PROPERTY, true)
+                .set(enabled);
         configuration.save();
     }
 
     private static boolean read(File file) {
         Configuration configuration = new Configuration(file);
+
         configuration.load();
-        return configuration.get(BuildingBricksConfigArbitrator.CATEGORY,
-                BuildingBricksConfigArbitrator.PROPERTY, true).getBoolean();
+        return configuration.get(BuildingBricksConfigArbitrator.CATEGORY, BuildingBricksConfigArbitrator.PROPERTY, true)
+                .getBoolean();
     }
 }
