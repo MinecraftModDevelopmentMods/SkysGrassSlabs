@@ -51,7 +51,6 @@ public abstract class LegacySlabBlock extends BlockSlab {
 
     @Override
     public IBlockState getStateFromMeta(int meta) {
-        return getDefaultState().withProperty(HALF,
-                (meta & 1) == 1 ? EnumBlockHalf.BOTTOM : EnumBlockHalf.TOP);
+        return getDefaultState().withProperty(HALF, (meta & 1) == 1 ? EnumBlockHalf.BOTTOM : EnumBlockHalf.TOP);
     }
 }

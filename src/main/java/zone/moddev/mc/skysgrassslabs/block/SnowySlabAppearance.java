@@ -16,6 +16,7 @@ final class SnowySlabAppearance {
                 return true;
             }
         }
+
         return false;
     }
 

@@ -30,18 +30,23 @@ public final class ModWorldState extends WorldSavedData {
     }
 
     public static ModWorldState get(World world) {
-        if (!world.isRemote && world.provider.getDimension() != 0 &&
-                world.getMinecraftServer() != null) {
+        if (!world.isRemote && world.provider.getDimension() != 0 && world.getMinecraftServer() != null) {
             World overworld = world.getMinecraftServer().worldServerForDimension(0);
-            if (overworld != null) world = overworld;
+
+            if (overworld != null) {
+                world = overworld;
+            }
         }
+
         MapStorage storage = world.getMapStorage();
         ModWorldState state = (ModWorldState) storage.getOrLoadData(ModWorldState.class, DATA_NAME);
+
         if (state == null) {
             state = new ModWorldState(DATA_NAME);
             storage.setData(DATA_NAME, state);
             state.markDirty();
         }
+
         return state;
     }
 
@@ -56,10 +61,17 @@ public final class ModWorldState extends WorldSavedData {
     }
 
     public void recordGrassBlocks(long count, int metadata) {
-        if (count <= 0) return;
+        if (count <= 0) {
+            return;
+        }
+
         recordGrassBlocks(count);
-        if ((metadata & 1) == 0) migratedGrassBlocksTop += count;
-        else migratedGrassBlocksBottom += count;
+
+        if ((metadata & 1) == 0) {
+            migratedGrassBlocksTop += count;
+        } else {
+            migratedGrassBlocksBottom += count;
+        }
     }
 
     public void recordDirtBlocks(long count) {
@@ -68,10 +80,17 @@ public final class ModWorldState extends WorldSavedData {
     }
 
     public void recordDirtBlocks(long count, int metadata) {
-        if (count <= 0) return;
+        if (count <= 0) {
+            return;
+        }
+
         recordDirtBlocks(count);
-        if ((metadata & 1) == 0) migratedDirtBlocksTop += count;
-        else migratedDirtBlocksBottom += count;
+
+        if ((metadata & 1) == 0) {
+            migratedDirtBlocksTop += count;
+        } else {
+            migratedDirtBlocksBottom += count;
+        }
     }
 
     public void recordGrassItems(long count) {
@@ -84,9 +103,12 @@ public final class ModWorldState extends WorldSavedData {
         markDirty();
     }
 
-    public void recordUnsupported(String id, long count) {
-        if (count <= 0) return;
-        unsupported.put(id, unsupported.containsKey(id) ? unsupported.get(id) + count : count);
+    public void recordUnsupported(String registryId, long count) {
+        if (count <= 0) {
+            return;
+        }
+
+        unsupported.put(registryId, unsupported.containsKey(registryId) ? unsupported.get(registryId) + count : count);
         markDirty();
     }
 
@@ -142,9 +164,12 @@ public final class ModWorldState extends WorldSavedData {
         migratedGrassItems = nbt.getLong("migrated_grass_items");
         migratedDirtItems = nbt.getLong("migrated_dirt_items");
         unsupported.clear();
+
         NBTTagList list = nbt.getTagList("unsupported", 10);
+
         for (int index = 0; index < list.tagCount(); ++index) {
             NBTTagCompound entry = list.getCompoundTagAt(index);
+
             unsupported.put(entry.getString("id"), entry.getLong("count"));
         }
     }
@@ -162,13 +187,17 @@ public final class ModWorldState extends WorldSavedData {
         nbt.setLong("migrated_dirt_blocks_bottom", migratedDirtBlocksBottom);
         nbt.setLong("migrated_grass_items", migratedGrassItems);
         nbt.setLong("migrated_dirt_items", migratedDirtItems);
+
         NBTTagList list = new NBTTagList();
+
         for (Map.Entry<String, Long> value : unsupported.entrySet()) {
             NBTTagCompound entry = new NBTTagCompound();
+
             entry.setString("id", value.getKey());
             entry.setLong("count", value.getValue());
             list.appendTag(entry);
         }
+
         nbt.setTag("unsupported", list);
         return nbt;
     }

@@ -20,8 +20,11 @@ import zone.moddev.mc.skysgrassslabs.proxy.CommonProxy;
 import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingHandler;
 import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
-@Mod(modid = SkysGrassSlabs.MOD_ID, name = SkysGrassSlabs.NAME,
-        version = SkysGrassSlabs.VERSION, dependencies = "before:buildingbricks")
+@Mod(
+        modid = SkysGrassSlabs.MOD_ID,
+        name = SkysGrassSlabs.NAME,
+        version = SkysGrassSlabs.VERSION,
+        dependencies = "before:buildingbricks")
 public final class SkysGrassSlabs {
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
@@ -39,18 +42,25 @@ public final class SkysGrassSlabs {
         logger = event.getModLog();
         SkysGrassSlabsConfig.load(event.getSuggestedConfigurationFile());
         ModBlocks.register();
-        for (int meta = 0; meta < 2; ++meta)
+
+        for (int meta = 0; meta < 2; ++meta) {
             GrassSlabsApi.registerGrassForm(ModBlocks.DIRT_SLAB.getStateFromMeta(meta),
                     ModBlocks.GRASS_SLAB.getStateFromMeta(meta));
+        }
+
         BuildingBricksCompat.preInit(event.getModConfigurationDirectory());
 
         MinecraftForge.EVENT_BUS.register(new CommonEvents());
+
         LegacyMigrationHandler migration = new LegacyMigrationHandler();
+
         MinecraftForge.EVENT_BUS.register(migration);
         FMLCommonHandler.instance().bus().register(migration);
+
         if (!GrassSlabsApi.hasSmoothingOwner() && SkysGrassSlabsConfig.isSmoothingActive()) {
             MinecraftForge.EVENT_BUS.register(new GrassSlabSmoothingHandler());
         }
+
         proxy.preInit();
     }
 
@@ -66,7 +76,9 @@ public final class SkysGrassSlabs {
     }
 
     @Mod.EventHandler
-    public void loadComplete(FMLLoadCompleteEvent event) { GrassSlabsApi.freeze(); }
+    public void loadComplete(FMLLoadCompleteEvent event) {
+        GrassSlabsApi.freeze();
+    }
 
     @Mod.EventHandler
     public void missingMappings(FMLMissingMappingsEvent event) {

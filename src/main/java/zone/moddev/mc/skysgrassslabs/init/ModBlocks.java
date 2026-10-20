@@ -31,10 +31,11 @@ public final class ModBlocks {
     }
 
     private static void registerBlock(Block block, String name, ItemBlock item) {
-        ResourceLocation id = new ResourceLocation(SkysGrassSlabs.MOD_ID, name);
-        block.setRegistryName(id).setUnlocalizedName(SkysGrassSlabs.MOD_ID + "." + name)
+        ResourceLocation registryId = new ResourceLocation(SkysGrassSlabs.MOD_ID, name);
+
+        block.setRegistryName(registryId).setUnlocalizedName(SkysGrassSlabs.MOD_ID + "." + name)
                 .setCreativeTab(CreativeTabs.BUILDING_BLOCKS);
-        item.setRegistryName(id);
+        item.setRegistryName(registryId);
         GameRegistry.register(block);
         GameRegistry.register(item);
     }

@@ -10,28 +10,19 @@ import org.junit.jupiter.api.Test;
 class SmoothingDecisionTest {
     @Test
     void acceptsOnlyAOneBlockNaturalGrassTransition() {
-        assertTrue(SmoothingDecision.shouldPlace(63, 64,
-                true, true, true, true, true, false));
-        assertFalse(SmoothingDecision.shouldPlace(63, 63,
-                true, true, true, true, true, false));
-        assertFalse(SmoothingDecision.shouldPlace(63, 65,
-                true, true, true, true, true, false));
+        assertTrue(SmoothingDecision.shouldPlace(63, 64, true, true, true, true, true, false));
+        assertFalse(SmoothingDecision.shouldPlace(63, 63, true, true, true, true, true, false));
+        assertFalse(SmoothingDecision.shouldPlace(63, 65, true, true, true, true, true, false));
     }
 
     @Test
     void rejectsEveryProtectedTargetCondition() {
-        assertFalse(SmoothingDecision.shouldPlace(63, 64,
-                false, true, true, true, true, false));
-        assertFalse(SmoothingDecision.shouldPlace(63, 64,
-                true, false, true, true, true, false));
-        assertFalse(SmoothingDecision.shouldPlace(63, 64,
-                true, true, false, true, true, false));
-        assertFalse(SmoothingDecision.shouldPlace(63, 64,
-                true, true, true, false, true, false));
-        assertFalse(SmoothingDecision.shouldPlace(63, 64,
-                true, true, true, true, false, false));
-        assertFalse(SmoothingDecision.shouldPlace(63, 64,
-                true, true, true, true, true, true));
+        assertFalse(SmoothingDecision.shouldPlace(63, 64, false, true, true, true, true, false));
+        assertFalse(SmoothingDecision.shouldPlace(63, 64, true, false, true, true, true, false));
+        assertFalse(SmoothingDecision.shouldPlace(63, 64, true, true, false, true, true, false));
+        assertFalse(SmoothingDecision.shouldPlace(63, 64, true, true, true, false, true, false));
+        assertFalse(SmoothingDecision.shouldPlace(63, 64, true, true, true, true, false, false));
+        assertFalse(SmoothingDecision.shouldPlace(63, 64, true, true, true, true, true, true));
     }
 
     @Test
@@ -41,14 +32,17 @@ class SmoothingDecisionTest {
         int[] reverse = chunkOrder(true);
         int[] shuffled = forward.clone();
         Random random = new Random(0x110021L);
+
         for (int index = shuffled.length - 1; index > 0; --index) {
             int swap = random.nextInt(index + 1);
             int value = shuffled[index];
+
             shuffled[index] = shuffled[swap];
             shuffled[swap] = value;
         }
 
         boolean[] expected = smooth(area, forward);
+
         assertArrayEquals(expected, smooth(area, reverse));
         assertArrayEquals(expected, smooth(area, shuffled));
     }
@@ -59,31 +53,37 @@ class SmoothingDecisionTest {
         int[] order = chunkOrder(false);
         int checksum = 0;
         long started = System.nanoTime();
+
         for (int pass = 0; pass < 20000; ++pass) {
             checksum += smoothChunk(area, order[pass % order.length], null);
         }
+
         long elapsed = System.nanoTime() - started;
         long nanosPerPass = elapsed / 20000L;
+
         System.out.println("256-column smoothing decision pass: " + nanosPerPass + " ns");
 
         assertTrue(checksum > 0, "Synthetic benchmark did not exercise an eligible slope");
-        assertTrue(nanosPerPass < 5_000_000L,
-                "Smoothing decision pass exceeded the 5 ms regression ceiling");
+        assertTrue(nanosPerPass < 5_000_000L, "Smoothing decision pass exceeded the 5 ms regression ceiling");
     }
 
     private static int[] chunkOrder(boolean reverse) {
         int[] order = new int[81];
+
         for (int index = 0; index < order.length; ++index) {
             order[index] = reverse ? order.length - index - 1 : index;
         }
+
         return order;
     }
 
     private static boolean[] smooth(SyntheticArea area, int[] order) {
         boolean[] decisions = new boolean[SyntheticArea.COLUMNS * SyntheticArea.COLUMNS];
+
         for (int chunk : order) {
             smoothChunk(area, chunk, decisions);
         }
+
         return decisions;
     }
 
@@ -91,31 +91,41 @@ class SmoothingDecisionTest {
         int chunkX = chunk % SyntheticArea.CHUNKS;
         int chunkZ = chunk / SyntheticArea.CHUNKS;
         int accepted = 0;
+
         for (int localZ = 0; localZ < 16; ++localZ) {
             for (int localX = 0; localX < 16; ++localX) {
-                int x = (chunkX << 4) + localX;
-                int z = (chunkZ << 4) + localZ;
-                int index = z * SyntheticArea.COLUMNS + x;
-                boolean place = area.eligible(index) && hasHigherNeighbour(
-                        area, x, z, localX, localZ);
+                int blockX = (chunkX << 4) + localX;
+                int blockZ = (chunkZ << 4) + localZ;
+                int index = blockZ * SyntheticArea.COLUMNS + blockX;
+                boolean place = area.eligible(index) && hasHigherNeighbour(area, blockX, blockZ, localX, localZ);
+
                 if (place) {
                     ++accepted;
-                    if (decisions != null) decisions[index] = true;
+
+                    if (decisions != null) {
+                        decisions[index] = true;
+                    }
                 }
             }
         }
+
         return accepted;
     }
 
-    private static boolean hasHigherNeighbour(SyntheticArea area, int x, int z,
-            int localX, int localZ) {
-        int surface = area.height(x, z);
-        if (localX > 0 && area.higherGrass(x - 1, z, surface)) return true;
-        if (localZ > 0 && area.higherGrass(x, z - 1, surface)) return true;
-        if (x + 1 < SyntheticArea.COLUMNS && area.higherGrass(x + 1, z, surface)) {
+    private static boolean hasHigherNeighbour(SyntheticArea area, int blockX, int blockZ, int localX, int localZ) {
+        int surface = area.height(blockX, blockZ);
+
+        if (localX > 0 && area.higherGrass(blockX - 1, blockZ, surface)) {
             return true;
         }
-        return z + 1 < SyntheticArea.COLUMNS && area.higherGrass(x, z + 1, surface);
+        if (localZ > 0 && area.higherGrass(blockX, blockZ - 1, surface)) {
+            return true;
+        }
+        if (blockX + 1 < SyntheticArea.COLUMNS && area.higherGrass(blockX + 1, blockZ, surface)) {
+            return true;
+        }
+
+        return blockZ + 1 < SyntheticArea.COLUMNS && area.higherGrass(blockX, blockZ + 1, surface);
     }
 
     private static final class SyntheticArea {
@@ -131,6 +141,7 @@ class SmoothingDecisionTest {
 
         private SyntheticArea(long seed) {
             Random random = new Random(seed);
+
             for (int index = 0; index < heights.length; ++index) {
                 heights[index] = 62 + random.nextInt(4);
                 grass[index] = random.nextInt(10) != 0;
@@ -141,19 +152,19 @@ class SmoothingDecisionTest {
             }
         }
 
-        private int height(int x, int z) {
-            return heights[z * COLUMNS + x];
+        private int height(int blockX, int blockZ) {
+            return heights[blockZ * COLUMNS + blockX];
         }
 
-        private boolean higherGrass(int x, int z, int lowerHeight) {
-            int index = z * COLUMNS + x;
-            return SmoothingDecision.shouldPlace(lowerHeight, heights[index],
-                    true, grass[index], true, true, true, false);
+        private boolean higherGrass(int blockX, int blockZ, int lowerHeight) {
+            int index = blockZ * COLUMNS + blockX;
+
+            return SmoothingDecision.shouldPlace(lowerHeight, heights[index], true, grass[index], true, true, true,
+                    false);
         }
 
         private boolean eligible(int index) {
-            return grass[index] && clear[index] && dry[index] && supported[index] &&
-                    !blockEntity[index];
+            return grass[index] && clear[index] && dry[index] && supported[index] && !blockEntity[index];
         }
     }
 }

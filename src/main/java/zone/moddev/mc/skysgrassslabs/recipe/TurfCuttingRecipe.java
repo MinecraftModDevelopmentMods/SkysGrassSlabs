@@ -16,8 +16,10 @@ public final class TurfCuttingRecipe implements IRecipe {
     public boolean matches(InventoryCrafting inventory, World world) {
         int grassInputs = 0;
         int shovels = 0;
+
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
             ItemStack stack = inventory.getStackInSlot(slot);
+
             if (stack == null) {
                 continue;
             }
@@ -29,6 +31,7 @@ public final class TurfCuttingRecipe implements IRecipe {
                 return false;
             }
         }
+
         return grassInputs == 1 && shovels == 1;
     }
 
@@ -51,12 +54,16 @@ public final class TurfCuttingRecipe implements IRecipe {
     @Override
     public ItemStack[] getRemainingItems(InventoryCrafting inventory) {
         ItemStack[] remaining = new ItemStack[inventory.getSizeInventory()];
+
         for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
             ItemStack stack = inventory.getStackInSlot(slot);
+
             if (stack == null) {
                 continue;
             }
+
             ItemStack soil = soilRemainder(stack);
+
             if (soil != null) {
                 remaining[slot] = soil;
             } else if (isShovel(stack)) {
@@ -64,23 +71,26 @@ public final class TurfCuttingRecipe implements IRecipe {
                 remaining[slot].stackSize = 1;
             }
         }
+
         return remaining;
     }
 
     private static boolean isShovel(ItemStack stack) {
         Set<String> toolClasses = stack.getItem().getToolClasses(stack);
+
         return toolClasses != null && toolClasses.contains("shovel");
     }
 
     private static ItemStack soilRemainder(ItemStack stack) {
         Item item = stack.getItem();
+
         if (item == Item.getItemFromBlock(Blocks.GRASS)) {
             return new ItemStack(Blocks.DIRT);
         }
-        if (item == Item.getItemFromBlock(ModBlocks.GRASS_SLAB) ||
-                BuildingBricksCompat.isGrassSlabItem(stack)) {
+        if (item == Item.getItemFromBlock(ModBlocks.GRASS_SLAB) || BuildingBricksCompat.isGrassSlabItem(stack)) {
             return new ItemStack(ModBlocks.DIRT_SLAB);
         }
+
         return null;
     }
 }

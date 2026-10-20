@@ -13,15 +13,14 @@ import net.minecraft.world.World;
 public final class DirtSlabBlock extends LegacySlabBlock {
     public DirtSlabBlock() {
         super(Material.GROUND);
-        setDefaultState(blockState.getBaseState()
-                .withProperty(HALF, EnumBlockHalf.BOTTOM)
-                .withProperty(BlockDirt.SNOWY, Boolean.FALSE));
+        setDefaultState(blockState.getBaseState().withProperty(HALF, EnumBlockHalf.BOTTOM).withProperty(BlockDirt.SNOWY,
+                Boolean.FALSE));
         setTickRandomly(true);
     }
 
     @Override
     protected BlockStateContainer createBlockState() {
-        return new BlockStateContainer(this, new IProperty<?>[] {HALF, BlockDirt.SNOWY});
+        return new BlockStateContainer(this, new IProperty<?>[] { HALF, BlockDirt.SNOWY });
     }
 
     @Override

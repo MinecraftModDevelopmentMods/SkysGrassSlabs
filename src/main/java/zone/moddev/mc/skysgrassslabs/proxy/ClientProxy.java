@@ -35,8 +35,10 @@ public final class ClientProxy extends CommonProxy {
     private static void registerLegacyModels() {
         for (Block alias : BuildingBricksCompat.legacyAliases()) {
             final String path = alias == BuildingBricksCompat.dirtSlab() ? "dirt_slab" : "grass_slab";
+
             ModelLoader.setCustomStateMapper(alias, new StateMapperBase() {
-                @Override protected ModelResourceLocation getModelResourceLocation(IBlockState state) {
+                @Override
+                protected ModelResourceLocation getModelResourceLocation(IBlockState state) {
                     return new ModelResourceLocation(new ResourceLocation(SkysGrassSlabs.MOD_ID, path),
                             "half=" + state.getValue(BlockSlab.HALF).getName() + ",snowy=false");
                 }
@@ -51,14 +53,15 @@ public final class ClientProxy extends CommonProxy {
     public void init() {
         BlockColors blockColors = Minecraft.getMinecraft().getBlockColors();
         ItemColors itemColors = Minecraft.getMinecraft().getItemColors();
-        IBlockColor grassBlockColor = (state, world, pos, tintIndex) ->
-                world == null || pos == null
-                        ? ColorizerGrass.getGrassColor(0.5D, 1.0D)
-                        : BiomeColorHelper.getGrassColorAtPos(world, pos);
+        IBlockColor grassBlockColor = (state, world, pos, tintIndex) -> world == null || pos == null
+                ? ColorizerGrass.getGrassColor(0.5D, 1.0D)
+                : BiomeColorHelper.getGrassColorAtPos(world, pos);
         IItemColor grassItemColor = (stack, tintIndex) -> ColorizerGrass.getGrassColor(0.5D, 1.0D);
+
         blockColors.registerBlockColorHandler(grassBlockColor, ModBlocks.GRASS_SLAB, ModBlocks.TURF);
-        itemColors.registerItemColorHandler(grassItemColor,
-                Item.getItemFromBlock(ModBlocks.GRASS_SLAB), Item.getItemFromBlock(ModBlocks.TURF));
+        itemColors.registerItemColorHandler(grassItemColor, Item.getItemFromBlock(ModBlocks.GRASS_SLAB),
+                Item.getItemFromBlock(ModBlocks.TURF));
+
         if (BuildingBricksCompat.hasLegacyAliases()) {
             blockColors.registerBlockColorHandler(grassBlockColor, BuildingBricksCompat.grassSlab(),
                     BuildingBricksCompat.historicalGrassSlab());

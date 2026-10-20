@@ -16,8 +16,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 public final class TurfBlock extends Block {
-    public static final AxisAlignedBB TURF_AABB =
-            new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 1.0D / 16.0D, 1.0D);
+    public static final AxisAlignedBB TURF_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 1.0D / 16.0D, 1.0D);
 
     public TurfBlock() {
         super(Material.CARPET);
@@ -64,12 +63,15 @@ public final class TurfBlock extends Block {
         if (world.isRemote) {
             return;
         }
+
         BlockPos support = pos.down();
+
         if (world.getBlockState(support).getBlock() != Blocks.DIRT) {
             dropBlockAsItem(world, pos, state, 0);
             world.setBlockToAir(pos);
             return;
         }
+
         GrassSpread.spreadFrom(world, pos, random, support);
     }
 
