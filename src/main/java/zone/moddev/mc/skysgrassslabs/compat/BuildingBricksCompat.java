@@ -20,37 +20,42 @@ import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 
 public final class BuildingBricksCompat {
     public static final String MOD_ID = "buildingbricks";
-    public static final ResourceLocation GRASS_SLAB_ID =
-            new ResourceLocation(MOD_ID, "grass_slab");
-    public static final ResourceLocation DIRT_SLAB_ID =
-            new ResourceLocation(MOD_ID, "dirt_slab");
-    public static final ResourceLocation HISTORICAL_GRASS_SLAB_ID =
-            new ResourceLocation("buildingbrickscompatvanilla", "grass_slab");
+    public static final ResourceLocation GRASS_SLAB_ID = new ResourceLocation(MOD_ID, "grass_slab");
+    public static final ResourceLocation DIRT_SLAB_ID = new ResourceLocation(MOD_ID, "dirt_slab");
+    public static final ResourceLocation HISTORICAL_GRASS_SLAB_ID = new ResourceLocation("buildingbrickscompatvanilla",
+            "grass_slab");
 
     private static Block grassSlab;
     private static Block dirtSlab;
     private static Block historicalGrassSlab;
     private static boolean legacyAliasesRegistered;
-    private static final Map<Block, String> buildingBricksBlocks =
-            Collections.synchronizedMap(new IdentityHashMap<Block, String>());
+    private static final Map<Block, String> buildingBricksBlocks = Collections
+            .synchronizedMap(new IdentityHashMap<Block, String>());
 
     public static void preInit(File configDirectory) {
         boolean installed = Loader.isModLoaded(MOD_ID);
-        if (!installed) return;
+
+        if (!installed) {
+            return;
+        }
+
         SkysGrassSlabs.logger.info("BuildingBricks slab replacement is {}",
-                SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs()
-                        ? "enabled" : "disabled");
-        if (!BuildingBricksPolicy.shouldArbitrateWorldgen(installed,
-                SkysGrassSlabsConfig.isSmoothingActive())) return;
+                SkysGrassSlabsConfig.forceReplaceBuildingBricksSlabs() ? "enabled" : "disabled");
+
+        if (!BuildingBricksPolicy.shouldArbitrateWorldgen(installed, SkysGrassSlabsConfig.isSmoothingActive())) {
+            return;
+        }
 
         File configFile = new File(configDirectory, "BuildingBricks/general.cfg");
+
         try {
             if (!BuildingBricksConfigArbitrator.disable(configFile)) {
                 SkysGrassSlabs.logger.info("BuildingBricks grass-slab generation is already disabled");
                 return;
             }
-            SkysGrassSlabs.logger.info(
-                    "Disabled BuildingBricks grass-slab generation; Sky's Grass Slabs owns smoothing");
+
+            SkysGrassSlabs.logger
+                    .info("Disabled BuildingBricks grass-slab generation; Sky's Grass Slabs owns smoothing");
         } catch (IOException | RuntimeException exception) {
             SkysGrassSlabsConfig.suppressSmoothingForThisRun();
             SkysGrassSlabs.logger.error(
@@ -64,25 +69,35 @@ public final class BuildingBricksCompat {
         dirtSlab = ForgeRegistries.BLOCKS.getValue(DIRT_SLAB_ID);
         historicalGrassSlab = ForgeRegistries.BLOCKS.getValue(HISTORICAL_GRASS_SLAB_ID);
         buildingBricksBlocks.clear();
-        for (ResourceLocation id : ForgeRegistries.BLOCKS.getKeys()) {
-            if (MOD_ID.equals(id.getNamespace())) {
-                buildingBricksBlocks.put(ForgeRegistries.BLOCKS.getValue(id), id.toString());
+
+        for (ResourceLocation registryId : ForgeRegistries.BLOCKS.getKeys()) {
+            if (MOD_ID.equals(registryId.getNamespace())) {
+                buildingBricksBlocks.put(ForgeRegistries.BLOCKS.getValue(registryId), registryId.toString());
             }
         }
     }
 
     public static Block grassSlab() {
-        if (grassSlab == null) resolveBlocks();
+        if (grassSlab == null) {
+            resolveBlocks();
+        }
+
         return grassSlab;
     }
 
     public static Block dirtSlab() {
-        if (dirtSlab == null) resolveBlocks();
+        if (dirtSlab == null) {
+            resolveBlocks();
+        }
+
         return dirtSlab;
     }
 
     public static Block historicalGrassSlab() {
-        if (historicalGrassSlab == null) resolveBlocks();
+        if (historicalGrassSlab == null) {
+            resolveBlocks();
+        }
+
         return historicalGrassSlab;
     }
 
@@ -104,25 +119,29 @@ public final class BuildingBricksCompat {
     }
 
     public static Map<Integer, String> buildingBricksBlockIdsByNumericId() {
-        Map<Integer, String> ids = new HashMap<Integer, String>();
+        Map<Integer, String> registryIds = new HashMap<Integer, String>();
+
         synchronized (buildingBricksBlocks) {
             for (Map.Entry<Block, String> entry : buildingBricksBlocks.entrySet()) {
-                ids.put(Block.getIdFromBlock(entry.getKey()), entry.getValue());
+                registryIds.put(Block.getIdFromBlock(entry.getKey()), entry.getValue());
             }
         }
-        return ids;
+
+        return registryIds;
     }
 
     public static boolean isGrassSlabItem(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return false;
-        return (grassSlab() != null && stack.getItem() == Item.getItemFromBlock(grassSlab())) ||
-                (historicalGrassSlab() != null &&
-                stack.getItem() == Item.getItemFromBlock(historicalGrassSlab()));
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+
+        return (grassSlab() != null && stack.getItem() == Item.getItemFromBlock(grassSlab()))
+                || (historicalGrassSlab() != null && stack.getItem() == Item.getItemFromBlock(historicalGrassSlab()));
     }
 
     static boolean isDirtSlabItem(ItemStack stack) {
-        return stack != null && !stack.isEmpty() && dirtSlab() != null &&
-                stack.getItem() == Item.getItemFromBlock(dirtSlab());
+        return stack != null && !stack.isEmpty() && dirtSlab() != null
+                && stack.getItem() == Item.getItemFromBlock(dirtSlab());
     }
 
     public static IRecipe bridgeRecipe() {
@@ -130,7 +149,10 @@ public final class BuildingBricksCompat {
     }
 
     public static void registerLegacyAliasBlocks(IForgeRegistry<Block> registry) {
-        if (isInstalled()) return;
+        if (isInstalled()) {
+            return;
+        }
+
         grassSlab = legacyAlias(GRASS_SLAB_ID, true);
         dirtSlab = legacyAlias(DIRT_SLAB_ID, false);
         historicalGrassSlab = legacyAlias(HISTORICAL_GRASS_SLAB_ID, true);
@@ -139,15 +161,17 @@ public final class BuildingBricksCompat {
     }
 
     public static void registerLegacyAliasItems(IForgeRegistry<Item> registry) {
-        if (!legacyAliasesRegistered) return;
-        registry.registerAll(aliasItem(grassSlab), aliasItem(dirtSlab),
-                aliasItem(historicalGrassSlab));
+        if (!legacyAliasesRegistered) {
+            return;
+        }
+
+        registry.registerAll(aliasItem(grassSlab), aliasItem(dirtSlab), aliasItem(historicalGrassSlab));
     }
 
-    private static Block legacyAlias(ResourceLocation id, boolean grass) {
+    private static Block legacyAlias(ResourceLocation registryId, boolean grass) {
         LegacySlabAliasBlock block = new LegacySlabAliasBlock(grass);
-        block.setRegistryName(id).setTranslationKey(
-                SkysGrassSlabs.MOD_ID + ".legacy_" + id.getPath());
+
+        block.setRegistryName(registryId).setTranslationKey(SkysGrassSlabs.MOD_ID + ".legacy_" + registryId.getPath());
         return block;
     }
 
@@ -158,6 +182,7 @@ public final class BuildingBricksCompat {
                 return damage & 1;
             }
         };
+
         item.setHasSubtypes(true);
         return item.setRegistryName(block.getRegistryName());
     }

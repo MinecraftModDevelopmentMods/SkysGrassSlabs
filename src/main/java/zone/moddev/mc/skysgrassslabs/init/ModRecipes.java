@@ -20,33 +20,28 @@ public final class ModRecipes {
 
     public static void register(IForgeRegistry<IRecipe> registry) {
         registerVanillaSeeds();
-        RecipeSorter.register("skysgrassslabs:turf_cutting", TurfCuttingRecipe.class,
-                RecipeSorter.Category.SHAPELESS, "after:minecraft:shapeless");
-        RecipeSorter.register("skysgrassslabs:buildingbricks_grass_slab_from_seeds",
-                BuildingBricksDirtSlabRecipe.class, RecipeSorter.Category.SHAPELESS,
+        RecipeSorter.register("skysgrassslabs:turf_cutting", TurfCuttingRecipe.class, RecipeSorter.Category.SHAPELESS,
                 "after:minecraft:shapeless");
+        RecipeSorter.register("skysgrassslabs:buildingbricks_grass_slab_from_seeds", BuildingBricksDirtSlabRecipe.class,
+                RecipeSorter.Category.SHAPELESS, "after:minecraft:shapeless");
 
         registry.registerAll(
-                named(new ShapedOreRecipe(null, new ItemStack(ModBlocks.DIRT_SLAB, 6),
-                        "DDD", 'D', Blocks.DIRT), "dirt_slab"),
-                named(new ShapedOreRecipe(null, new ItemStack(ModBlocks.GRASS_SLAB, 6),
-                        "GGG", 'G', Blocks.GRASS), "grass_slab"),
+                named(new ShapedOreRecipe(null, new ItemStack(ModBlocks.DIRT_SLAB, 6), "DDD", 'D', Blocks.DIRT),
+                        "dirt_slab"),
+                named(new ShapedOreRecipe(null, new ItemStack(ModBlocks.GRASS_SLAB, 6), "GGG", 'G', Blocks.GRASS),
+                        "grass_slab"),
                 named(new ShapedOreRecipe(null, new ItemStack(Blocks.DIRT), "SS", 'S',
-                        new ItemStack(ModBlocks.DIRT_SLAB, 1, OreDictionary.WILDCARD_VALUE)),
-                        "dirt_from_slabs"),
+                        new ItemStack(ModBlocks.DIRT_SLAB, 1, OreDictionary.WILDCARD_VALUE)), "dirt_from_slabs"),
                 named(new ShapedOreRecipe(null, new ItemStack(Blocks.GRASS), "SS", 'S',
-                        new ItemStack(ModBlocks.GRASS_SLAB, 1, OreDictionary.WILDCARD_VALUE)),
-                        "grass_from_slabs"),
-                named(new ShapelessOreRecipe(null, new ItemStack(Blocks.GRASS),
-                        new ItemStack(Blocks.DIRT), SEED_ORE), "grass_block_from_seeds"),
+                        new ItemStack(ModBlocks.GRASS_SLAB, 1, OreDictionary.WILDCARD_VALUE)), "grass_from_slabs"),
+                named(new ShapelessOreRecipe(null, new ItemStack(Blocks.GRASS), new ItemStack(Blocks.DIRT), SEED_ORE),
+                        "grass_block_from_seeds"),
                 named(new ShapelessOreRecipe(null, new ItemStack(ModBlocks.GRASS_SLAB),
-                        new ItemStack(ModBlocks.DIRT_SLAB), SEED_ORE),
-                        "grass_slab_from_seeds"),
+                        new ItemStack(ModBlocks.DIRT_SLAB), SEED_ORE), "grass_slab_from_seeds"),
                 named(new TurfCuttingRecipe(), "turf"));
 
         if (BuildingBricksCompat.isInstalled()) {
-            registry.register(named(BuildingBricksCompat.bridgeRecipe(),
-                    "buildingbricks_grass_slab_from_seeds"));
+            registry.register(named(BuildingBricksCompat.bridgeRecipe(), "buildingbricks_grass_slab_from_seeds"));
         }
     }
 

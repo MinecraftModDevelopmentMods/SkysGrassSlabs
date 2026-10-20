@@ -12,14 +12,16 @@ final class BuildingBricksConfigArbitrator {
 
     static boolean disable(File configFile) throws IOException {
         Configuration configuration = new Configuration(configFile);
+
         configuration.load();
+
         if (!configuration.get(CATEGORY, PROPERTY, true).getBoolean()) {
             return false;
         }
 
         if (configFile.isFile()) {
-            File backup = new File(configFile.getParentFile(),
-                    "general.cfg.skysgrassslabs-backup");
+            File backup = new File(configFile.getParentFile(), "general.cfg.skysgrassslabs-backup");
+
             if (!backup.exists()) {
                 Files.copy(configFile.toPath(), backup.toPath());
             }
@@ -29,10 +31,13 @@ final class BuildingBricksConfigArbitrator {
         configuration.save();
 
         Configuration verification = new Configuration(configFile);
+
         verification.load();
+
         if (verification.get(CATEGORY, PROPERTY, true).getBoolean()) {
             throw new IOException("BuildingBricks configuration did not retain generateGrassSlabs=false");
         }
+
         return true;
     }
 

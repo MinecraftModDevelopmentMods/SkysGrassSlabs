@@ -18,8 +18,11 @@ import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingHandler;
 import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
-@Mod(modid = SkysGrassSlabs.MOD_ID, name = SkysGrassSlabs.NAME,
-        version = SkysGrassSlabs.VERSION, dependencies = "before:buildingbricks")
+@Mod(
+        modid = SkysGrassSlabs.MOD_ID,
+        name = SkysGrassSlabs.NAME,
+        version = SkysGrassSlabs.VERSION,
+        dependencies = "before:buildingbricks")
 public final class SkysGrassSlabs {
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
@@ -39,12 +42,16 @@ public final class SkysGrassSlabs {
         BuildingBricksCompat.preInit(event.getModConfigurationDirectory());
 
         MinecraftForge.EVENT_BUS.register(new CommonEvents());
+
         LegacyMigrationHandler migration = new LegacyMigrationHandler();
+
         MinecraftForge.EVENT_BUS.register(migration);
         FMLCommonHandler.instance().bus().register(migration);
+
         if (!GrassSlabsApi.hasSmoothingOwner() && SkysGrassSlabsConfig.isSmoothingActive()) {
             MinecraftForge.EVENT_BUS.register(new GrassSlabSmoothingHandler());
         }
+
         proxy.preInit();
     }
 
@@ -54,6 +61,7 @@ public final class SkysGrassSlabs {
             GrassSlabsApi.registerGrassForm(ModBlocks.DIRT_SLAB.getStateFromMeta(metadata),
                     ModBlocks.GRASS_SLAB.getStateFromMeta(metadata));
         }
+
         proxy.init();
     }
 

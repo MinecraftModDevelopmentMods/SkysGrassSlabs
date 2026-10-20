@@ -22,6 +22,7 @@ public final class TurfEatingAI extends EntityAIBase {
         if (sheep.getRNG().nextInt(sheep.isChild() ? 50 : 1000) != 0) {
             return false;
         }
+
         return world.getBlockState(position()).getBlock() == ModBlocks.TURF;
     }
 
@@ -49,17 +50,20 @@ public final class TurfEatingAI extends EntityAIBase {
     @Override
     public void updateTask() {
         eatingTimer = Math.max(0, eatingTimer - 1);
+
         if (eatingTimer != 4) {
             return;
         }
 
         BlockPos pos = position();
+
         if (world.getBlockState(pos).getBlock() != ModBlocks.TURF) {
             return;
         }
         if (world.getGameRules().getBoolean("mobGriefing")) {
             world.destroyBlock(pos, false);
         }
+
         sheep.eatGrassBonus();
     }
 

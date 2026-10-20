@@ -14,10 +14,9 @@ import net.minecraft.world.World;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 public final class PathSlabBlock extends LegacySlabBlock {
-    public static final AxisAlignedBB BOTTOM_PATH_AABB =
-            new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 7.0D / 16.0D, 1.0D);
-    public static final AxisAlignedBB TOP_PATH_AABB =
-            new AxisAlignedBB(0.0D, 8.0D / 16.0D, 0.0D, 1.0D, 15.0D / 16.0D, 1.0D);
+    public static final AxisAlignedBB BOTTOM_PATH_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 7.0D / 16.0D, 1.0D);
+    public static final AxisAlignedBB TOP_PATH_AABB = new AxisAlignedBB(0.0D, 8.0D / 16.0D, 0.0D, 1.0D, 15.0D / 16.0D,
+            1.0D);
 
     public PathSlabBlock() {
         super(Material.GROUND);
@@ -31,18 +30,18 @@ public final class PathSlabBlock extends LegacySlabBlock {
     }
 
     @Override
-    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock,
-            BlockPos changedPos) {
+    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock, BlockPos changedPos) {
         super.neighborChanged(state, world, pos, changedBlock, changedPos);
+
         if (!world.isRemote && world.getBlockState(pos.up()).getMaterial().isSolid()) {
-            world.setBlockState(pos, ModBlocks.DIRT_SLAB.getDefaultState()
-                    .withProperty(HALF, state.getValue(HALF)), 3);
+            world.setBlockState(pos, ModBlocks.DIRT_SLAB.getDefaultState().withProperty(HALF, state.getValue(HALF)), 3);
         }
     }
 
     @Override
     public List<ItemStack> getDrops(IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
         List<ItemStack> drops = new ArrayList<ItemStack>();
+
         drops.add(new ItemStack(ModBlocks.DIRT_SLAB));
         return drops;
     }

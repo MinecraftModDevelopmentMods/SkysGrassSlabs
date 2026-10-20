@@ -17,8 +17,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 public final class TurfBlock extends Block {
-    public static final AxisAlignedBB TURF_AABB =
-            new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 1.0D / 16.0D, 1.0D);
+    public static final AxisAlignedBB TURF_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 1.0D / 16.0D, 1.0D);
 
     public TurfBlock() {
         super(Material.CARPET);
@@ -44,8 +43,7 @@ public final class TurfBlock extends Block {
     }
 
     @Override
-    public BlockFaceShape getBlockFaceShape(IBlockAccess world, IBlockState state, BlockPos pos,
-            EnumFacing face) {
+    public BlockFaceShape getBlockFaceShape(IBlockAccess world, IBlockState state, BlockPos pos, EnumFacing face) {
         return face == EnumFacing.DOWN ? BlockFaceShape.SOLID : BlockFaceShape.UNDEFINED;
     }
 
@@ -55,8 +53,7 @@ public final class TurfBlock extends Block {
     }
 
     @Override
-    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock,
-            BlockPos changedPos) {
+    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block changedBlock, BlockPos changedPos) {
         if (!world.isRemote && world.getBlockState(pos.down()).getBlock() == Blocks.GRASS) {
             world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
             return;
@@ -72,12 +69,15 @@ public final class TurfBlock extends Block {
         if (world.isRemote) {
             return;
         }
+
         BlockPos support = pos.down();
+
         if (world.getBlockState(support).getBlock() != Blocks.DIRT) {
             dropBlockAsItem(world, pos, state, 0);
             world.setBlockToAir(pos);
             return;
         }
+
         GrassSpread.spreadFrom(world, pos, random, support);
     }
 

@@ -32,62 +32,74 @@ public final class NormalizingSlabItem extends ItemBlock {
     }
 
     @Override
-    public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos,
-            EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
+    public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing,
+            float hitX, float hitY, float hitZ) {
         ItemStack stack = player.getHeldItem(hand);
-        if (stack.isEmpty() ||
-                !player.canPlayerEdit(pos.offset(facing), facing, stack)) {
+
+        if (stack.isEmpty() || !player.canPlayerEdit(pos.offset(facing), facing, stack)) {
             return EnumActionResult.FAIL;
         }
 
         IBlockState state = world.getBlockState(pos);
+
         if (state.getBlock() == slab) {
             BlockSlab.EnumBlockHalf half = state.getValue(BlockSlab.HALF);
-            if ((facing == EnumFacing.UP && half == BlockSlab.EnumBlockHalf.BOTTOM) ||
-                    (facing == EnumFacing.DOWN && half == BlockSlab.EnumBlockHalf.TOP)) {
+
+            if ((facing == EnumFacing.UP && half == BlockSlab.EnumBlockHalf.BOTTOM)
+                    || (facing == EnumFacing.DOWN && half == BlockSlab.EnumBlockHalf.TOP)) {
                 return combine(stack, player, world, pos);
             }
         }
 
         BlockPos adjacent = pos.offset(facing);
+
         if (world.getBlockState(adjacent).getBlock() == slab) {
             return combine(stack, player, world, adjacent);
         }
+
         return super.onItemUse(player, world, pos, hand, facing, hitX, hitY, hitZ);
     }
 
     @Override
-    public boolean canPlaceBlockOnSide(World world, BlockPos pos, EnumFacing side,
-            EntityPlayer player, ItemStack stack) {
+    public boolean canPlaceBlockOnSide(World world, BlockPos pos, EnumFacing side, EntityPlayer player,
+            ItemStack stack) {
         IBlockState state = world.getBlockState(pos);
+
         if (state.getBlock() == slab) {
             BlockSlab.EnumBlockHalf half = state.getValue(BlockSlab.HALF);
-            if ((side == EnumFacing.UP && half == BlockSlab.EnumBlockHalf.BOTTOM) ||
-                    (side == EnumFacing.DOWN && half == BlockSlab.EnumBlockHalf.TOP)) {
+
+            if ((side == EnumFacing.UP && half == BlockSlab.EnumBlockHalf.BOTTOM)
+                    || (side == EnumFacing.DOWN && half == BlockSlab.EnumBlockHalf.TOP)) {
                 return true;
             }
         }
         if (world.getBlockState(pos.offset(side)).getBlock() == slab) {
             return true;
         }
+
         return super.canPlaceBlockOnSide(world, pos, side, player, stack);
     }
 
     private EnumActionResult combine(ItemStack stack, EntityPlayer player, World world, BlockPos pos) {
         IBlockState combined = combinedBlock.getDefaultState();
-        AxisAlignedBB box = combined.getCollisionBoundingBox(world, pos);
-        if (box == Block.NULL_AABB || !world.checkNoEntityCollision(box.offset(pos))) {
+        AxisAlignedBB boundingBox = combined.getCollisionBoundingBox(world, pos);
+
+        if (boundingBox == Block.NULL_AABB || !world.checkNoEntityCollision(boundingBox.offset(pos))) {
             return EnumActionResult.FAIL;
         }
         if (!world.setBlockState(pos, combined, 11)) {
             return EnumActionResult.FAIL;
         }
+
         SoundType sound = combinedBlock.getSoundType(combined, world, pos, player);
-        world.playSound(player, pos, sound.getPlaceSound(), SoundCategory.BLOCKS,
-                (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
+
+        world.playSound(player, pos, sound.getPlaceSound(), SoundCategory.BLOCKS, (sound.getVolume() + 1.0F) / 2.0F,
+                sound.getPitch() * 0.8F);
+
         if (!player.capabilities.isCreativeMode) {
             stack.shrink(1);
         }
+
         return EnumActionResult.SUCCESS;
     }
 }
