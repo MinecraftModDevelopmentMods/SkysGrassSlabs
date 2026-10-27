@@ -121,13 +121,16 @@ public final class BuildingBricksCompat {
         registerLegacyAlias(HISTORICAL_GRASS_SLAB_ID, true);
         legacyAliasesRegistered = true;
         resolveBlocks();
+        SkysGrassSlabs.logger.info("Legacy slab recovery enabled for {}, {} and {}. "
+                + "Saved blocks and items will be converted as they load.",
+                GRASS_SLAB_ID, DIRT_SLAB_ID, HISTORICAL_GRASS_SLAB_ID);
     }
 
     private static void registerLegacyAlias(ResourceLocation registryId, boolean grass) {
         LegacySlabAliasBlock block = new LegacySlabAliasBlock(grass);
 
-        block.setRegistryName(registryId)
-                .setUnlocalizedName(SkysGrassSlabs.MOD_ID + ".legacy_" + registryId.getResourcePath());
+        LegacyRegistryWarnings.setName(block, registryId);
+        block.setUnlocalizedName(SkysGrassSlabs.MOD_ID + ".legacy_" + registryId.getResourcePath());
 
         ItemBlock item = new ItemBlock(block) {
             @Override
@@ -137,7 +140,7 @@ public final class BuildingBricksCompat {
         };
 
         item.setHasSubtypes(true);
-        item.setRegistryName(registryId);
+        LegacyRegistryWarnings.setName(item, registryId);
         GameRegistry.register(block);
         GameRegistry.register(item);
     }

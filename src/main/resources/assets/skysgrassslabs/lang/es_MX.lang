@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=Losa de tierra
 tile.skysgrassslabs.grass_slab.name=Losa de pasto
 tile.skysgrassslabs.path_slab.name=Losa de sendero de pasto
 tile.skysgrassslabs.turf.name=Tapete de pasto
+config.skysgrassslabs.generateGrassSlabs=Generar losas de césped
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=Reemplazar losas antiguas
+config.skysgrassslabs.generateGrassSlabs.tooltip=Añade losas de hierba a pendientes nuevas del mundo normal. Con Terrain Smoother, solo controla la hierba. Los chunks existentes no cambian. Reinicia Minecraft.
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=Sustituye las losas de hierba y tierra compatibles de BuildingBricks. Haz una copia del mundo primero: los cambios no se pueden deshacer. Reinicia Minecraft.

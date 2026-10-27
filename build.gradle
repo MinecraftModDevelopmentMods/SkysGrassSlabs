@@ -223,6 +223,8 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
 }
 
+apply from: 'gradle/runtime-log-checks.gradle'
+
 def integrationTestClasses = layout.buildDirectory.dir('integration-test-mod/classes')
 def compileIntegrationTestMod = tasks.register('compileIntegrationTestMod', JavaCompile) {
     group = 'verification'
@@ -268,11 +270,16 @@ def prepareIntegrationTest = tasks.register('prepareIntegrationTest') {
             into mods
         }
         new File(runDirectory, 'eula.txt').setText('eula=true\n', 'UTF-8')
+        ['banned-players.json', 'banned-ips.json', 'ops.json', 'whitelist.json'].each { name ->
+            new File(runDirectory, name).setText('[]\n', 'UTF-8')
+        }
         new File(runDirectory, 'server.properties').setText('''\
 level-name=world
 level-seed=skys-grass-slabs-integration
 level-type=default
 online-mode=false
+server-ip=127.0.0.1
+server-port=0
 generate-structures=false
 spawn-animals=false
 spawn-monsters=false
@@ -301,6 +308,14 @@ def createIntegrationProcess = { String phase, Object dependency ->
             if (values.getProperty("${phase.toLowerCase(Locale.ROOT)}_complete") != 'true') {
                 throw new GradleException("${phase} integration did not complete: ${marker}")
             }
+            File log = new File(integrationRunDirectory.get().asFile, 'logs/latest.log')
+            File archived = layout.buildDirectory.file("integration-logs/${phase.toLowerCase(Locale.ROOT)}.log").get().asFile
+            archived.parentFile.mkdirs()
+            archived.bytes = log.bytes
+            project.ext.auditRuntimeLog(archived, [
+                    kind: 'development', side: 'server',
+                    directory: integrationRunDirectory.get().asFile
+            ])
         }
     }
 }
@@ -497,6 +512,7 @@ tasks.register('writeReleaseChecksums') {
     group = 'verification'
     dependsOn tasks.named('verifyReleaseArtifacts')
     def output = layout.buildDirectory.file('release/SHA256SUMS')
+    inputs.files(releaseFiles.map { names -> names.collect { layout.buildDirectory.file("libs/${it}") } })
     outputs.file(output)
     doLast {
         File libs = layout.buildDirectory.dir('libs').get().asFile
@@ -610,8 +626,27 @@ idea {
     module { downloadSources = true; downloadJavadoc = true }
 }
 eclipse {
-    classpath { downloadSources = true; downloadJavadoc = true }
-    synchronizationTasks 'genEclipseRuns'
+    classpath {
+        downloadSources = true
+        downloadJavadoc = true
+        file.whenMerged { classpath ->
+            // Eclipse copies these files on every build. Use Gradle's expanded metadata, never the template.
+            def resources = classpath.entries.findAll {
+                it instanceof org.gradle.plugins.ide.eclipse.model.SourceFolder &&
+                        it.path in ['src/main/resources', 'build/resources/main']
+            }
+            // Keep one entry when Gradle merges an existing Eclipse classpath.
+            resources.drop(1).each { classpath.entries.remove(it) }
+            resources.take(1).each { entry ->
+                entry.path = 'build/resources/main'
+            }
+        }
+    }
+    synchronizationTasks 'processResources', 'genEclipseRuns'
+}
+
+tasks.named('eclipseClasspath') {
+    dependsOn tasks.named('processResources')
 }
 
 def prepareEclipseResources = tasks.register('prepareEclipseResources') {
@@ -691,6 +726,12 @@ tasks.register('verifyEclipseProductionClasspath') {
             throw new GradleException('Eclipse Buildship uses the wrong Gradle home')
         }
         File metadata = file('bin/main/mcmod.info')
+        def eclipseClasspath = new groovy.xml.XmlSlurper().parse(file('.classpath'))
+        def resourceFolders = eclipseClasspath.classpathentry.findAll { it.@kind == 'src' }*.@path*.text()
+        if (resourceFolders.contains('src/main/resources') ||
+                resourceFolders.count { it == 'build/resources/main' } != 1) {
+            throw new GradleException('Eclipse must copy processed resources, not overwrite them with templates')
+        }
         def parsed = new JsonSlurper().parseText(metadata.getText('UTF-8'))
         if (parsed[0].version != project.mod_version || parsed[0].mcversion != project.minecraft_version) {
             throw new GradleException('Eclipse output contains incorrect mcmod.info')

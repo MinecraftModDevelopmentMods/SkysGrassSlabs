@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=Dirt Slab
 tile.skysgrassslabs.grass_slab.name=Grass Slab
 tile.skysgrassslabs.path_slab.name=Grass Path Slab
 tile.skysgrassslabs.turf.name=Turf
+config.skysgrassslabs.generateGrassSlabs=Generate grass slabs
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=Replace legacy slabs
+config.skysgrassslabs.generateGrassSlabs.tooltip=Add grass slabs to new Overworld slopes. With Terrain Smoother, this controls grass only. Existing chunks stay unchanged. Restart Minecraft.
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=Replace supported BuildingBricks grass and dirt slabs. Back up the world first: replacements cannot be undone. Restart Minecraft.

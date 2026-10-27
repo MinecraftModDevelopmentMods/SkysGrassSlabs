@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=Dalle de terre
 tile.skysgrassslabs.grass_slab.name=Dalle de gazon
 tile.skysgrassslabs.path_slab.name=Dalle de sentier de gazon
 tile.skysgrassslabs.turf.name=Plaque de gazon
+config.skysgrassslabs.generateGrassSlabs=Générer des dalles d'herbe
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=Remplacer les anciennes dalles
+config.skysgrassslabs.generateGrassSlabs.tooltip=Ajoute des dalles d'herbe aux nouvelles pentes du monde normal. Avec Terrain Smoother, cette option ne contrôle que l'herbe. Les chunks existants ne changent pas. Redémarrez Minecraft.
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=Remplace les dalles d'herbe et de terre compatibles de BuildingBricks. Sauvegardez le monde d'abord : les remplacements sont irréversibles. Redémarrez Minecraft.
