@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.1.110021 - Minecraft 1.10.2
+
+- Added a Config screen to the Mods list, with help for each setting. Changes
+  take effect after restarting Minecraft.
+- Improved smoothing where nearby decoration has already placed grass or
+  flowers. Trees, crops and occupied blocks are left alone; saved terrain stays
+  as it is.
+- Kept exposed ground grassy beneath steps and corners when using Building
+  Pieces. Full-cover slabs keep their existing dirt support.
+- Replaced repeated warnings about intentional legacy slab names with one
+  clear recovery notice. Saved IDs and recovery behaviour are unchanged.
+- Fixed the mod information and Config button after Eclipse rebuilds.
+
 ## 1.1.0.110021 - Minecraft 1.10.2
 
 - Added optional shared grass rules for Building Pieces and safe generation

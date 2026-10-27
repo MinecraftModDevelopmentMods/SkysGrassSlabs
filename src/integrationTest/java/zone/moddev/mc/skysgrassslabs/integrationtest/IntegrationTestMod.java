@@ -1508,7 +1508,7 @@ public final class IntegrationTestMod {
     }
 
     private static int verifyWorldgen(WorldServer world) {
-        int checks = 0;
+        int checks = FoliageChecks.run(world);
         int chunkX = (world.getSpawnPoint().getX() >> 4) + 4;
         int chunkZ = (world.getSpawnPoint().getZ() >> 4) + 4;
 
@@ -1555,8 +1555,8 @@ public final class IntegrationTestMod {
         prepareGrassSurface(world, replaceable.east().up());
         world.setBlockState(replaceable.up(), Blocks.TALLGRASS.getDefaultState(), 3);
         handler.beforeDecoration(new DecorateBiomeEvent.Pre(world, new Random(5), chunkStart));
-        require(world.getBlockState(replaceable.up()).getBlock() == Blocks.TALLGRASS,
-                "Smoothing overwrote replaceable provider decoration");
+        require(world.getBlockState(replaceable.up()).getBlock() == ModBlocks.GRASS_SLAB,
+                "Grass placed by a neighbouring decorator blocked a valid transition");
         checks++;
 
         BlockPos wet = new BlockPos((chunkX << 4) + 12, 192, (chunkZ << 4) + 12);

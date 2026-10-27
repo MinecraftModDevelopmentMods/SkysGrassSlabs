@@ -26,7 +26,10 @@ class LocalizationContractTest {
     private static final File LANG_DIR = new File("src/main/resources/assets/skysgrassslabs/lang");
     private static final List<String> KEYS = Arrays.asList("tile.skysgrassslabs.dirt_slab.name",
             "tile.skysgrassslabs.grass_slab.name", "tile.skysgrassslabs.path_slab.name",
-            "tile.skysgrassslabs.turf.name");
+            "tile.skysgrassslabs.turf.name", "config.skysgrassslabs.generateGrassSlabs",
+            "config.skysgrassslabs.forceReplaceBuildingBricksSlabs",
+            "config.skysgrassslabs.generateGrassSlabs.tooltip",
+            "config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip");
     private static final List<String> LOCALES = Arrays.asList("de_AT", "de_AU", "de_DE", "en_CA", "en_EN", "en_GB",
             "en_PT", "en_US", "es_ES", "es_MX", "fr_CA", "fr_FR", "ja_JP", "ko_KR", "pt_BR", "pt_PT", "ru_RU", "zh_CN");
 
@@ -48,7 +51,7 @@ class LocalizationContractTest {
             Map<String, String> translations = read(locale);
 
             assertEquals(KEYS, new ArrayList<String>(translations.keySet()), locale);
-            assertEquals(4, translations.size(), locale);
+            assertEquals(8, translations.size(), locale);
         }
     }
 
@@ -103,7 +106,7 @@ class LocalizationContractTest {
     }
 
     private static void assertValues(String locale, String... values) throws Exception {
-        assertEquals(Arrays.asList(values), new ArrayList<String>(read(locale).values()), locale);
+        assertEquals(Arrays.asList(values), new ArrayList<String>(read(locale).values()).subList(0, 4), locale);
     }
 
     private static Map<String, String> read(String locale) throws Exception {

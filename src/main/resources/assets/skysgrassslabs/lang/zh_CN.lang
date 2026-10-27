@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=泥土台阶
 tile.skysgrassslabs.grass_slab.name=草方块台阶
 tile.skysgrassslabs.path_slab.name=草径台阶
 tile.skysgrassslabs.turf.name=草皮
+config.skysgrassslabs.generateGrassSlabs=生成草方块台阶
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=替换旧版台阶
+config.skysgrassslabs.generateGrassSlabs.tooltip=在新生成的主世界斜坡上放置草方块台阶。安装Terrain Smoother后，此选项只控制草地。已有区块不会改变。需要重启Minecraft。
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=替换受支持的BuildingBricks草方块和泥土台阶。替换无法撤销，请先备份世界。需要重启Minecraft。

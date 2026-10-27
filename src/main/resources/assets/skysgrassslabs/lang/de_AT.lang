@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=Eanstufn
 tile.skysgrassslabs.grass_slab.name=Grosstufn
 tile.skysgrassslabs.path_slab.name=Steigstufn
 tile.skysgrassslabs.turf.name=Grassodn
+config.skysgrassslabs.generateGrassSlabs=Grasstufen erzeugen
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=Alte Stufen ersetzen
+config.skysgrassslabs.generateGrassSlabs.tooltip=Fügt Grasplatten an neuen Hängen der Oberwelt hinzu. Mit Terrain Smoother steuert dies nur Gras. Bestehende Chunks bleiben unverändert. Minecraft neu starten.
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=Ersetzt unterstützte Gras- und Erdplatten von BuildingBricks. Zuerst die Welt sichern: Ersetzungen lassen sich nicht rückgängig machen. Minecraft neu starten.

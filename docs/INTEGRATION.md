@@ -1,5 +1,11 @@
 # Optional content integration
 
+`coversSupport(state, world, pos)` reports whether a piece covers the whole
+horizontal footprint. This method is available from 1.1.1. Support repair leaves
+grass beneath narrower steps and corners intact, and that exposed soil can
+regrow. Full-cover slabs and turf
+retain their previous support rules.
+
 Grass Slabs remains standalone. Terrain Smoother 0.1 uses Grass Slabs 1.1's
 version 1 API in `zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi`.
 

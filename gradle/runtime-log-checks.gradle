@@ -1,0 +1,342 @@
+// Audit whole runtime logs, not just the final pass marker.
+def recoveryNotice = 'Legacy slab recovery enabled for buildingbricks:grass_slab, buildingbricks:dirt_slab and buildingbrickscompatvanilla:grass_slab. Saved blocks and items will be converted as they load.'
+def scanEntries = [
+    'slime-launcher-0.2.2.jar': 'META-INF/versions/11/net/minecraftforge/launcher/shadow/util/download/DownloadUtilsImpl.class'
+]
+if (project.minecraft_version == '1.12.2') {
+    ['asm', 'asm-analysis', 'asm-tree', 'asm-util'].each {
+        scanEntries[it + '-6.2.jar'] = 'module-info.class'
+    }
+    scanEntries['slf4j-api-1.8.0-beta4.jar'] = 'META-INF/versions/9/module-info.class'
+}
+
+ext.auditRuntimeLogText = { String text, Map options ->
+    if (!(options.kind in ['development', 'packaged']) || !(options.side in ['client', 'server'])) {
+        throw new GradleException('Runtime kind and side must be explicit')
+    }
+    boolean development = options.kind == 'development'
+    boolean client = options.side == 'client'
+    List<Map> records = []
+    def header = ~/^\[[^\]]+\] \[([^\]]+)\/(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\] \[([^\]]+)\]: (.*)$/
+    text.readLines().each { line ->
+        def match = line =~ header
+        if (match.matches()) {
+            records.add([level: match[0][2], logger: match[0][3],
+                    message: match[0][4], body: ''])
+        } else {
+            def shortHeader = line =~ /^\[[^\]]+\] \[[^\]]+\/(WARN|ERROR|FATAL)\]: (.*)$/
+            def status = line =~ /^(?:\d{4}-\d\d-\d\d [0-9:,.]+ (?:[A-Za-z0-9 #._-]+ )?)?(WARN|ERROR|FATAL) (.*)$/
+            if (shortHeader.matches()) {
+                records.add([level: shortHeader[0][1], logger: 'Unlabelled',
+                        message: shortHeader[0][2], body: ''])
+            } else if (status.matches()) {
+                records.add([level: status[0][1], logger: 'Log4jStatus',
+                        message: status[0][2], body: ''])
+            } else if (!records.isEmpty()) {
+                records.last().body += line + '\n'
+            }
+        }
+    }
+    if (records.isEmpty()) {
+        throw new GradleException('Runtime log contains no recognised log records')
+    }
+
+    Set<Integer> knownDiagnostics = [] as Set
+    if (development) {
+        // Old Forge cannot scan these exact Java 9/11 launcher descriptors.
+        // Require the paired class-reader failure and entry, not "corrupt zip" generally.
+        for (int index = 0; index + 2 < records.size(); index++) {
+            def failure = records[index]
+            def entry = records[index + 1]
+            def warning = records[index + 2]
+            if (failure.logger == 'FML' && failure.level == 'ERROR' &&
+                    failure.message == 'Unable to read a class file correctly' &&
+                    failure.body.contains('org.objectweb.asm.ClassReader') &&
+                    failure.body.contains('java.lang.IllegalArgumentException')) {
+                scanEntries.each { jar, classEntry ->
+                    String prefix = 'There was a problem reading the entry ' + classEntry + ' in the jar '
+                    if (entry.logger == 'FML' && entry.level == 'ERROR' &&
+                            entry.message.startsWith(prefix) &&
+                            entry.message.replace('\\', '/').endsWith('/' + jar + ' - probably a corrupt zip') &&
+                            warning.logger == 'FML' && warning.level == 'WARN' &&
+                            warning.message == 'Zip file ' + jar + ' failed to read properly, it will be ignored') {
+                        knownDiagnostics.addAll([index, index + 1, index + 2])
+                    }
+                }
+            }
+
+            // Forge 1.12 expects Maven's flat layout, not Gradle's hash directory.
+            if (project.minecraft_version == '1.12.2' && failure.logger == 'FML' &&
+                    failure.level == 'ERROR' &&
+                    failure.message == 'Apache Maven library folder was not in the format expected. Using default libraries directory.') {
+                String full = entry.message.replace('\\', '/')
+                def expectedJar = full =~ /^Full: (.+\/org\.apache\.maven\/maven-artifact\/3\.5\.3\/)[a-f0-9]{40}\/maven-artifact-3\.5\.3\.jar$/
+                if (expectedJar.matches() && entry.logger == 'FML' && entry.level == 'ERROR' &&
+                        warning.logger == 'FML' && warning.level == 'ERROR' &&
+                        warning.message.replace('\\', '/') == 'Trimmed: ' + expectedJar[0][1].toLowerCase(Locale.ROOT)) {
+                    knownDiagnostics.addAll([index, index + 1, index + 2])
+                }
+            }
+        }
+    }
+
+    List<String> offlineMessages = [
+        '**** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!',
+        'The server will make no attempt to authenticate usernames. Beware.',
+        'While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.',
+        'To change this, set "online-mode" to "true" in the server.properties file.'
+    ]
+    List<String> unexpected = []
+    int reviewed = 0
+    records.eachWithIndex { record, index ->
+        if (!(record.level in ['WARN', 'ERROR', 'FATAL'])) {
+            return
+        }
+        boolean allowed = knownDiagnostics.contains(index)
+        if (record.logger == 'FML' && record.body.trim().isEmpty()) {
+            allowed |= record.level == 'ERROR' &&
+                    record.message == 'FML appears to be missing any signature data. This is not a good thing' &&
+                    (development || project.minecraft_version == '1.10.2')
+            allowed |= development && record.level == 'ERROR' &&
+                    record.message == 'The binary patch set is missing. Either you are in a development environment, or things are not going to work!'
+            allowed |= project.minecraft_version == '1.12.2' && record.level == 'WARN' &&
+                    record.message == 'Missing English translation for FML: assets/fml/lang/en_us.lang'
+        }
+        allowed |= options.offlineTestServer && !client && record.level == 'WARN' &&
+                record.logger == 'net.minecraft.server.dedicated.DedicatedServer' &&
+                offlineMessages.contains(record.message) && record.body.trim().isEmpty()
+        allowed |= client && record.level == 'WARN' &&
+                record.logger == 'net.minecraft.client.audio.SoundManager' &&
+                record.message == 'Author: Paul Lamb, www.paulscode.com' && record.body.trim().isEmpty()
+        allowed |= development && record.level == 'WARN' && record.logger == 'Log4jStatus' &&
+                record.message == 'Unable to instantiate org.fusesource.jansi.WindowsAnsiOutputStream'
+        // This unsigned local Mineralogy build has a retained upstream fingerprint.
+        // Its warning stays in the log and is accepted only after checking the jar.
+        allowed |= options.verifiedLocalMineralogy && record.level == 'WARN' &&
+                record.logger == 'mineralogy' && record.message == 'Invalid fingerprint detected!' &&
+                record.body.trim().isEmpty()
+        allowed |= !development && record.body.trim().isEmpty() && (options.reviewedFixtureMessages ?: []).any {
+            it.level == record.level && it.logger == record.logger && it.message == record.message
+        }
+        if (!allowed) {
+            unexpected.add(record.level + ' [' + record.logger + '] ' + record.message)
+        } else {
+            reviewed++
+        }
+    }
+    if (!unexpected.isEmpty()) {
+        throw new GradleException('Unexpected runtime diagnostics:\n' + unexpected.join('\n'))
+    }
+    if (text =~ /(?i)dangerous alternative prefix|Encountered an unexpected exception|OutOfMemoryError|AssertionError|Exception in thread|MissingModsException|cascading worldgen lag|IllegalAccessError|NoClassDefFoundError|NoSuchMethodError|VerifyError|UnsatisfiedLinkError|StackOverflowError|ExceptionInInitializerError|ClassCastException/) {
+        throw new GradleException('Runtime log contains an unsuppressed registry warning, crash or world-generation failure')
+    }
+    int notices = records.count {
+        it.level == 'INFO' && it.logger == 'skysgrassslabs' && it.message == recoveryNotice
+    }
+    int expectedNotices = options.recoveryMessage == false ? 0 : 1
+    if (notices != expectedNotices) {
+        throw new GradleException('Expected ' + expectedNotices + ' legacy recovery notices, found ' + notices)
+    }
+    if (options.marker && !text.contains(options.marker.toString())) {
+        throw new GradleException('Runtime log is missing its completion marker: ' + options.marker)
+    }
+    [records: records.size(), reviewedDiagnostics: reviewed]
+}
+
+def fixturePolicies = file('gradle/runtime-fixture-diagnostics.json').isFile() ?
+        new groovy.json.JsonSlurper().parse(file('gradle/runtime-fixture-diagnostics.json')).fixtures : [:]
+
+ext.verifyRuntimeFixture = { File archive ->
+    def policy = fixturePolicies[archive.name]
+    if (policy == null || file(policy.path).canonicalFile != archive.canonicalFile) {
+        throw new GradleException('No reviewed log policy for this upgrade fixture: ' + archive.name)
+    }
+    String actual = java.security.MessageDigest.getInstance('SHA-256').digest(archive.bytes)
+            .encodeHex().toString().toUpperCase(Locale.ROOT)
+    if (actual != policy.sha256) {
+        throw new GradleException('Upgrade fixture does not match its reviewed log policy: ' + archive.name)
+    }
+    [policy.blocks, policy.sounds].each { entries ->
+        entries.each { name, ids ->
+            if (!name.startsWith('minecraft:') || ids.size() != 2 || ids.any { it < 0 }) {
+                throw new GradleException('Fixture allowances must name exact vanilla numeric reassignments')
+            }
+        }
+    }
+    policy
+}
+
+ext.writeRuntimeFixtureContext = { File directory, File archive ->
+    def policy = project.ext.verifyRuntimeFixture(archive)
+    new File(directory, 'verification-fixture.json').setText(
+            groovy.json.JsonOutput.toJson([fixture: archive.name, sha256: policy.sha256]) + '\n', 'UTF-8')
+}
+
+def reviewedFixtureMessages = { File directory ->
+    File contextFile = new File(directory, 'verification-fixture.json')
+    if (!contextFile.isFile()) {
+        return []
+    }
+    def context = new groovy.json.JsonSlurper().parse(contextFile)
+    def policy = fixturePolicies[context.fixture]
+    if (policy == null || policy.sha256 != context.sha256) {
+        throw new GradleException('Unrecognised upgrade-fixture verification context')
+    }
+    project.ext.verifyRuntimeFixture(file(policy.path))
+    List<Map> messages = [[level: 'ERROR', logger: 'FML.ModTracker',
+            message: 'This world was saved with mod ' + policy.generator +
+                    ' which appears to be missing, things may not work well']]
+    messages.addAll(policy.extraDiagnostics ?: [])
+    [Block: policy.blocks, SoundEvent: policy.sounds].each { type, entries ->
+        entries.each { name, ids ->
+            messages.add([level: 'WARN', logger: 'FML',
+                    message: 'Registry ' + type + ': Object did not get ID it asked for. Name: ' +
+                            name + ' Expected: ' + ids[0] + ' Got: ' + ids[1]])
+        }
+    }
+    messages
+}
+
+ext.auditRuntimeLog = { File log, Map options = [:] ->
+    if (!log.isFile()) {
+        throw new GradleException('Runtime log is missing: ' + log)
+    }
+    File directory = options.directory ? file(options.directory) : log.parentFile.parentFile
+    Properties settings = new Properties()
+    File serverProperties = new File(directory, 'server.properties')
+    if (serverProperties.isFile()) {
+        serverProperties.withInputStream { settings.load(it) }
+    }
+    Map verified = new LinkedHashMap(options)
+    verified.reviewedFixtureMessages = reviewedFixtureMessages(directory)
+    verified.verifiedLocalMineralogy = false
+    if (providers.gradleProperty('runtimeLocalMineralogy').getOrElse('false').toBoolean()) {
+        File mineralogy = new File(directory, 'mods/Mineralogy-6.0.2.110021.jar')
+        String expectedHash = '48841ABD9517127D1F0D17960AAD86FEFB251D340B006872ACECADD01A4B43F9'
+        if (project.minecraft_version != '1.10.2' || !mineralogy.isFile() ||
+                java.security.MessageDigest.getInstance('SHA-256').digest(mineralogy.bytes)
+                        .encodeHex().toString().toUpperCase(Locale.ROOT) != expectedHash) {
+            throw new GradleException('The reviewed local Mineralogy jar is missing or has changed')
+        }
+        verified.verifiedLocalMineralogy = true
+    }
+    verified.offlineTestServer = settings.getProperty('online-mode') == 'false' &&
+            settings.getProperty('server-ip') == '127.0.0.1' && settings.getProperty('server-port') == '0'
+    def result = project.ext.auditRuntimeLogText(log.getText('UTF-8'), verified)
+    logger.lifecycle('Runtime log audit passed: ' + log.name + ' (' + result.records +
+            ' records; ' + result.reviewedDiagnostics + ' reviewed diagnostics)')
+}
+
+tasks.register('verifyRuntimeLog') {
+    group = 'verification'
+    description = 'Checks a complete development or packaged runtime log for unexpected warnings and errors.'
+    doLast {
+        if (!providers.gradleProperty('runtimeLog').isPresent()) {
+            throw new GradleException('Supply -PruntimeLog=<log>, -PruntimeKind=development|packaged and -PruntimeSide=client|server')
+        }
+        project.ext.auditRuntimeLog(file(providers.gradleProperty('runtimeLog').get()), [
+            kind: providers.gradleProperty('runtimeKind').getOrElse('packaged'),
+            side: providers.gradleProperty('runtimeSide').getOrElse('server'),
+            recoveryMessage: providers.gradleProperty('recoveryMessage').getOrElse('true').toBoolean(),
+            directory: providers.gradleProperty('runtimeDirectory').orNull,
+            marker: providers.gradleProperty('runtimeMarker').orNull
+        ])
+    }
+}
+
+tasks.register('verifyRuntimeLogPolicy') {
+    group = 'verification'
+    description = 'Tests strict warning/error classification and the recovery startup notice.'
+    doLast {
+        String notice = '[00:00:00] [main/INFO] [skysgrassslabs]: ' + recoveryNotice + '\n'
+        Map options = [kind: 'packaged', side: 'server']
+        project.ext.auditRuntimeLogText(notice, options)
+        fixturePolicies.each { name, policy ->
+            project.ext.verifyRuntimeFixture(file(policy.path))
+            String originalHash = policy.sha256
+            try {
+                policy.sha256 = '0' * 64
+                try {
+                    project.ext.verifyRuntimeFixture(file(policy.path))
+                    throw new IllegalStateException('A changed fixture hash was accepted')
+                } catch (GradleException expected) {
+                    // A reviewed warning list must never authorise another input world.
+                }
+            } finally {
+                policy.sha256 = originalHash
+            }
+        }
+        int rejected = 0
+        List<String> badLogs = [
+            '',
+            '[00:00:00] [main/INFO] [FML]: Ordinary startup without a recovery notice\n',
+            notice + '[00:00:01] [main/WARN] [FML]: An unexpected warning\n',
+            notice + '[00:00:01] [main/ERROR] [FML]: An unexpected error\n',
+            notice + '[00:00:01] [main/FATAL] [FML]: A fatal error\n',
+            notice + '[00:00:01] [main/WARN] [FML]: Dangerous alternative prefix buildingbricks for grass_slab\n',
+            notice + '[00:00:01] [main/WARN] [FML]: Zip file unknown.jar failed to read properly, it will be ignored\n',
+            notice + '[00:00:01] [main/ERROR] [FML]: Unable to read a class file correctly\n',
+            notice + '[00:00:01] [main/ERROR] [FML]: The binary patch set is missing. Either you are in a development environment, or things are not going to work!\n',
+            notice + '[00:00:01] [main/WARN] [FML]: Author: Paul Lamb, www.paulscode.com\n',
+            notice + '2026-10-23 00:00:01,000 ERROR Logging failed\n',
+            notice + '2026-10-23 00:00:01,000 main WARN Unexpected status warning\n',
+            notice + '[00:00:01] [main/WARN]: Unlabelled warning\n',
+            notice + '[00:00:01] [main/WARN] [mineralogy]: Invalid fingerprint detected!\n',
+            notice + notice
+        ]
+        badLogs.each { text ->
+            try {
+                project.ext.auditRuntimeLogText(text, options)
+                throw new IllegalStateException('An unexpected log was accepted')
+            } catch (GradleException expected) {
+                rejected++
+            }
+        }
+        String scan = '[00:00:01] [main/ERROR] [FML]: Unable to read a class file correctly\n' +
+                'java.lang.IllegalArgumentException\n at org.objectweb.asm.ClassReader.read(Unknown Source)\n' +
+                '[00:00:01] [main/ERROR] [FML]: There was a problem reading the entry ' +
+                scanEntries['slime-launcher-0.2.2.jar'] + ' in the jar /cache/slime-launcher-0.2.2.jar - probably a corrupt zip\n' +
+                '[00:00:01] [main/WARN] [FML]: Zip file slime-launcher-0.2.2.jar failed to read properly, it will be ignored\n'
+        Map development = options + [kind: 'development']
+        project.ext.auditRuntimeLogText(notice +
+                '[00:00:01] [main/WARN] [mineralogy]: Invalid fingerprint detected!\n',
+                options + [verifiedLocalMineralogy: true])
+        project.ext.auditRuntimeLogText(notice + scan, development)
+        [
+            scan.replace('DownloadUtilsImpl.class', 'AnUnrecognisedClass.class'),
+            scan.replace('slime-launcher-0.2.2.jar', 'unknown-library.jar'),
+            scan + 'java.lang.IllegalAccessError: A real launch failure\n'
+        ].each { altered ->
+            try {
+                project.ext.auditRuntimeLogText(notice + altered, development)
+                throw new IllegalStateException('An unrecognised scanner failure was accepted')
+            } catch (GradleException expected) {
+                rejected++
+            }
+        }
+        String offline = '[00:00:01] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: ' +
+                '**** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!\n'
+        project.ext.auditRuntimeLogText(notice + offline, options + [offlineTestServer: true])
+        try {
+            project.ext.auditRuntimeLogText(notice + offline, options)
+            throw new IllegalStateException('Offline warnings were accepted without a disposable server configuration')
+        } catch (GradleException expected) {
+            rejected++
+        }
+        Map fixture = options + [reviewedFixtureMessages: [
+                [level: 'WARN', logger: 'FML', message: 'Reviewed fixture diagnostic']]]
+        String fixtureWarning = '[00:00:01] [main/WARN] [FML]: Reviewed fixture diagnostic\n'
+        project.ext.auditRuntimeLogText(notice + fixtureWarning, fixture)
+        try {
+            project.ext.auditRuntimeLogText(notice + fixtureWarning +
+                    'java.io.IOException: Unexpected fixture failure\n', fixture)
+            throw new IllegalStateException('A reviewed fixture message concealed an exception')
+        } catch (GradleException expected) {
+            rejected++
+        }
+        logger.lifecycle('Runtime log policy passed: ' + rejected + ' unexpected-log cases rejected')
+    }
+}
+tasks.named('check') {
+    dependsOn 'verifyRuntimeLogPolicy'
+}
