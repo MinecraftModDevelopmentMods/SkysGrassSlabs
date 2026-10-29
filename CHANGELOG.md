@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.1.112021 - Minecraft 1.12.2
+
+- Added a Config screen with help for each setting. Save your changes and
+  restart Minecraft to apply them.
+- Fixed gaps in new grass slopes where neighbouring decoration had already
+  placed grass or flowers. Trees, crops and occupied blocks stay protected.
+- Kept exposed grass beneath Building Pieces steps and corners grassy.
+  Full-cover slabs keep their usual dirt support.
+- Replaced the warnings for intentional legacy slab registrations with one
+  clear recovery notice. Saved IDs and recovery rules are unchanged.
+- Fixed the Mods page, Config button and launch variables after Eclipse rebuilds.
+
 ## 1.1.0.112021 - Minecraft 1.12.2
 
 - Added optional shared grass behaviour with Sky's Building Pieces.

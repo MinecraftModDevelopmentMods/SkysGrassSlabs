@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=Degrau de Terra
 tile.skysgrassslabs.grass_slab.name=Degrau de Bloco de Relva
 tile.skysgrassslabs.path_slab.name=Degrau de Caminho de Relva
 tile.skysgrassslabs.turf.name=Placa de Relva
+config.skysgrassslabs.generateGrassSlabs=Gerar lajes de relva
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=Substituir lajes antigas
+config.skysgrassslabs.generateGrassSlabs.tooltip=Acrescenta degraus de relva às novas encostas do mundo normal. Com Terrain Smoother, controla apenas a relva. Os chunks existentes não mudam. Reinicie o Minecraft.
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=Opção de compatibilidade com mundos antigos. Deixe desativada nos packs normais do Minecraft 1.12.2. Os degraus antigos são recuperados automaticamente. Reinicie o Minecraft.

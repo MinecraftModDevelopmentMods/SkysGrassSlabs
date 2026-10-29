@@ -116,7 +116,10 @@ public final class GrassSpread {
         BlockPos above = target.up();
         IBlockState cover = world.getBlockState(above);
 
-        if (cover.getBlock() == ModBlocks.TURF || GrassSlabsApi.isGrassForm(cover)) {
+        // Keep covered-piece rejection; only full ground can regrow beside a narrower grass piece.
+        if (cover.getBlock() == ModBlocks.TURF
+                || GrassSlabsApi.isGrassForm(cover)
+                        && (!state.isFullCube() || GrassSlabsApi.coversSupport(cover, world, above))) {
             return false;
         }
 

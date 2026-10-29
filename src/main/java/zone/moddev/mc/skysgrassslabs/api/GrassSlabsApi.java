@@ -6,6 +6,8 @@ import java.util.Random;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import zone.moddev.mc.skysgrassslabs.block.GrassSpread;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
@@ -175,12 +177,13 @@ public final class GrassSlabsApi {
                 world.setBlockState(pos, dirt, 3);
             }
         } else if (isSpreadingGrassForm(state)) {
-            GrassSpread.spreadFrom(world, pos, random, pos.down());
+            GrassSpread.spreadFrom(world, pos, random, coversSupport(state, world, pos) ? pos.down() : null);
         }
     }
 
     public static void repairSupport(World world, BlockPos pos) {
-        if (world.isRemote || !world.isBlockLoaded(pos.down())) {
+        if (world.isRemote || !world.isBlockLoaded(pos.down())
+                || !coversSupport(world.getBlockState(pos), world, pos)) {
             return;
         }
 
@@ -191,6 +194,12 @@ public final class GrassSlabsApi {
         if (dirt != null) {
             world.setBlockState(pos.down(), dirt, 2);
         }
+    }
+
+    /** Steps and corners leave some ground exposed; only a full footprint hides all of its grass. */
+    public static boolean coversSupport(IBlockState piece, IBlockAccess world, BlockPos pos) {
+        AxisAlignedBB bounds = piece.getBoundingBox(world, pos);
+        return bounds != null && bounds.minX == 0 && bounds.maxX == 1 && bounds.minZ == 0 && bounds.maxZ == 1;
     }
 
     /** Ignore derived visual properties while retaining the material and saved orientation. */

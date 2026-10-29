@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=Laje de Terra
 tile.skysgrassslabs.grass_slab.name=Laje de Bloco de Grama
 tile.skysgrassslabs.path_slab.name=Laje de Caminho de Grama
 tile.skysgrassslabs.turf.name=Placa de Grama
+config.skysgrassslabs.generateGrassSlabs=Gerar lajes de relva
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=Substituir lajes antigas
+config.skysgrassslabs.generateGrassSlabs.tooltip=Adiciona lajes de grama às novas encostas do mundo normal. Com Terrain Smoother, controla apenas a grama. Os chunks existentes não mudam. Reinicie o Minecraft.
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=Opção de compatibilidade com mundos antigos. Deixe desativada em pacotes normais do Minecraft 1.12.2. As lajes antigas são recuperadas automaticamente. Reinicie o Minecraft.

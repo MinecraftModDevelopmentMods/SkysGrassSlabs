@@ -22,11 +22,12 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
         modid = SkysGrassSlabs.MOD_ID,
         name = SkysGrassSlabs.NAME,
         version = SkysGrassSlabs.VERSION,
-        dependencies = "before:buildingbricks")
+        dependencies = "before:buildingbricks",
+        guiFactory = "zone.moddev.mc.skysgrassslabs.client.GrassSlabsGuiFactory")
 public final class SkysGrassSlabs {
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.1.0.112021";
+    public static final String VERSION = "1.1.1.112021";
 
     @SidedProxy(
             clientSide = "zone.moddev.mc.skysgrassslabs.proxy.ClientProxy",

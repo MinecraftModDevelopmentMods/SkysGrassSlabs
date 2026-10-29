@@ -42,6 +42,7 @@ public final class ClientProbeTestMod {
     private int reloadWorldFrames;
     private boolean modelsVerified;
     private boolean recipeBookVerified;
+    private boolean configScreenVerified;
 
     @Mod.EventHandler
     public void initialize(FMLInitializationEvent event) {
@@ -85,6 +86,8 @@ public final class ClientProbeTestMod {
                             && stateTicks >= 100) {
                         verifyModels(minecraft);
                         verifyRecipeBook();
+                        ConfigScreenChecks.run(minecraft, "first");
+                        configScreenVerified = true;
                         stopIntegratedServer(minecraft);
                         nextState(2);
                     }
@@ -101,6 +104,7 @@ public final class ClientProbeTestMod {
                             && stateTicks >= 100) {
                         verifyModels(minecraft);
                         verifyRecipeBook();
+                        ConfigScreenChecks.run(minecraft, "reload");
                         stopIntegratedServer(minecraft);
                         nextState(4);
                     }
@@ -178,6 +182,7 @@ public final class ClientProbeTestMod {
 
         values.setProperty("models_verified", Boolean.toString(modelsVerified));
         values.setProperty("recipe_book_verified", Boolean.toString(recipeBookVerified));
+        values.setProperty("config_screen_verified", Boolean.toString(configScreenVerified));
         values.setProperty("first_world_rendered", Boolean.toString(firstWorldFrames >= 8));
         values.setProperty("reload_rendered", Boolean.toString(reloadWorldFrames >= 8));
         values.setProperty("world_directory", WORLD_DIRECTORY);

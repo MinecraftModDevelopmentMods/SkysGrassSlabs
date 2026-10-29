@@ -18,12 +18,7 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 /** Plans a chunk's grass caps before writing any, without loading neighbouring chunks. */
 public final class GrassSlabSmoothingHandler {
     public static final String FEATURE_ID = "skysgrassslabs:grass_slab_smoothing";
-    private static final ThreadLocal<boolean[]> DECISIONS = new ThreadLocal<boolean[]>() {
-        @Override
-        protected boolean[] initialValue() {
-            return new boolean[256];
-        }
-    };
+    private static final ThreadLocal<Decisions> DECISIONS = ThreadLocal.withInitial(Decisions::new);
 
     @SubscribeEvent(
             priority = EventPriority.LOWEST)
@@ -41,11 +36,10 @@ public final class GrassSlabSmoothingHandler {
             return;
         }
 
-        boolean[] decisions = DECISIONS.get();
+        Decisions decisions = DECISIONS.get();
 
-        for (int index = 0; index < decisions.length; ++index) {
-            decisions[index] = false;
-        }
+        java.util.Arrays.fill(decisions.targetHeights, -1);
+        java.util.Arrays.fill(decisions.originalTargets, null);
 
         int startX = chunkPos.getXStart();
         int startZ = chunkPos.getZStart();
@@ -54,7 +48,7 @@ public final class GrassSlabSmoothingHandler {
             for (int localX = 0; localX < 16; ++localX) {
                 int worldX = startX + localX;
                 int worldZ = startZ + localZ;
-                int surfaceY = owner.getHeightValue(localX, localZ) - 1;
+                int surfaceY = SmoothingFoliage.surfaceHeight(owner, localX, localZ, startX, startZ);
 
                 if (surfaceY < 0 || surfaceY >= 255) {
                     continue;
@@ -65,7 +59,7 @@ public final class GrassSlabSmoothingHandler {
                 IBlockState lower = owner.getBlockState(surface);
                 IBlockState targetState = owner.getBlockState(target);
                 boolean lowerGrass = lower.getBlock() == Blocks.GRASS;
-                boolean clear = targetState.getBlock().isAir(targetState, world, target);
+                boolean clear = SmoothingFoliage.canReplace(world, owner, target);
                 boolean dry = targetState.getMaterial() != Material.WATER && targetState.getMaterial() != Material.LAVA;
                 boolean supported = lower.isSideSolid(world, surface, EnumFacing.UP);
                 boolean hasBlockEntity = owner.getTileEntity(target, Chunk.EnumCreateEntityType.CHECK) != null;
@@ -75,24 +69,35 @@ public final class GrassSlabSmoothingHandler {
                 }
 
                 if (hasHigherGrassNeighbour(world, chunkPos, localX, localZ, surfaceY)) {
-                    decisions[(localZ << 4) | localX] = true;
+                    int index = (localZ << 4) | localX;
+
+                    decisions.targetHeights[index] = surfaceY + 1;
+                    decisions.originalTargets[index] = targetState;
                 }
             }
         }
 
         boolean changed = false;
 
-        for (int index = 0; index < decisions.length; ++index) {
-            if (!decisions[index]) {
+        for (int index = 0; index < decisions.targetHeights.length; ++index) {
+            if (decisions.targetHeights[index] < 0) {
                 continue;
             }
 
             int localX = index & 15;
             int localZ = index >>> 4;
-            int surfaceY = owner.getHeightValue(localX, localZ) - 1;
-            BlockPos target = new BlockPos(startX + localX, surfaceY + 1, startZ + localZ);
+            // Retain the snapshot height: earlier writes must not move a later target.
+            BlockPos target = new BlockPos(startX + localX, decisions.targetHeights[index], startZ + localZ);
+
+            if (!owner.getBlockState(target).equals(decisions.originalTargets[index])
+                    || !SmoothingFoliage.canReplace(world, owner, target)) {
+                continue;
+            }
 
             setGenerationState(owner, target, ModBlocks.GRASS_SLAB.getDefaultState());
+            if (decisions.originalTargets[index].getBlock() == Blocks.DOUBLE_PLANT) {
+                setGenerationState(owner, target.up(), Blocks.AIR.getDefaultState());
+            }
 
             BlockPos support = target.down();
 
@@ -153,12 +158,17 @@ public final class GrassSlabSmoothingHandler {
             return false;
         }
 
-        int neighbourSurfaceY = chunk.getHeightValue(localX, localZ) - 1;
+        int neighbourSurfaceY = SmoothingFoliage.surfaceHeight(chunk, localX, localZ, chunkX << 4, chunkZ << 4);
         BlockPos neighbour = new BlockPos((chunkX << 4) + localX, neighbourSurfaceY, (chunkZ << 4) + localZ);
         boolean neighbourGrass = neighbourSurfaceY >= 0 && chunk.getBlockState(neighbour).getBlock() == Blocks.GRASS;
 
         return SmoothingDecision.shouldPlace(lowerSurfaceY, neighbourSurfaceY, true, neighbourGrass, true, true, true,
                 false);
+    }
+
+    private static final class Decisions {
+        final int[] targetHeights = new int[256];
+        final IBlockState[] originalTargets = new IBlockState[256];
     }
 
     private static Chunk loadedChunk(World world, int chunkX, int chunkZ) {
