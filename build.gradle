@@ -634,6 +634,17 @@ def prepareGameTestStructures = tasks.register('prepareGameTestStructures', Copy
         File properties = file("${gameTestRunDirectory}/server.properties")
         properties.parentFile.mkdirs()
         properties.setText('online-mode=false\nserver-port=0\n', 'UTF-8')
+        // A complete loader config avoids corrections while its file watcher is starting.
+        File loaderConfig = file("${gameTestRunDirectory}/config/fml.toml")
+        if (!loaderConfig.isFile()) {
+            loaderConfig.parentFile.mkdirs()
+            loaderConfig.setText('''\
+versionCheck=true
+splashscreen=true
+defaultConfigPath="defaultconfigs"
+maxThreads=-1
+''', 'UTF-8')
+        }
     }
 }
 
