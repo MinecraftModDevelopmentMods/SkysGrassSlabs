@@ -1,9 +1,12 @@
 # Configuration
 
-Forge creates `config/skysgrassslabs.cfg` after the mod is started for the
-first time. Stop the game or server before editing it, then restart to apply
-changes. On a dedicated server, the server's configuration controls world
-generation and world upgrades.
+Open **Mods**, select **Sky's Grass Slabs** and choose **Config** to change
+world generation and the legacy replacement option. Save with **Done**, then
+restart Minecraft to apply your choices. Settings are not changed mid-world.
+
+You can also edit `config/skysgrassslabs.cfg` while the game or server is
+stopped. On a dedicated server, edit the server's file and restart it; the
+client's Config screen does not change a remote server.
 
 ## World smoothing
 

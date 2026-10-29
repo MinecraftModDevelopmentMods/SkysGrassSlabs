@@ -1,5 +1,10 @@
 # Optional content integration
 
+`coversSupport(state, world, pos)` reports whether a piece covers the whole
+horizontal footprint. Support repair leaves grass beneath narrower steps and
+corners intact, and that exposed soil can regrow. Full-cover slabs and turf
+retain their previous support rules.
+
 Grass Slabs works on its own. Content and terrain mods can use version 1 of
 `zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi` without changing its saved IDs.
 

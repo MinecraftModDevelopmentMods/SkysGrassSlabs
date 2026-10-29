@@ -158,6 +158,9 @@ public final class BuildingBricksCompat {
         historicalGrassSlab = legacyAlias(HISTORICAL_GRASS_SLAB_ID, true);
         registry.registerAll(grassSlab, dirtSlab, historicalGrassSlab);
         legacyAliasesRegistered = true;
+        SkysGrassSlabs.logger.info("Legacy slab recovery enabled for {}, {} and {}. "
+                + "Saved blocks and items will be converted as they load.",
+                GRASS_SLAB_ID, DIRT_SLAB_ID, HISTORICAL_GRASS_SLAB_ID);
     }
 
     public static void registerLegacyAliasItems(IForgeRegistry<Item> registry) {
@@ -171,7 +174,8 @@ public final class BuildingBricksCompat {
     private static Block legacyAlias(ResourceLocation registryId, boolean grass) {
         LegacySlabAliasBlock block = new LegacySlabAliasBlock(grass);
 
-        block.setRegistryName(registryId).setTranslationKey(SkysGrassSlabs.MOD_ID + ".legacy_" + registryId.getPath());
+        LegacyRegistryWarnings.setName(block, registryId);
+        block.setTranslationKey(SkysGrassSlabs.MOD_ID + ".legacy_" + registryId.getPath());
         return block;
     }
 
@@ -184,7 +188,8 @@ public final class BuildingBricksCompat {
         };
 
         item.setHasSubtypes(true);
-        return item.setRegistryName(block.getRegistryName());
+        LegacyRegistryWarnings.setName(item, block.getRegistryName());
+        return item;
     }
 
     private BuildingBricksCompat() {

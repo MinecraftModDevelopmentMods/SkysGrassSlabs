@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=흙 반 블록
 tile.skysgrassslabs.grass_slab.name=잔디 블록 반 블록
 tile.skysgrassslabs.path_slab.name=잔디 길 반 블록
 tile.skysgrassslabs.turf.name=잔디
+config.skysgrassslabs.generateGrassSlabs=잔디 반 블록 생성
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=이전 모드 반 블록 교체
+config.skysgrassslabs.generateGrassSlabs.tooltip=새로 생성되는 오버월드 경사면에 잔디 반 블록을 놓습니다. Terrain Smoother가 있으면 잔디에만 적용됩니다. 기존 청크는 바뀌지 않습니다. Minecraft를 다시 시작해야 합니다.
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=이전 월드용 호환 설정입니다. 일반적인 Minecraft 1.12.2 팩에서는 꺼 두세요. 이전 반 블록은 자동으로 복구됩니다. 다시 시작해야 합니다.

@@ -1,0 +1,692 @@
+{
+  "fixtures": {
+    "skysgrassslabs-1.11.2-forward-world.zip": {
+      "path": "src/test/resources/fixtures/skysgrassslabs-1.11.2-forward-world.zip",
+      "sha256": "E6ABAECBC818C4EB28D3324ACC27DCCCD30247B4268879D7A789F0E1F55028F5",
+      "generator": "skysgrassslabsadjacentfixture",
+      "blocks": {
+        "minecraft:white_glazed_terracotta": [
+          235,
+          242
+        ],
+        "minecraft:yellow_glazed_terracotta": [
+          239,
+          243
+        ],
+        "minecraft:pink_glazed_terracotta": [
+          241,
+          244
+        ],
+        "minecraft:cyan_glazed_terracotta": [
+          244,
+          246
+        ],
+        "minecraft:orange_glazed_terracotta": [
+          236,
+          247
+        ],
+        "minecraft:lime_glazed_terracotta": [
+          240,
+          253
+        ],
+        "minecraft:gray_glazed_terracotta": [
+          242,
+          254
+        ],
+        "minecraft:silver_glazed_terracotta": [
+          243,
+          256
+        ],
+        "minecraft:magenta_glazed_terracotta": [
+          237,
+          257
+        ],
+        "minecraft:light_blue_glazed_terracotta": [
+          238,
+          258
+        ],
+        "minecraft:blue_glazed_terracotta": [
+          246,
+          259
+        ],
+        "minecraft:brown_glazed_terracotta": [
+          247,
+          260
+        ]
+      },
+      "sounds": {
+        "minecraft:entity.parrot.imitate.ghast": [
+          331,
+          493
+        ],
+        "minecraft:entity.parrot.imitate.blaze": [
+          324,
+          494
+        ],
+        "minecraft:entity.boat.paddle_water": [
+          151,
+          495
+        ],
+        "minecraft:entity.illusion_illager.hurt": [
+          277,
+          496
+        ],
+        "minecraft:entity.parrot.imitate.stray": [
+          341,
+          497
+        ],
+        "minecraft:entity.parrot.imitate.zombie": [
+          348,
+          498
+        ],
+        "minecraft:entity.illusion_illager.ambient": [
+          274,
+          499
+        ],
+        "minecraft:entity.parrot.imitate.polar_bear": [
+          335,
+          500
+        ],
+        "minecraft:entity.parrot.imitate.husk": [
+          332,
+          501
+        ],
+        "minecraft:block.note.chime": [
+          73,
+          502
+        ],
+        "minecraft:entity.parrot.imitate.witch": [
+          344,
+          503
+        ],
+        "minecraft:entity.parrot.hurt": [
+          323,
+          504
+        ],
+        "minecraft:entity.endereye.death": [
+          195,
+          505
+        ],
+        "minecraft:entity.parrot.imitate.enderman": [
+          328,
+          506
+        ],
+        "minecraft:block.note.guitar": [
+          75,
+          507
+        ],
+        "minecraft:entity.parrot.imitate.creeper": [
+          325,
+          508
+        ],
+        "minecraft:entity.parrot.imitate.skeleton": [
+          338,
+          509
+        ],
+        "minecraft:entity.parrot.imitate.wither_skeleton": [
+          346,
+          510
+        ],
+        "minecraft:entity.illusion_illager.mirror_move": [
+          278,
+          511
+        ],
+        "minecraft:entity.parrot.imitate.wolf": [
+          347,
+          512
+        ],
+        "minecraft:entity.parrot.death": [
+          320,
+          513
+        ],
+        "minecraft:entity.player.hurt_drown": [
+          368,
+          514
+        ],
+        "minecraft:entity.illusion_illager.prepare_blindness": [
+          279,
+          515
+        ],
+        "minecraft:entity.parrot.imitate.vex": [
+          342,
+          516
+        ],
+        "minecraft:entity.player.hurt_on_fire": [
+          369,
+          517
+        ],
+        "minecraft:entity.parrot.imitate.illusion_illager": [
+          333,
+          518
+        ],
+        "minecraft:entity.parrot.imitate.zombie_pigman": [
+          349,
+          519
+        ],
+        "minecraft:entity.parrot.ambient": [
+          319,
+          520
+        ],
+        "minecraft:entity.parrot.imitate.vindication_illager": [
+          343,
+          521
+        ],
+        "minecraft:entity.parrot.imitate.silverfish": [
+          337,
+          522
+        ],
+        "minecraft:block.note.bell": [
+          72,
+          523
+        ],
+        "minecraft:block.end_portal_frame.fill": [
+          27,
+          524
+        ],
+        "minecraft:entity.parrot.eat": [
+          321,
+          525
+        ],
+        "minecraft:entity.parrot.imitate.evocation_illager": [
+          330,
+          526
+        ],
+        "minecraft:entity.illusion_illager.prepare_mirror": [
+          280,
+          527
+        ],
+        "minecraft:entity.parrot.imitate.magmacube": [
+          334,
+          528
+        ],
+        "minecraft:block.note.xylophone": [
+          80,
+          529
+        ],
+        "minecraft:entity.parrot.imitate.elder_guardian": [
+          326,
+          530
+        ],
+        "minecraft:entity.parrot.imitate.endermite": [
+          329,
+          531
+        ],
+        "minecraft:block.end_portal.spawn": [
+          26,
+          532
+        ],
+        "minecraft:entity.illusion_illager.cast_spell": [
+          275,
+          533
+        ],
+        "minecraft:block.note.flute": [
+          74,
+          534
+        ],
+        "minecraft:entity.parrot.imitate.enderdragon": [
+          327,
+          535
+        ],
+        "minecraft:entity.parrot.imitate.shulker": [
+          336,
+          536
+        ],
+        "minecraft:entity.parrot.imitate.slime": [
+          339,
+          537
+        ],
+        "minecraft:entity.bobber.retrieve": [
+          152,
+          538
+        ],
+        "minecraft:entity.parrot.imitate.spider": [
+          340,
+          539
+        ],
+        "minecraft:entity.parrot.fly": [
+          322,
+          540
+        ],
+        "minecraft:entity.boat.paddle_land": [
+          150,
+          541
+        ],
+        "minecraft:entity.illusion_illager.death": [
+          276,
+          542
+        ],
+        "minecraft:entity.parrot.imitate.wither": [
+          345,
+          543
+        ],
+        "minecraft:entity.parrot.imitate.zombie_villager": [
+          350,
+          544
+        ],
+        "minecraft:ui.toast.in": [
+          544,
+          547
+        ],
+        "minecraft:entity.parrot.step": [
+          351,
+          548
+        ]
+      }
+    },
+    "skysgrassslabs-1.10.2-forward-world.zip": {
+      "path": "src/test/resources/fixtures/skysgrassslabs-1.10.2-forward-world.zip",
+      "sha256": "D6923BFFE062C1F0C454190AB11F031825949DF8080D8000133A723DEC2770BF",
+      "generator": "skysgrassslabsforwardfixture",
+      "blocks": {
+        "minecraft:observer": [
+          218,
+          222
+        ],
+        "minecraft:white_shulker_box": [
+          219,
+          223
+        ],
+        "minecraft:magenta_shulker_box": [
+          221,
+          225
+        ],
+        "minecraft:pink_shulker_box": [
+          225,
+          226
+        ],
+        "minecraft:yellow_shulker_box": [
+          223,
+          227
+        ],
+        "minecraft:orange_shulker_box": [
+          220,
+          232
+        ],
+        "minecraft:green_shulker_box": [
+          232,
+          233
+        ],
+        "minecraft:silver_shulker_box": [
+          227,
+          234
+        ],
+        "minecraft:black_shulker_box": [
+          234,
+          243
+        ],
+        "minecraft:gray_shulker_box": [
+          226,
+          246
+        ],
+        "minecraft:silver_glazed_terracotta": [
+          243,
+          247
+        ],
+        "minecraft:light_blue_shulker_box": [
+          222,
+          253
+        ],
+        "minecraft:red_shulker_box": [
+          233,
+          254
+        ],
+        "minecraft:blue_glazed_terracotta": [
+          246,
+          256
+        ],
+        "minecraft:brown_glazed_terracotta": [
+          247,
+          257
+        ]
+      },
+      "sounds": {
+        "minecraft:entity.llama.chest": [
+          299,
+          463
+        ],
+        "minecraft:entity.vindication_illager.death": [
+          454,
+          464
+        ],
+        "minecraft:entity.parrot.imitate.ghast": [
+          331,
+          465
+        ],
+        "minecraft:entity.vex.charge": [
+          444,
+          466
+        ],
+        "minecraft:entity.parrot.imitate.blaze": [
+          324,
+          467
+        ],
+        "minecraft:entity.boat.paddle_water": [
+          151,
+          468
+        ],
+        "minecraft:entity.mule.chest": [
+          314,
+          469
+        ],
+        "minecraft:entity.illusion_illager.hurt": [
+          277,
+          470
+        ],
+        "minecraft:entity.parrot.imitate.stray": [
+          341,
+          471
+        ],
+        "minecraft:entity.llama.step": [
+          304,
+          472
+        ],
+        "minecraft:entity.parrot.imitate.zombie": [
+          348,
+          473
+        ],
+        "minecraft:entity.illusion_illager.ambient": [
+          274,
+          474
+        ],
+        "minecraft:entity.parrot.imitate.polar_bear": [
+          335,
+          475
+        ],
+        "minecraft:entity.parrot.imitate.husk": [
+          332,
+          476
+        ],
+        "minecraft:entity.evocation_illager.death": [
+          211,
+          477
+        ],
+        "minecraft:block.note.chime": [
+          73,
+          478
+        ],
+        "minecraft:entity.evocation_illager.prepare_summon": [
+          214,
+          479
+        ],
+        "minecraft:entity.llama.death": [
+          300,
+          480
+        ],
+        "minecraft:entity.parrot.imitate.witch": [
+          344,
+          481
+        ],
+        "minecraft:entity.parrot.hurt": [
+          323,
+          482
+        ],
+        "minecraft:entity.endereye.death": [
+          195,
+          483
+        ],
+        "minecraft:entity.parrot.imitate.enderman": [
+          328,
+          484
+        ],
+        "minecraft:entity.vindication_illager.hurt": [
+          455,
+          485
+        ],
+        "minecraft:block.note.guitar": [
+          75,
+          486
+        ],
+        "minecraft:entity.llama.ambient": [
+          297,
+          487
+        ],
+        "minecraft:entity.parrot.imitate.creeper": [
+          325,
+          488
+        ],
+        "minecraft:entity.parrot.imitate.skeleton": [
+          338,
+          489
+        ],
+        "minecraft:entity.parrot.imitate.wither_skeleton": [
+          346,
+          490
+        ],
+        "minecraft:entity.illusion_illager.mirror_move": [
+          278,
+          491
+        ],
+        "minecraft:entity.vex.ambient": [
+          443,
+          492
+        ],
+        "minecraft:entity.evocation_illager.ambient": [
+          209,
+          493
+        ],
+        "minecraft:entity.parrot.imitate.wolf": [
+          347,
+          494
+        ],
+        "minecraft:entity.parrot.death": [
+          320,
+          495
+        ],
+        "minecraft:entity.player.hurt_drown": [
+          368,
+          496
+        ],
+        "minecraft:entity.illusion_illager.prepare_blindness": [
+          279,
+          497
+        ],
+        "minecraft:entity.evocation_illager.cast_spell": [
+          210,
+          498
+        ],
+        "minecraft:entity.parrot.imitate.vex": [
+          342,
+          499
+        ],
+        "minecraft:entity.player.hurt_on_fire": [
+          369,
+          500
+        ],
+        "minecraft:entity.vex.death": [
+          445,
+          501
+        ],
+        "minecraft:entity.parrot.imitate.illusion_illager": [
+          333,
+          502
+        ],
+        "minecraft:entity.parrot.imitate.zombie_pigman": [
+          349,
+          504
+        ],
+        "minecraft:block.shulker_box.close": [
+          92,
+          505
+        ],
+        "minecraft:entity.parrot.ambient": [
+          319,
+          506
+        ],
+        "minecraft:entity.parrot.imitate.vindication_illager": [
+          343,
+          507
+        ],
+        "minecraft:entity.parrot.imitate.silverfish": [
+          337,
+          509
+        ],
+        "minecraft:block.note.bell": [
+          72,
+          510
+        ],
+        "minecraft:entity.llama.angry": [
+          298,
+          511
+        ],
+        "minecraft:block.end_portal_frame.fill": [
+          27,
+          512
+        ],
+        "minecraft:entity.parrot.eat": [
+          321,
+          513
+        ],
+        "minecraft:entity.parrot.imitate.evocation_illager": [
+          330,
+          514
+        ],
+        "minecraft:entity.llama.swag": [
+          305,
+          515
+        ],
+        "minecraft:entity.illusion_illager.prepare_mirror": [
+          280,
+          516
+        ],
+        "minecraft:entity.llama.hurt": [
+          302,
+          517
+        ],
+        "minecraft:entity.parrot.imitate.magmacube": [
+          334,
+          518
+        ],
+        "minecraft:block.note.xylophone": [
+          80,
+          519
+        ],
+        "minecraft:entity.parrot.imitate.elder_guardian": [
+          326,
+          520
+        ],
+        "minecraft:entity.parrot.imitate.endermite": [
+          329,
+          521
+        ],
+        "minecraft:block.end_portal.spawn": [
+          26,
+          522
+        ],
+        "minecraft:entity.illusion_illager.cast_spell": [
+          275,
+          524
+        ],
+        "minecraft:block.note.flute": [
+          74,
+          525
+        ],
+        "minecraft:entity.evocation_illager.prepare_wololo": [
+          215,
+          526
+        ],
+        "minecraft:entity.evocation_illager.hurt": [
+          212,
+          527
+        ],
+        "minecraft:entity.parrot.imitate.enderdragon": [
+          327,
+          528
+        ],
+        "minecraft:entity.parrot.imitate.shulker": [
+          336,
+          529
+        ],
+        "minecraft:entity.elder_guardian.flop": [
+          185,
+          530
+        ],
+        "minecraft:entity.parrot.imitate.slime": [
+          339,
+          531
+        ],
+        "minecraft:entity.bobber.retrieve": [
+          152,
+          532
+        ],
+        "minecraft:entity.parrot.imitate.spider": [
+          340,
+          533
+        ],
+        "minecraft:entity.parrot.fly": [
+          322,
+          534
+        ],
+        "minecraft:entity.boat.paddle_land": [
+          150,
+          535
+        ],
+        "minecraft:block.shulker_box.open": [
+          93,
+          536
+        ],
+        "minecraft:entity.illusion_illager.death": [
+          276,
+          537
+        ],
+        "minecraft:entity.parrot.imitate.wither": [
+          345,
+          538
+        ],
+        "minecraft:entity.llama.spit": [
+          303,
+          539
+        ],
+        "minecraft:entity.vindication_illager.ambient": [
+          453,
+          540
+        ],
+        "minecraft:entity.evocation_fangs.attack": [
+          208,
+          541
+        ],
+        "minecraft:entity.llama.eat": [
+          301,
+          542
+        ],
+        "minecraft:entity.parrot.imitate.zombie_villager": [
+          350,
+          543
+        ],
+        "minecraft:entity.evocation_illager.prepare_attack": [
+          213,
+          547
+        ],
+        "minecraft:entity.parrot.step": [
+          351,
+          548
+        ],
+        "minecraft:entity.vex.hurt": [
+          446,
+          549
+        ]
+      },
+      "extraDiagnostics": [
+        {
+          "level": "ERROR",
+          "logger": "FML.ModTracker",
+          "message": "This world was saved with mod Forge which appears to be missing, things may not work well"
+        },
+        {
+          "level": "ERROR",
+          "logger": "FML",
+          "message": "Unidentified mapping from registry minecraft:soundevents"
+        },
+        {
+          "level": "ERROR",
+          "logger": "FML",
+          "message": "    minecraft:entity.experience_orb.touch: 196"
+        },
+        {
+          "level": "ERROR",
+          "logger": "FML",
+          "message": "There are unidentified mappings in this world - we are going to attempt to process anyway"
+        }
+      ]
+    }
+  }
+}

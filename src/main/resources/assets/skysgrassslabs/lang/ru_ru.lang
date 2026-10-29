@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=Земляная плита
 tile.skysgrassslabs.grass_slab.name=Дёрновая плита
 tile.skysgrassslabs.path_slab.name=Плита тропы
 tile.skysgrassslabs.turf.name=Дёрн
+config.skysgrassslabs.generateGrassSlabs=Генерировать дёрновые плиты
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=Заменять старые плиты
+config.skysgrassslabs.generateGrassSlabs.tooltip=Добавляет дёрновые плиты на новые склоны обычного мира. С Terrain Smoother настройка управляет только травой. Существующие чанки не меняются. Перезапустите Minecraft.
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=Совместимость со старыми мирами. В обычных сборках Minecraft 1.12.2 оставьте выключенной. Старые плиты восстанавливаются автоматически. Требуется перезапуск.

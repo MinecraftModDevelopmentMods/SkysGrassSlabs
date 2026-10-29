@@ -222,6 +222,8 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
 }
 
+apply from: 'gradle/runtime-log-checks.gradle'
+
 def integrationTestClasses = layout.buildDirectory.dir('integration-test-mod/classes')
 def compileIntegrationTestMod = tasks.register('compileIntegrationTestMod', JavaCompile) {
     group = 'verification'
@@ -278,11 +280,16 @@ def prepareIntegrationTest = tasks.register('prepareIntegrationTest') {
             into mods
         }
         new File(runDirectory, 'eula.txt').setText('eula=true\n', 'UTF-8')
+        ['banned-players.json', 'banned-ips.json', 'ops.json', 'whitelist.json'].each { name ->
+            new File(runDirectory, name).setText('[]\n', 'UTF-8')
+        }
         new File(runDirectory, 'server.properties').setText('''\
 level-name=world
 level-seed=skys-grass-slabs-integration
 level-type=default
 online-mode=false
+server-ip=127.0.0.1
+server-port=0
 generate-structures=false
 spawn-animals=false
 spawn-monsters=false
@@ -298,6 +305,7 @@ def createIntegrationProcess = { String phase, Object dependency ->
         dependsOn dependency
         workingDir integrationRunDirectory
         systemProperty 'skysgrassslabs.integrationPhase', phase.toLowerCase(Locale.ROOT)
+        systemProperty 'log4j.configurationFile', file('src/integrationTest/resources/log4j2.xml').toURI().toString()
         configureFromForgeRun(delegate, 'runServer')
         doLast {
             File marker = new File(integrationRunDirectory.get().asFile,
@@ -310,6 +318,14 @@ def createIntegrationProcess = { String phase, Object dependency ->
             if (values.getProperty("${phase.toLowerCase(Locale.ROOT)}_complete") != 'true') {
                 throw new GradleException("${phase} integration did not complete: ${marker}")
             }
+            File log = new File(integrationRunDirectory.get().asFile, 'logs/latest.log')
+            File archived = layout.buildDirectory.file("integration-logs/${phase.toLowerCase(Locale.ROOT)}.log").get().asFile
+            archived.parentFile.mkdirs()
+            archived.bytes = log.bytes
+            project.ext.auditRuntimeLog(archived, [
+                    kind: 'development', side: 'server',
+                    directory: integrationRunDirectory.get().asFile
+            ])
         }
     }
 }
@@ -389,6 +405,7 @@ def clientIntegrationProcess = tasks.register('clientIntegrationProcess', JavaEx
     dependsOn prepareClientIntegrationTest
     workingDir clientIntegrationRunDirectory
     systemProperty 'skysgrassslabs.clientProbe', 'true'
+    systemProperty 'log4j.configurationFile', file('src/integrationTest/resources/log4j2.xml').toURI().toString()
     configureFromForgeRun(delegate, 'runClient')
     doLast {
         File runDirectory = clientIntegrationRunDirectory.get().asFile
@@ -398,12 +415,14 @@ def clientIntegrationProcess = tasks.register('clientIntegrationProcess', JavaEx
         }
         Properties values = new Properties()
         marker.withInputStream { values.load(it) }
-        ['models_verified', 'recipe_book_verified', 'first_world_rendered',
+        ['models_verified', 'recipe_book_verified', 'config_screen_verified', 'first_world_rendered',
                 'reload_rendered'].each { key ->
             if (values.getProperty(key) != 'true') {
                 throw new GradleException("Development client failed ${key}: ${values}")
             }
         }
+        project.ext.auditRuntimeLog(new File(runDirectory, 'logs/latest.log'),
+                [kind: 'development', side: 'client', directory: runDirectory])
     }
 }
 
@@ -478,6 +497,9 @@ def preparePackagedRuntime = { String taskName, String directoryName, Object fix
         outputs.dir(runDirectory)
         outputs.upToDateWhen { false }
         doLast {
+            if (fixtureArchive != null) {
+                project.ext.verifyRuntimeFixture(file(fixtureArchive))
+            }
             project.delete(runDirectory)
             project.copy {
                 from packagedServerBase
@@ -497,6 +519,7 @@ def preparePackagedRuntime = { String taskName, String directoryName, Object fix
                     from zipTree(file(fixtureArchive))
                     into new File(runDirectory, 'world')
                 }
+                project.ext.writeRuntimeFixtureContext(runDirectory, file(fixtureArchive))
             }
             new File(runDirectory, 'eula.txt').setText('eula=true\n', 'UTF-8')
             new File(runDirectory, 'server.properties').setText('''\
@@ -504,6 +527,8 @@ level-name=world
 level-seed=skys-grass-slabs-packaged
 level-type=default
 online-mode=false
+server-ip=127.0.0.1
+server-port=0
 generate-structures=false
 spawn-animals=false
 spawn-monsters=false
@@ -522,12 +547,20 @@ def createPackagedServerProcess = { String taskName, String phase, String direct
         File runDirectory = layout.buildDirectory.dir(directoryName).get().asFile
         workingDir runDirectory
         doFirst {
+            ['banned-players.json', 'banned-ips.json', 'ops.json', 'whitelist.json'].each { name ->
+                File list = new File(runDirectory, name)
+                if (!list.exists()) {
+                    list.setText('[]\n', 'UTF-8')
+                }
+            }
             List<String> command = [
                     java8Launcher.get().executablePath.asFile.absolutePath,
                     '-Djava.net.preferIPv4Stack=true',
                     '-Dforge.logging.console.level=info',
                     "-Dskysgrassslabs.integrationPhase=${phase}"
             ]
+            command.add('-Dlog4j.configurationFile=' +
+                    file('src/integrationTest/resources/log4j2.xml').toURI().toString())
             if (phase.startsWith('forward-sylvester')) {
                 command.addAll(['-Xms1G', '-Xmx8G'])
             }
@@ -549,6 +582,12 @@ def createPackagedServerProcess = { String taskName, String phase, String direct
             if (values.getProperty(key) != 'true') {
                 throw new GradleException("Packaged ${phase} did not complete: ${marker}")
             }
+            File log = new File(runDirectory, 'logs/latest.log')
+            File archived = layout.buildDirectory.file("runtime-logs/${taskName}.log").get().asFile
+            archived.parentFile.mkdirs()
+            archived.bytes = log.bytes
+            project.ext.auditRuntimeLog(archived,
+                    [kind: 'packaged', side: 'server', directory: runDirectory])
         }
     }
 }
@@ -632,6 +671,8 @@ level-name=world
 level-seed=skys-grass-slabs-orespawn-mineralogy
 level-type=default
 online-mode=false
+server-ip=127.0.0.1
+server-port=0
 generate-structures=false
 spawn-animals=false
 spawn-monsters=false
@@ -766,6 +807,8 @@ def prepareSylvesterForwardUpgradeTest = tasks.register(
         new File(runDirectory, 'server.properties').setText('''\
 level-name=world
 online-mode=false
+server-ip=127.0.0.1
+server-port=0
 generate-structures=false
 spawn-animals=false
 spawn-monsters=false
@@ -944,6 +987,7 @@ def packagedClientProcess = tasks.register('packagedClientProcess', Exec) {
         ]
         commandLine java8Launcher.get().executablePath.asFile.absolutePath,
                 '-Xms512m', '-Xmx2g', '-Dskysgrassslabs.clientProbe=true',
+                '-Dlog4j.configurationFile=' + file('src/integrationTest/resources/log4j2.xml').toURI().toString(),
                 "-Djava.library.path=${natives.absolutePath}",
                 '-Dminecraft.launcher.brand=skysgrassslabs-validation',
                 '-Dminecraft.launcher.version=1',
@@ -965,13 +1009,15 @@ tasks.register('packagedClientIntegrationTest') {
         }
         Properties values = new Properties()
         marker.withInputStream { values.load(it) }
-        ['models_verified', 'recipe_book_verified', 'first_world_rendered',
+        ['models_verified', 'recipe_book_verified', 'config_screen_verified', 'first_world_rendered',
                 'reload_rendered'].each { key ->
             if (values.getProperty(key) != 'true') {
                 throw new GradleException("Packaged client failed ${key}: ${values}")
             }
         }
         verifyPackagedRun(runDirectory, 'Packaged client')
+        project.ext.auditRuntimeLog(new File(runDirectory, 'logs/latest.log'),
+                [kind: 'packaged', side: 'client', directory: runDirectory])
     }
 }
 
@@ -1081,6 +1127,7 @@ tasks.register('writeReleaseChecksums') {
     group = 'verification'
     dependsOn tasks.named('verifyReleaseArtifacts')
     def output = layout.buildDirectory.file('release/SHA256SUMS')
+    inputs.files(releaseFiles.map { names -> names.collect { layout.buildDirectory.file("libs/${it}") } })
     outputs.file(output)
     doLast {
         File libs = layout.buildDirectory.dir('libs').get().asFile
@@ -1194,8 +1241,27 @@ idea {
     module { downloadSources = true; downloadJavadoc = true }
 }
 eclipse {
-    classpath { downloadSources = true; downloadJavadoc = true }
-    synchronizationTasks 'genEclipseRuns'
+    classpath {
+        downloadSources = true
+        downloadJavadoc = true
+        file.whenMerged { classpath ->
+            // Eclipse copies these files on every build. Use Gradle's expanded metadata, never the template.
+            def resources = classpath.entries.findAll {
+                it instanceof org.gradle.plugins.ide.eclipse.model.SourceFolder &&
+                        it.path in ['src/main/resources', 'build/resources/main']
+            }
+            // Keep one entry when Gradle merges an existing Eclipse classpath.
+            resources.drop(1).each { classpath.entries.remove(it) }
+            resources.take(1).each { entry ->
+                entry.path = 'build/resources/main'
+            }
+        }
+    }
+    synchronizationTasks 'processResources', 'genEclipseRuns'
+}
+
+tasks.named('eclipseClasspath') {
+    dependsOn tasks.named('processResources')
 }
 
 def prepareEclipseResources = tasks.register('prepareEclipseResources') {
@@ -1239,6 +1305,7 @@ tasks.register('isolateEclipseProductionRuns') {
             include 'run*.launch'
         }.files.each { File launch ->
             String contents = launch.getText('UTF-8')
+            contents = contents.replace('${MC_VERSION}', project.minecraft_version.toString())
             contents = contents.replace(
                     'key="MC_VERSION" value="${MC_VERSION}"',
                     "key=\"MC_VERSION\" value=\"${minecraft_version}\"")
@@ -1288,6 +1355,12 @@ tasks.register('verifyEclipseProductionClasspath') {
             throw new GradleException('Eclipse Buildship uses the wrong Gradle home')
         }
         File metadata = file('bin/main/mcmod.info')
+        def eclipseClasspath = new groovy.xml.XmlSlurper().parse(file('.classpath'))
+        def resourceFolders = eclipseClasspath.classpathentry.findAll { it.@kind == 'src' }*.@path*.text()
+        if (resourceFolders.contains('src/main/resources') ||
+                resourceFolders.count { it == 'build/resources/main' } != 1) {
+            throw new GradleException('Eclipse must copy processed resources, not overwrite them with templates')
+        }
         def parsed = new JsonSlurper().parseText(metadata.getText('UTF-8'))
         if (parsed[0].version != project.mod_version || parsed[0].mcversion != project.minecraft_version) {
             throw new GradleException('Eclipse output contains incorrect mcmod.info')
@@ -1295,6 +1368,7 @@ tasks.register('verifyEclipseProductionClasspath') {
         ['runClient.launch', 'runServer.launch'].each { name ->
             String contents = file(name).getText('UTF-8').replace('\\', '/')
             if (!contents.contains('org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE') ||
+                    contents.contains('${MC_VERSION}') ||
                     contents.contains('src/test') || contents.contains('bin/test') || contents.contains('junit-')) {
                 throw new GradleException("${name} exposes test code or dependencies")
             }

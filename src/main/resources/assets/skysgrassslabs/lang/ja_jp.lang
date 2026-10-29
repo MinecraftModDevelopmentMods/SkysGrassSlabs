@@ -2,3 +2,7 @@ tile.skysgrassslabs.dirt_slab.name=土のハーフブロック
 tile.skysgrassslabs.grass_slab.name=草ブロックのハーフブロック
 tile.skysgrassslabs.path_slab.name=草の道のハーフブロック
 tile.skysgrassslabs.turf.name=芝生
+config.skysgrassslabs.generateGrassSlabs=草のハーフブロックを生成
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs=旧MODのハーフブロックを置換
+config.skysgrassslabs.generateGrassSlabs.tooltip=新しく生成されるオーバーワールドの斜面に草のハーフブロックを置きます。Terrain Smoother導入時は草だけを設定します。既存のチャンクは変わりません。Minecraftの再起動が必要です。
+config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip=古いワールド用の互換設定です。通常のMinecraft 1.12.2環境では無効のままにしてください。古いハーフブロックは自動で復元されます。再起動が必要です。
