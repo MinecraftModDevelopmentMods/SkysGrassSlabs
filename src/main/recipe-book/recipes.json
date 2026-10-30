@@ -1,0 +1,60 @@
+[
+  {
+    "recipe": "skysgrassslabs:dirt_slab",
+    "owner": "skysgrassslabs",
+    "ingredients": [
+      {
+        "item": "minecraft:dirt",
+        "data": 0
+      }
+    ]
+  },
+  {
+    "recipe": "skysgrassslabs:grass_slab",
+    "owner": "skysgrassslabs",
+    "ingredients": [
+      {
+        "item": "minecraft:grass",
+        "data": 0
+      }
+    ]
+  },
+  {
+    "recipe": "skysgrassslabs:dirt_from_slabs",
+    "owner": "skysgrassslabs",
+    "ingredients": [
+      {
+        "item": "skysgrassslabs:dirt_slab"
+      }
+    ]
+  },
+  {
+    "recipe": "skysgrassslabs:grass_from_slabs",
+    "owner": "skysgrassslabs",
+    "ingredients": [
+      {
+        "item": "skysgrassslabs:grass_slab"
+      }
+    ]
+  },
+  {
+    "recipe": "skysgrassslabs:grass_block_from_seeds",
+    "owner": "skysgrassslabs",
+    "ingredients": [
+      {
+        "item": "minecraft:dirt",
+        "data": 0
+      }
+    ]
+  },
+  {
+    "recipe": "skysgrassslabs:grass_slab_from_seeds",
+    "owner": "skysgrassslabs",
+    "ingredients": [
+      {
+        "item": "skysgrassslabs:dirt_slab",
+        "data": 0
+      }
+    ]
+  }
+]

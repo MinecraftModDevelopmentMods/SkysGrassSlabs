@@ -126,6 +126,7 @@ public final class IntegrationTestMod {
                         "56D8B8C1FA7F2289C9F9A3BCF2BEB2D15F0F880373D0647BB9BDBFA7E1D5FE54");
                 evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
             } else if ("fresh".equals(phase)) {
+                RecipeBookChecks.run(world);
                 int gameplayChecks = verifyGameplay(server, world);
                 int worldgenChecks = verifyWorldgen(world);
 

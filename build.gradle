@@ -1393,3 +1393,5 @@ tasks.register('verifyEclipseProductionClasspath') {
 tasks.named('check') {
     dependsOn tasks.named('verifyReleaseMetadata')
 }
+
+apply from: 'gradle/recipe-advancements.gradle'
