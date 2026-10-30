@@ -47,6 +47,12 @@ public final class BuildingBricksDirtSlabRecipe extends IForgeRegistryEntry.Impl
         return width * height >= 2;
     }
 
+    // Legacy material identities are resolved late and cannot be filled safely by the recipe book.
+    @Override
+    public boolean isDynamic() {
+        return true;
+    }
+
     @Override
     public ItemStack getRecipeOutput() {
         return new ItemStack(ModBlocks.GRASS_SLAB);

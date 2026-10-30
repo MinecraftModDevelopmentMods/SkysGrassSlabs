@@ -27,7 +27,7 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 public final class SkysGrassSlabs {
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.1.1.112021";
+    public static final String VERSION = "1.1.2.112021";
 
     @SidedProxy(
             clientSide = "zone.moddev.mc.skysgrassslabs.proxy.ClientProxy",

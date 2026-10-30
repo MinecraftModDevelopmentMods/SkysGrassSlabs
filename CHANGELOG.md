@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2.112021
+
+- Added the missing recipe-book unlocks for crafting and rebuilding pieces.
+- Made the next recipes appear while the crafting table is still open.
+
 ## 1.1.1.112021 - Minecraft 1.12.2
 
 - Added a Config screen with help for each setting. Save your changes and
