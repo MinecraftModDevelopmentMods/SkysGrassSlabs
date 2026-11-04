@@ -5,7 +5,7 @@ generation and legacy options. Hover over a setting for help. Choose
 **Done** to save, then restart Minecraft. Escape leaves pending choices unsaved.
 The screen does not change a remote server's configuration.
 
-Forge creates `config/skysgrassslabs-common.toml` after the mod is started for
+The game creates `config/skysgrassslabs-common.toml` after the mod is started for
 the first time. Stop the game or server before editing it, then restart to
 apply changes. On a dedicated server, the server's configuration controls
 world generation and world upgrades.

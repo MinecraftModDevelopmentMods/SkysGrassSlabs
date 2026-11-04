@@ -47,6 +47,7 @@ class FamilyForwardFixtureTest {
 
     @ParameterizedTest
     @CsvSource({
+            "1.20.1,8192BB2908C65D80B598F9A4770FD0840B20E760C4ABB10384D58CBF63638CAD,20,0,0,forge-1201-upgrade-run",
             "1.19.4,77A6FC338FC08EDFD7CFF06DE495C69352D3BA1D2BD2F990A985D484B5420CC5,20,0,0,family-119-upgrade-run",
             "1.18.2,989DA26DB3BF6BE780EE58D8DEAB89A52BA4E18F95902FAC6D06B8F74C9FAEB6,20,0,0,family-118-upgrade-run",
             "1.16.5,F885F3E9113B20BBE7489A333E98923D3B7BFFB62C486AD669CBBE7E6A519E93,568,0,14400,family-116-upgrade-run",
@@ -70,7 +71,7 @@ class FamilyForwardFixtureTest {
         assertEquals(completedChunks, contract.getAsJsonArray("chunks").size());
         assertEquals(partialChunks, contract.getAsJsonArray("partial_chunks").size());
         assertEquals(expectedRenamed, contract.get("native_renamed_cells").getAsInt());
-        assertEquals(completedChunks * ((minecraft.equals("1.18.2") || minecraft.equals("1.19.4")) ? 1536 : 1024), contract.get("checked_cells").getAsInt());
+        assertEquals(completedChunks * ((minecraft.equals("1.18.2") || minecraft.equals("1.19.4") || minecraft.equals("1.20.1")) ? 1536 : 1024), contract.get("checked_cells").getAsInt());
         JsonObject profile = json(Paths.get("tools/native-log-profiles.json"))
                 .getAsJsonObject("profiles").getAsJsonObject(profileName);
         assertEquals(expectedRenamed, profile.get("saved_uses").getAsInt());
@@ -83,7 +84,7 @@ class FamilyForwardFixtureTest {
             try (var input = new java.util.zip.InflaterInputStream(new java.io.ByteArrayInputStream(
                     java.util.Base64.getDecoder().decode(row.get("cells").getAsString())))) {
                 byte[] cells = input.readAllBytes();
-                assertEquals((minecraft.equals("1.18.2") || minecraft.equals("1.19.4")) ? 1536 : 1024, cells.length);
+                assertEquals((minecraft.equals("1.18.2") || minecraft.equals("1.19.4") || minecraft.equals("1.20.1")) ? 1536 : 1024, cells.length);
                 for (byte cell : cells) {
                     String name = contract.getAsJsonObject("source_names")
                             .get(Integer.toString(Byte.toUnsignedInt(cell))).getAsString();
@@ -99,6 +100,7 @@ class FamilyForwardFixtureTest {
 
     @ParameterizedTest
     @CsvSource({
+            "1.20.1,3CDA8B69A0AEF0ABB3283D38144281FF15A81DD538A4A2049A30E421B9678693,9F61D47241B1AE536912C16539E4034825153430E028C7186A3505C0171A03AD,58835d6bd7069abc27c5468d2405c0c6b382ca38,3465,source_jar_sha256",
             "1.19.4,B804B42B65942345E99F004130FC13932BBE55565188DBCF46CB4FFFD5A28B5C,3A97C2D7E1A2E1D9C33D513BE08F9B2D3611AC914185DED8C8B9138D76EF5B82,7459aaa214c86c8e759f77feb2e2f61c1790285b,3337,source_jar_sha256",
             "1.18.2,FB1D5187194299216263B8E789A3762B63FD52CA11BEE8E865A86FBC55A0126B,357E8792542EEC84E4D3DEF3E91193559B826574DC23DB8A5081A69ABF112CE7,98bf6c4313589ad233b8c6301de781f608da41ea,2975,source_jar_sha256",
             "1.15.2,15CF16E1CE347C1D85B524D07B9D167AE82423AE240F354F617648EB5FF6D93C,A0D741B5D641DE05EFA37DDC0565B5FC3164661A6B03890E71ECF86F7EB56E51,5f63feb3dffa4dbabd2f974c22c40d6be8e6b928,2230,main_sha256",

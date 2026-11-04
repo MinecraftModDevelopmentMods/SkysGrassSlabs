@@ -1,12 +1,12 @@
 # Upgrading an older world
 
 Always make a complete copy of the world before changing its Minecraft or
-Forge version. Test the copy first and keep the original until the upgraded
+loader version. Test the copy first and keep the original until the upgraded
 world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.2.0.120011.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.2.0.120012.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -19,6 +19,10 @@ Minecraft 1.13.2 through 1.19.4 worlds already use named block states. Their
 orientation, snowy and waterlogged states load through Minecraft's normal
 upgrade process.
 
+Sky's Grass Slabs content also survives a same-version move from Forge 47.4.10
+to NeoForge 47.1.106. Check that every other mod in the world supports the
+target loader before you open the copy.
+
 World smoothing still affects only newly generated chunks. Chunks indexed as
 part of an older world are not treated as new terrain by the smoothing
 feature.
@@ -30,7 +34,7 @@ original mod is absent. Slab orientation, stack counts and custom item data are
 retained.
 
 Other older shapes such as stairs, vertical slabs, corners and steps are not
-part of this migration. Forge may report them as missing and may remove them
+part of this migration. NeoForge may report them as missing and may remove them
 after offering its normal backup and confirmation screen. Do not continue
 unless losing those unsupported blocks is acceptable for that copy of the
 world.
@@ -55,7 +59,7 @@ decoration does not break under turf's stricter support rules. Breaking that
 carpet produces an item which is converted to turf.
 
 Stairs, dirt carpet, dirt path carpet, mycelium variants and podzol variants
-fall outside this recovery. Forge can remove them when you confirm the missing
+fall outside this recovery. NeoForge can remove them when you confirm the missing
 content warning. Read the full list and keep your original world backup.
 
 When both mods remain installed, their content is left alone by default. See
@@ -64,9 +68,9 @@ When both mods remain installed, their content is left alone by default. See
 ## Modpack checklist
 
 1. Back up the complete instance and world.
-2. Update Forge and every required mod to a matching Minecraft 1.20.1 build.
+2. Use NeoForge 47.1.106 and compatible Minecraft 1.20.1 builds of your mods.
 3. Install the 1.20.1 Sky's Grass Slabs jar before the first upgraded start.
-4. Read the complete Forge missing content list before confirming it.
+4. Read the complete NeoForge missing content list before confirming it.
 5. Check representative slabs, turf, paths, inventories and old terrain.
 6. Stop and start the upgraded copy once more, then repeat the checks.
 

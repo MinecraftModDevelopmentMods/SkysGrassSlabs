@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.2.0.120011
+## 1.2.0.120012
 
 - Share grass spreading and support rules with Sky's Building Pieces.
 - Let Sky's Terrain Smoother take over generation when installed.

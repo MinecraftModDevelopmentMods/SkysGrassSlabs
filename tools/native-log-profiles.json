@@ -594,6 +594,20 @@
         "checked_cells": 30720,
         "renamed_cells": 0
       }
+    },
+    "forge-1201-upgrade-run": {
+      "fixture": "src/test/resources/fixtures/grass-family-1.20.1/world.zip",
+      "sha256": "3CDA8B69A0AEF0ABB3283D38144281FF15A81DD538A4A2049A30E421B9678693",
+      "mappings": {},
+      "saved_uses": 0,
+      "missing_fixture_helper": false,
+      "native_biome_contract": {
+        "path": "src/test/resources/fixtures/grass-family-1.20.1/biomes.json",
+        "sha256": "8192BB2908C65D80B598F9A4770FD0840B20E760C4ABB10384D58CBF63638CAD",
+        "source": "1.20.1",
+        "checked_cells": 30720,
+        "renamed_cells": 0
+      }
     }
   },
   "native_control": {

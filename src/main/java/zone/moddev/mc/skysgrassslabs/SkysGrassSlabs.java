@@ -6,7 +6,7 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.eventbus.api.IEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyMigrationHandler;
@@ -23,21 +23,21 @@ import net.minecraft.world.level.block.state.properties.SlabType;
 public final class SkysGrassSlabs {
     public static final String MOD_ID = "skysgrassslabs";
     public static final String NAME = "Sky's Grass Slabs";
-    public static final String VERSION = "1.2.0.120011";
+    public static final String VERSION = "1.2.0.120012";
     public static final Logger LOGGER = LogManager.getLogger();
 
-    public SkysGrassSlabs(FMLJavaModLoadingContext context) {
+    public SkysGrassSlabs(IEventBus modBus) {
         SkysGrassSlabsConfig.migrateLegacyConfig();
-        SkysGrassSlabsConfig.register(context);
+        SkysGrassSlabsConfig.register(modBus);
 
-        context.getModEventBus().addListener(this::setup);
-        context.getModEventBus().addListener(this::loadComplete);
+        modBus.addListener(this::setup);
+        modBus.addListener(this::loadComplete);
         zone.moddev.mc.skysgrassslabs.world.WorldgenBootstrap.register(
-                context.getModEventBus());
+                modBus);
         CommonEvents.register();
         LegacyMigrationHandler.register();
         zone.moddev.mc.skysgrassslabs.compat.GrassSlabsCompat.register(
-                context.getModEventBus());
+                modBus);
         zone.moddev.mc.skysgrassslabs.compat.GrassSlabsMigrationHandler.register();
         DistExecutor.runWhenOn(Dist.CLIENT,
                 () -> zone.moddev.mc.skysgrassslabs.proxy.ClientProxy::register);

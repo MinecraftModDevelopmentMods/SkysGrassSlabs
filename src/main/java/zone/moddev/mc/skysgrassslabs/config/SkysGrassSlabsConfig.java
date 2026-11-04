@@ -9,7 +9,8 @@ import java.util.List;
 import com.electronwill.nightconfig.core.CommentedConfig;
 import org.apache.commons.lang3.tuple.Pair;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLPaths;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
@@ -38,9 +39,9 @@ public final class SkysGrassSlabsConfig {
         SPEC = pair.getRight();
     }
 
-    public static void register(FMLJavaModLoadingContext context) {
-        context.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
-        context.getModEventBus()
+    public static void register(IEventBus modBus) {
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+        modBus
                 .addListener((net.minecraftforge.fml.event.config.ModConfigEvent.Loading event) -> {
                     if (event.getConfig().getSpec() == SPEC) {
                         loadedValues = event.getConfig().getConfigData();

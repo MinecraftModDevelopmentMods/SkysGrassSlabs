@@ -203,7 +203,7 @@ public final class IntegrationTestMod {
                 evidence.setProperty("reload_complete", "true");
             } else if (phase.startsWith("family-115-") || phase.startsWith("family-116-")
                     || phase.startsWith("family-117-") || phase.startsWith("family-118-")
-                    || phase.startsWith("family-119-")) {
+                    || phase.startsWith("family-119-") || phase.startsWith("family-1201-")) {
                 FamilyForwardChecks.run(world);
                 evidence.setProperty(phase.replace('-', '_') + "_complete", "true");
             } else if (phase.startsWith("owner-")) {
