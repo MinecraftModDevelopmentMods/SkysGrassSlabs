@@ -1,0 +1,21 @@
+{
+  "format": "zlib-u8-quart-volume-v1",
+  "source_minecraft": "1.16.5",
+  "source_world_sha256": "1A8DC264AFBEF2683C2D30963853B8E3D84329782D98347CB4CA44B78DE816C3",
+  "source_names": {
+    "1": "minecraft:plains",
+    "7": "minecraft:river",
+    "27": "minecraft:birch_forest",
+    "29": "minecraft:dark_forest"
+  },
+  "checked_cells": 1024,
+  "native_renamed_cells": 0,
+  "chunks": [
+    {
+      "x": 0,
+      "z": 0,
+      "cells": "eNpjZGdnZ2QHA2l2dllZxlH+KH+UP2L4AK4/KQE="
+    }
+  ],
+  "partial_chunks": []
+}

@@ -2,8 +2,14 @@
   "type": "minecraft:crafting_shapeless",
   "category": "building",
   "ingredients": [
-    { "item": "minecraft:dirt" },
-    { "tag": "forge:seeds" }
+    {
+      "item": "minecraft:dirt"
+    },
+    {
+      "tag": "forge:seeds"
+    }
   ],
-  "result": { "item": "minecraft:grass_block" }
+  "result": {
+    "item": "minecraft:grass_block"
+  }
 }

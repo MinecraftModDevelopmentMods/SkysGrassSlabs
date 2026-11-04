@@ -1,0 +1,16 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="LGPL-2.1-only"
+
+[[mods]]
+modId="grassslabs"
+version="1"
+displayName="Legacy content compatibility fixture"
+description='''Build-only source registrations for testing installed-mod replacement. This is not the original mod.'''
+
+[[dependencies.grassslabs]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1]"
+ordering="NONE"
+side="SERVER"

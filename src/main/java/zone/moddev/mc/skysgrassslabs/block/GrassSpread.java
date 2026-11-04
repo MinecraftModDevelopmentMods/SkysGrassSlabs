@@ -1,130 +1,143 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import net.minecraft.util.RandomSource;
-import javax.annotation.Nullable;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.FluidTags;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
-/** Shared vanilla-shaped grass propagation for slabs and turf. */
 public final class GrassSpread {
     private static final int SPREAD_ATTEMPTS = 4;
 
-    public static boolean canRemainGrass(ServerLevel level, BlockPos pos) {
+    public static boolean canRemainGrass(Level world, BlockPos pos) {
         BlockPos above = pos.above();
-        return level.getMaxLocalRawBrightness(above) >= 4
-                || level.getBlockState(above).getLightBlock(level, above) < level.getMaxLightLevel();
+        BlockState cover = world.getBlockState(above);
+        if (cover.is(Blocks.SNOW)
+                && cover.getValue(net.minecraft.world.level.block.SnowLayerBlock.LAYERS) == 1) {
+            return true;
+        }
+        if (cover.getFluidState().getAmount() == 8) {
+            return false;
+        }
+        // Test the cover without letting the piece's own partial shape hide it.
+        int blocked = net.minecraft.world.level.lighting.LightEngine.getLightBlockInto(
+                world, Blocks.AIR.defaultBlockState(), pos, cover, above,
+                net.minecraft.core.Direction.UP, cover.getLightBlock(world, above));
+        return blocked < world.getMaxLightLevel();
     }
 
-    public static boolean hasSpreadLight(ServerLevel level, BlockPos pos) {
+    public static boolean hasSpreadLight(Level world, BlockPos pos) {
         BlockPos above = pos.above();
-        BlockState cover = level.getBlockState(above);
-        return level.getMaxLocalRawBrightness(above) >= 9
-                && cover.getLightBlock(level, above) < level.getMaxLightLevel()
-                && !level.getFluidState(above).is(FluidTags.WATER);
+        return world.getMaxLocalRawBrightness(above) >= 9 &&
+                world.getBlockState(above).getLightBlock(world, above) < world.getMaxLightLevel() &&
+                !world.getFluidState(above).is(FluidTags.WATER);
     }
 
-    public static void spreadFrom(ServerLevel level, BlockPos source, RandomSource random,
-            @Nullable BlockPos excludedTarget) {
-        if (!level.isAreaLoaded(source, 3) || !hasSpreadLight(level, source)) {
+    public static void spreadFrom(Level world, BlockPos source, RandomSource random,
+            BlockPos excludedTarget) {
+        if (!world.isAreaLoaded(source, 3) || !hasSpreadLight(world, source)) {
             return;
         }
         for (int attempt = 0; attempt < SPREAD_ATTEMPTS; ++attempt) {
             BlockPos target = source.offset(random.nextInt(3) - 1,
                     random.nextInt(5) - 3, random.nextInt(3) - 1);
-            if (target.equals(excludedTarget) || !withinBuildHeight(level, target)
-                    || !level.isLoaded(target)) {
+            if (target.equals(excludedTarget)) {
                 continue;
             }
-            growTarget(level, target);
+            if (target.getY() < world.getMinBuildHeight() || target.getY() >= world.getMaxBuildHeight() || !world.isLoaded(target)) {
+                return;
+            }
+            growTarget(world, target, world.getBlockState(source));
         }
     }
 
-    public static void tickDirtSlab(ServerLevel level, BlockPos target, BlockState state,
+    public static void tickDirtSlab(Level world, BlockPos target, BlockState state,
             RandomSource random) {
-        if (!level.isAreaLoaded(target, 3) || !targetIsViable(level, target)) {
+        if (!world.isAreaLoaded(target, 3) || !targetIsViable(world, target)) {
             return;
         }
         for (int attempt = 0; attempt < SPREAD_ATTEMPTS; ++attempt) {
             BlockPos source = target.offset(random.nextInt(3) - 1,
-                    random.nextInt(5) - 3, random.nextInt(3) - 1);
-            if (!withinBuildHeight(level, source) || !level.isLoaded(source)) {
-                continue;
+                    random.nextInt(5) - 1, random.nextInt(3) - 1);
+            if (source.getY() < world.getMinBuildHeight() || source.getY() >= world.getMaxBuildHeight() || !world.isLoaded(source)) {
+                return;
             }
-            if (isViableSource(level, source)) {
-                level.setBlockAndUpdate(target, snowyState(level, target,
-                        ModBlocks.grassStateLike(state)));
+            if (isViableSource(world, source)) {
+                BlockState grass = GrassSlabsApi.grassFor(state, world.getBlockState(source));
+                if (grass != null) {
+                    world.setBlock(target, grass, 3);
+                }
                 return;
             }
         }
     }
 
-    public static boolean growTarget(ServerLevel level, BlockPos target) {
-        if (!targetIsViable(level, target)) {
+    public static boolean growTarget(Level world, BlockPos target) {
+        return growTarget(world, target, Blocks.GRASS_BLOCK.defaultBlockState());
+    }
+
+    private static boolean growTarget(Level world, BlockPos target, BlockState source) {
+        if (!targetIsViable(world, target)) {
             return false;
         }
-        BlockState state = level.getBlockState(target);
-        if (state.is(Blocks.DIRT)) {
-            return level.setBlockAndUpdate(target, Blocks.GRASS_BLOCK.defaultBlockState());
+        BlockState state = world.getBlockState(target);
+        if (state.getBlock() == Blocks.DIRT) {
+            BlockState grass = GrassSlabsApi.grassFor(state, source);
+            return world.setBlock(target,
+                    grass == null ? Blocks.GRASS_BLOCK.defaultBlockState() : grass, 3);
         }
-        if (state.is(ModBlocks.DIRT_SLAB.get())) {
+        if (state.getBlock() == ModBlocks.DIRT_SLAB) {
             if (state.getValue(SlabBlock.TYPE) == SlabType.DOUBLE) {
-                return level.setBlockAndUpdate(target, Blocks.GRASS_BLOCK.defaultBlockState());
+                return world.setBlock(target, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
             }
-            return level.setBlockAndUpdate(target,
-                    snowyState(level, target, ModBlocks.grassStateLike(state)));
+        }
+
+        BlockState grass = GrassSlabsApi.grassFor(state, source);
+        if (grass != null) {
+            return world.setBlock(target, grass, 3);
         }
         return false;
     }
 
-    public static boolean isViableSource(ServerLevel level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        if (!canRemainGrass(level, pos) || !hasSpreadLight(level, pos)) {
+    public static boolean isViableSource(Level world, BlockPos pos) {
+        BlockState state = world.getBlockState(pos);
+        if (!canRemainGrass(world, pos) || !hasSpreadLight(world, pos)) {
             return false;
         }
-        if (state.is(Blocks.GRASS_BLOCK)) {
+        if (state.getBlock() == Blocks.GRASS_BLOCK || GrassSlabsApi.isSpreadingGrassForm(state)) {
             return true;
         }
-        if (state.is(ModBlocks.GRASS_SLAB.get())) {
+        if (state.getBlock() == ModBlocks.GRASS_SLAB) {
             return !state.getValue(SlabBlock.WATERLOGGED);
         }
-        return state.is(ModBlocks.TURF.get())
-                && level.getBlockState(pos.below()).is(Blocks.DIRT);
+        return state.getBlock() == ModBlocks.TURF &&
+                world.getBlockState(pos.below()).getBlock() == Blocks.DIRT;
     }
 
-    private static boolean targetIsViable(ServerLevel level, BlockPos target) {
-        BlockState state = level.getBlockState(target);
-        boolean dirt = state.is(Blocks.DIRT)
-                || state.is(ModBlocks.DIRT_SLAB.get())
-                        && !state.getValue(SlabBlock.WATERLOGGED);
-        if (!dirt) {
+    private static boolean targetIsViable(Level world, BlockPos target) {
+        BlockState state = world.getBlockState(target);
+        boolean dirt = state.getBlock() == Blocks.DIRT || GrassSlabsApi.grassFor(state) != null ||
+                state.getBlock() == ModBlocks.DIRT_SLAB && !state.getValue(SlabBlock.WATERLOGGED);
+        if (!dirt || !state.getFluidState().isEmpty()
+                || state.hasProperty(SlabBlock.WATERLOGGED) && state.getValue(SlabBlock.WATERLOGGED)) {
             return false;
         }
         BlockPos above = target.above();
-        BlockState cover = level.getBlockState(above);
-        if (cover.is(ModBlocks.TURF.get()) || cover.is(ModBlocks.GRASS_SLAB.get())) {
+        BlockState cover = world.getBlockState(above);
+        // Narrow steps and corners leave full ground exposed, but still cover smaller pieces.
+        if (cover.getBlock() == ModBlocks.TURF || GrassSlabsApi.isGrassForm(cover)
+                && (!state.isCollisionShapeFullBlock(world, target)
+                        || GrassSlabsApi.coversSupport(cover, world, above))) {
             return false;
         }
-        return level.getMaxLocalRawBrightness(above) >= 4
-                && cover.getLightBlock(level, above) < level.getMaxLightLevel()
-                && !level.getFluidState(above).is(FluidTags.WATER);
-    }
-
-    private static BlockState snowyState(ServerLevel level, BlockPos pos, BlockState state) {
-        return state.hasProperty(SnowyDirtBlock.SNOWY)
-                ? state.setValue(SnowyDirtBlock.SNOWY,
-                        SnowySlabAppearance.hasNearbySnow(level, pos))
-                : state;
-    }
-
-    private static boolean withinBuildHeight(ServerLevel level, BlockPos pos) {
-        return pos.getY() >= level.getMinBuildHeight() && pos.getY() < level.getMaxBuildHeight();
+        return world.getMaxLocalRawBrightness(above) >= 4 &&
+                cover.getLightBlock(world, above) < world.getMaxLightLevel() &&
+                !world.getFluidState(above).is(FluidTags.WATER);
     }
 
     private GrassSpread() {

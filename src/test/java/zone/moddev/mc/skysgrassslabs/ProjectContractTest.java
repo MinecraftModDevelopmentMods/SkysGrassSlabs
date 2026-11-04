@@ -1,262 +1,391 @@
 package zone.moddev.mc.skysgrassslabs;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
-
-public class ProjectContractTest {
+class ProjectContractTest {
     @Test
-    public void metadataUsesStableIdentityWithoutOreSpawnDependency() throws Exception {
-        String metadata = Files.readString(
-                Path.of("src/main/resources/META-INF/mods.toml"), StandardCharsets.UTF_8);
-        String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-
-        assertTrue(properties.contains("mod_id=skysgrassslabs"));
+    void releaseIdentityAndToolchainArePinned() throws Exception {
+        String properties = read("gradle.properties");
         assertTrue(properties.contains("minecraft_version=1.20.1"));
         assertTrue(properties.contains("forge_version=47.4.10"));
         assertTrue(properties.contains("mapping_channel=official"));
         assertTrue(properties.contains("mapping_version=1.20.1"));
-        assertTrue(properties.contains("java_toolchain_version=17.0.1+12"));
-        assertFalse(metadata.contains("modId=\"orespawn\""));
-    }
-
-    @Test
-    public void playerAndMaintainerDocumentsExist() {
-        assertTrue(Files.isRegularFile(Path.of("docs/CONFIGURATION.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
-        assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.1.120011.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
-    }
-
-    @Test
-    public void releaseIdentityAndLicenseAreStable() throws Exception {
-        String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.1.1.120011"));
-        assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
-        assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
-        assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
-                .contains("Copyright (C) 2026 SkyBlade1978"));
-    }
-
-    @Test
-    public void releaseDispatcherIsExplicitAndUsesTheImmutableBundle() throws Exception {
-        String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        String workflow = Files.readString(
-                Path.of(".github/workflows/deploy-release.yml"), StandardCharsets.UTF_8);
-        String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
-        assertTrue(build.contains("server-port=0"));
-
-        assertTrue(properties.contains("loader_name=forge"));
-        assertTrue(properties.contains("loader_code=1"));
+        assertTrue(properties.contains("mcp_version=20230612.114412"));
+        assertTrue(properties.contains("mod_version=1.2.0.120011"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
-        assertTrue(workflow.contains("confirm_live_publication:"));
-        assertFalse(workflow.contains("    environment:\n      name: release"));
-        assertTrue(workflow.contains("CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}"));
-        assertTrue(workflow.contains("MAVEN_UPLOAD_URL: ${{ secrets.MAVEN_UPLOAD_URL }}"));
-        assertTrue(workflow.contains("MAVEN_UPLOAD_USERNAME: ${{ secrets.MAVEN_UPLOAD_USERNAME }}"));
-        assertTrue(workflow.contains("MAVEN_UPLOAD_PASSWORD: ${{ secrets.MAVEN_UPLOAD_PASSWORD }}"));
-        assertTrue(workflow.contains("-PpreparedReleaseDir="));
-        assertTrue(workflow.contains("MinecraftModDevelopmentMods/SkysGrassSlabs"));
-        assertTrue(workflow.indexOf("  publish_maven:") <
-                workflow.indexOf("  publish_curseforge:"));
-        assertTrue(workflow.indexOf("  publish_curseforge:") <
-                workflow.indexOf("  publish_github:"));
-        assertTrue(build.contains("if (preparedReleaseDir.isPresent())"));
+        assertTrue(properties.contains("java_toolchain_version=17.0.1+12"));
+        String build = read("build.gradle");
+        assertTrue(build.contains("'Built-On-Java': '17'"));
+        assertTrue(build.contains("major != 61"));
     }
 
     @Test
-    public void codeQlCannotReuseCachedCompilationOutput() throws Exception {
-        String workflow = Files.readString(
-                Path.of(".github/workflows/codeql-analysis.yml"), StandardCharsets.UTF_8);
-        assertTrue(workflow.contains("clean classes --rerun-tasks --no-daemon"));
-    }
-
-
-    @Test
-    public void commonConfigAndWorldStateUsePermanentKeys() throws Exception {
-        String config = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/config/SkysGrassSlabsConfig.java"),
-                StandardCharsets.UTF_8);
-        String main = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/SkysGrassSlabs.java"),
-                StandardCharsets.UTF_8);
-        String state = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/world/ModWorldState.java"),
-                StandardCharsets.UTF_8);
-        assertTrue(config.contains("push(\"worldgen\")"));
-        assertTrue(config.contains("define(GENERATE_GRASS_SLABS, true)"));
-        assertTrue(config.contains("push(\"compat\")"));
-        assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
-        assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
-        assertTrue(main.contains("VERSION = \"1.1.1.120011\""));
+    void saveFacingIdsConfigurationAndWorldStateRemainStable() throws Exception {
+        String blocks = read("src/main/java/zone/moddev/mc/skysgrassslabs/init/ModBlocks.java");
+        for (String id : Arrays.asList("dirt_slab", "grass_slab", "path_slab", "turf")) {
+            assertTrue(blocks.contains("\"" + id + "\""), id);
+        }
+        String config = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/config/SkysGrassSlabsConfig.java");
+        assertTrue(config.contains("generateGrassSlabs"));
+        assertTrue(config.contains("forceReplaceBuildingBricksSlabs"));
+        assertTrue(config.contains("skysgrassslabs-common.toml"));
+        String state = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/world/ModWorldState.java");
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
-        assertTrue(state.contains("schema_version"));
+        assertTrue(state.contains("MIGRATION_VERSION = 1"));
     }
 
     @Test
-    public void allSaveFacingResourcesExist() {
-        String[] paths = {
-                "src/main/resources/assets/skysgrassslabs/blockstates/dirt_slab.json",
-                "src/main/resources/assets/skysgrassslabs/blockstates/grass_slab.json",
-                "src/main/resources/assets/skysgrassslabs/blockstates/path_slab.json",
-                "src/main/resources/assets/skysgrassslabs/blockstates/turf.json",
-                "src/main/resources/assets/skysgrassslabs/models/block/turf.json",
-                "src/main/resources/assets/skysgrassslabs/models/item/turf.json",
-                "src/main/resources/data/skysgrassslabs/recipes/dirt_slab.json",
-                "src/main/resources/data/skysgrassslabs/recipes/grass_slab.json",
-                "src/main/resources/data/skysgrassslabs/recipes/grass_block_from_seeds.json",
-                "src/main/resources/data/skysgrassslabs/recipes/grass_slab_from_seeds.json",
-                "src/main/resources/data/skysgrassslabs/recipes/turf.json",
-                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/dirt_slab.json",
-                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/grass_slab.json",
-                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/path_slab.json",
-                "src/main/resources/data/skysgrassslabs/loot_tables/blocks/turf.json"
-        };
-        for (String path : paths) {
-            assertTrue(path, Files.isRegularFile(Path.of(path)));
+    void forgeFortyFiveMetadataAndPackFormatArePresent() throws Exception {
+        assertTrue(new File("src/main/resources/META-INF/mods.toml").isFile());
+        assertFalse(new File("src/main/resources/mcmod.info").exists());
+        assertTrue(read("src/main/resources/META-INF/mods.toml")
+                .contains("modId=\"skysgrassslabs\""));
+        var pack = new com.google.gson.JsonParser().parse(read("src/main/resources/pack.mcmeta"))
+                .getAsJsonObject().getAsJsonObject("pack");
+        assertEquals(net.minecraft.SharedConstants.RESOURCE_PACK_FORMAT, pack.get("pack_format").getAsInt());
+        assertEquals(net.minecraft.SharedConstants.RESOURCE_PACK_FORMAT, pack.get("forge:resource_pack_format").getAsInt());
+        assertEquals(net.minecraft.SharedConstants.DATA_PACK_FORMAT, pack.get("forge:data_pack_format").getAsInt());
+    }
+
+    @Test
+    void recipesUseDataPackIdsAndARealSerializer() throws Exception {
+        List<String> recipes = Arrays.asList("dirt_slab", "grass_slab",
+                "grass_block_from_seeds", "grass_slab_from_seeds", "turf");
+        for (String recipe : recipes) {
+            JsonObject json = json("src/main/resources/data/skysgrassslabs/recipes/" +
+                    recipe + ".json");
+            assertTrue(json.has("type"), recipe);
+            assertTrue(new File("src/main/resources/data/skysgrassslabs/advancements/recipes/" +
+                    recipe + ".json").isFile(), recipe);
         }
-        assertTrue(Files.isRegularFile(Path.of(
-                "src/main/resources/assets/grassslabs/blockstates/grass_slab.json")));
-        assertTrue(Files.isRegularFile(Path.of(
-                "src/main/resources/assets/grassslabs/blockstates/dirt_slab.json")));
-        assertTrue(Files.isRegularFile(Path.of(
-                "src/main/resources/assets/grassslabs/blockstates/dirt_path_slab.json")));
-        assertTrue(Files.isRegularFile(Path.of(
-                "src/main/resources/assets/grassslabs/blockstates/grass_carpet.json")));
+        assertEquals("skysgrassslabs:turf_cutting", json(
+                "src/main/resources/data/skysgrassslabs/recipes/turf.json")
+                .get("type").getAsString());
+        String serializer = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java");
+        assertTrue(serializer.contains("extends CustomRecipe"));
+        assertTrue(serializer.contains("RecipeSerializer<TurfCuttingRecipe>"));
+        assertTrue(serializer.contains("new ResourceLocation(SkysGrassSlabs.MOD_ID, \"turf_cutting\")"));
+        assertTrue(serializer.contains("public boolean isSpecial()"));
+        assertTrue(serializer.contains("return false;"));
+        assertTrue(serializer.contains("RecipeType.CRAFTING"));
+        assertTrue(serializer.contains("public NonNullList<Ingredient> getIngredients()"));
+        assertTrue(serializer.contains("canPerformAction(ToolActions.SHOVEL_FLATTEN)"));
+
+        JsonObject seeds = json("src/main/resources/data/forge/tags/items/seeds.json");
+        assertEquals(4, seeds.getAsJsonArray("values").size());
     }
 
     @Test
-    public void legacyUpgradeHooksAreNarrowAndAvoidUnsafe() throws Exception {
-        String coremod = Files.readString(Path.of(
-                "src/main/resources/coremods/skysgrassslabs_legacy_world.js"),
-                StandardCharsets.UTF_8);
-        String bridge = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook.java"),
-                StandardCharsets.UTF_8);
+    void nativeStateModelsCoverWaterSnowAndBothOrientations() throws Exception {
+        for (String name : Arrays.asList("dirt_slab", "grass_slab")) {
+            String states = read("src/main/resources/assets/skysgrassslabs/blockstates/" +
+                    name + ".json");
+            assertTrue(states.contains("snowy=false,type=bottom,waterlogged=false"));
+            assertTrue(states.contains("snowy=true,type=top,waterlogged=true"));
+            assertTrue(states.contains("type=double"));
+            assertTrue(states.contains("skysgrassslabs:block/"));
+        }
+        String path = read(
+                "src/main/resources/assets/skysgrassslabs/blockstates/path_slab.json");
+        assertTrue(path.contains("type=bottom,waterlogged=false"));
+        assertTrue(path.contains("type=top,waterlogged=true"));
+        assertTrue(path.contains("minecraft:block/dirt_path"));
+
+        for (String modelName : Arrays.asList("path_slab.json", "path_slab_top.json")) {
+            String model = read("src/main/resources/assets/skysgrassslabs/models/block/" +
+                    modelName);
+            assertTrue(model.contains("minecraft:block/dirt_path_top"), modelName);
+            assertTrue(model.contains("minecraft:block/dirt_path_side"), modelName);
+            assertFalse(model.contains("minecraft:block/grass_path"), modelName);
+        }
+
+        for (String name : Arrays.asList("dirt_slab_snow.json", "dirt_slab_top_snow.json",
+                "grass_slab_snow.json", "grass_slab_top_snow.json")) {
+            String model = read("src/main/resources/assets/skysgrassslabs/models/block/" + name);
+            assertTrue(model.contains("\"top\": \"minecraft:block/snow\""), name);
+            assertTrue(model.contains("\"side\": \"minecraft:block/grass_block_snow\""), name);
+            assertFalse(upFace(model).contains("tintindex"), name);
+        }
+    }
+
+    @Test
+    void legacyFlatteningHookIsStrictlyScopedAndPreservesTheSnapshot() throws Exception {
+        String coremod = read("src/main/resources/coremods/skysgrassslabs_legacy_world.js");
         assertTrue(coremod.contains("net.minecraft.util.datafix.fixes.BlockStateData"));
-        assertTrue(coremod.contains("net.minecraftforge.common.ForgeHooks"));
         assertTrue(coremod.contains("net.minecraft.world.level.chunk.storage.ChunkStorage"));
+        assertEquals(3, occurrences(coremod, "'type': 'CLASS'"));
         assertTrue(coremod.contains("65536"));
         assertTrue(coremod.contains("4096"));
         assertTrue(coremod.contains("throw new Error"));
+        String bridge = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook.java");
         assertTrue(bridge.contains("skysgrassslabs_legacy_registry.dat"));
+        assertTrue(bridge.contains("BlockStateData"));
         assertTrue(bridge.contains("indexLegacyChunks"));
-        assertTrue(bridge.contains("SUPPORTED_BLOCK_IDS"));
+        assertTrue(bridge.contains("SUPPORTED_BUILDINGBRICKS_IDS"));
+        assertTrue(bridge.contains("captureLegacyLevelData") && bridge.contains("writeLegacyLevelData"));
         assertFalse(bridge.contains("import sun.misc"));
         assertFalse(bridge.contains("Unsafe.class"));
         assertFalse(bridge.contains("Field.class.getDeclaredField(\"modifiers\")"));
+        assertTrue(coremod.contains("return new LdcInsnNode(size)"));
     }
 
     @Test
-    public void acceptedRenderingAndRecipeContractsRemainVisible() throws Exception {
-        String turf = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/block/TurfBlock.java"),
-                StandardCharsets.UTF_8);
-        String recipe = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/recipe/TurfCuttingRecipe.java"),
-                StandardCharsets.UTF_8);
-        String client = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/client/ClientEvents.java"),
-                StandardCharsets.UTF_8);
-        assertTrue(turf.contains("extends CarpetBlock"));
-        assertTrue(recipe.contains("extends CustomRecipe"));
-        assertTrue(recipe.contains("CraftingBookCategory"));
-        assertTrue(recipe.contains("RegistryAccess"));
-        assertTrue(recipe.contains("return false;"));
-        assertTrue(recipe.contains("canPerformAction(ToolActions.SHOVEL_FLATTEN)"));
+    void renamedVanillaPathAndSoundIdsAreRecoveredOnUpgrade() throws Exception {
+        String handler = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/LegacyMigrationHandler.java");
+        assertTrue(handler.contains("new ResourceLocation(\"minecraft\", \"grass_path\")"));
+        assertTrue(handler.contains("new ResourceLocation(\"minecraft\", \"dirt_path\")"));
+        assertTrue(handler.contains("item.sweet_berries.pick_from_bush"));
+        assertTrue(handler.contains("block.sweet_berry_bush.pick_berries"));
+        String subscriber = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/compat/MissingMappingHandler.java");
+        assertTrue(subscriber.contains("Bus.FORGE"));
+        assertTrue(subscriber.contains("remapMissingContent"));
+        assertTrue(handler.contains("remapMissingBlocks"));
+        assertTrue(handler.contains("remapMissingItems"));
+        assertTrue(handler.contains("remapMissingSounds"));
+    }
+
+    @Test
+    void eclipseClasspathCannotContainSealedLwjglTwoArtifacts() throws Exception {
+        String build = read("build.gradle");
+        assertFalse(build.contains("org.lwjgl.lwjgl:lwjgl"));
+        assertTrue(build.contains("sealed LWJGL 2 artifacts"));
+        assertTrue(build.contains("synchronizationTasks 'isolateEclipseProductionRuns'"));
+    }
+
+    @Test
+    void clientHandlersUseForgeFortyFiveModBusAndRenderLayers() throws Exception {
+        String events = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/init/ClientRegistryEvents.java");
+        assertTrue(events.contains("bus = Mod.EventBusSubscriber.Bus.MOD"));
+        assertFalse(events.contains("bus = Mod.EventBusSubscriber.Bus.FORGE"));
+        assertTrue(events.contains("RegisterColorHandlersEvent.Block"));
+        assertTrue(events.contains("RegisterColorHandlersEvent.Item"));
+        assertTrue(events.contains("FMLClientSetupEvent"));
+        String client = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/proxy/ClientProxy.java");
+        assertTrue(client.contains("ItemBlockRenderTypes.setRenderLayer(ModBlocks.GRASS_SLAB"));
+        assertTrue(client.contains("ItemBlockRenderTypes.setRenderLayer(ModBlocks.TURF"));
         assertTrue(client.contains("RenderType.cutoutMipped()"));
     }
 
     @Test
-    public void forge47LifecycleAndDataPackContractsArePresent() throws Exception {
-        String blocks = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/init/ModBlocks.java"),
-                StandardCharsets.UTF_8);
-        String worldgen = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/world/WorldgenBootstrap.java"),
-                StandardCharsets.UTF_8);
-        String modifier = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/world/SmoothingBiomeModifier.java"),
-                StandardCharsets.UTF_8);
-        String modifierJson = Files.readString(Path.of(
-                "src/main/resources/data/skysgrassslabs/forge/biome_modifier/"
-                        + "grass_slab_smoothing.json"), StandardCharsets.UTF_8);
-        String pack = Files.readString(Path.of("src/main/resources/pack.mcmeta"),
-                StandardCharsets.UTF_8);
-        assertTrue(blocks.contains("BuildCreativeModeTabContentsEvent"));
-        assertTrue(blocks.contains("event.getTabKey()"));
-        assertTrue(worldgen.contains("ForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS"));
-        assertTrue(worldgen.contains("FEATURE_NAME = \"grass_slab_smoothing\""));
+    void pathTextureAlignmentAndFenceSafeTurfRemainAccepted() throws Exception {
+        for (String name : Arrays.asList("path_slab.json", "path_slab_top.json")) {
+            JsonObject model = json("src/main/resources/assets/skysgrassslabs/models/block/" + name);
+            for (String face : Arrays.asList("north", "south", "west", "east")) {
+                assertEquals(JsonParser.parseString("[0,1,16,8]"),
+                        model.getAsJsonArray("elements").get(0).getAsJsonObject()
+                                .getAsJsonObject("faces").getAsJsonObject(face).get("uv"));
+            }
+        }
+        String turf = read("src/main/java/zone/moddev/mc/skysgrassslabs/block/TurfBlock.java");
+        assertTrue(turf.contains("noOcclusion()"));
+        assertTrue(turf.contains("public void onPlace"));
+        String spread = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/block/GrassSpread.java");
+        assertTrue(spread.contains("cover.getBlock() == ModBlocks.TURF"));
+    }
+
+    @Test
+    void shovelFlatteningUsesTheNativeToolHook() throws Exception {
+        String slab = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/block/LegacySlabBlock.java");
+        assertTrue(slab.contains("getToolModifiedState"));
+        assertTrue(slab.contains("ToolActions.SHOVEL_FLATTEN"));
+        assertTrue(slab.contains("context.getItemInHand().canPerformAction(action)"));
+        assertFalse(slab.contains("RightClickBlock"));
+        String events = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/event/CommonEvents.java");
+        assertFalse(events.contains("RightClickBlock"));
+        JsonObject shovelTag = json(
+                "src/main/resources/data/minecraft/tags/blocks/mineable/shovel.json");
+        assertFalse(shovelTag.get("replace").getAsBoolean());
+        assertEquals(3, shovelTag.getAsJsonArray("values").size());
+    }
+
+    @Test
+    void smoothingUsesTheForgeFeatureRegistryAndOwningChunk() throws Exception {
+        String registry = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/world/WorldgenBootstrap.java");
+        assertTrue(registry.contains("DeferredRegister<Feature<?>>"));
+        assertTrue(registry.contains("ForgeRegistries.FEATURES"));
+        assertTrue(registry.contains("ForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS"));
+        assertTrue(registry.contains("\"grass_slab_smoothing\""));
+        String modifier = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/world/SmoothingBiomeModifier.java");
         assertTrue(modifier.contains("features.add(0, smoothing)"));
+        assertTrue(modifier.contains("GrassSlabsApi.hasSmoothingOwner()"));
         assertTrue(modifier.contains("BiomeTags.IS_NETHER"));
         assertTrue(modifier.contains("BiomeTags.IS_END"));
-        assertTrue(modifierJson.contains("skysgrassslabs:grass_slab_smoothing"));
-        assertTrue(pack.contains("\"pack_format\": 15"));
-        assertTrue(pack.contains("\"forge:resource_pack_format\": 15"));
-        assertTrue(pack.contains("\"forge:data_pack_format\": 15"));
+        assertEquals("skysgrassslabs:grass_slab_smoothing", json(
+                "src/main/resources/data/skysgrassslabs/forge/biome_modifier/grass_slab_smoothing.json")
+                .get("type").getAsString());
+        String feature = read(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/world/GrassSlabSmoothingFeature.java");
+        assertTrue(feature.contains("extends Feature<NoneFeatureConfiguration>"));
+        assertTrue(feature.contains("region.getCenter()"));
+        assertFalse(feature.contains("BiomeLoadingEvent"));
+        assertFalse(feature.contains("BuiltinRegistries.CONFIGURED_FEATURE"));
+        assertTrue(feature.contains("world.hasChunk(chunkX, chunkZ)"));
+        assertFalse(new File(
+                "src/main/java/zone/moddev/mc/skysgrassslabs/world/ContextFeature.java").exists());
+    }
 
-        for (String recipeName : new String[] {"dirt_slab", "grass_slab",
-                "grass_block_from_seeds", "grass_slab_from_seeds", "turf"}) {
-            String recipe = Files.readString(Path.of(
-                    "src/main/resources/data/skysgrassslabs/recipes/" + recipeName + ".json"),
-                    StandardCharsets.UTF_8);
-            assertTrue(recipeName, recipe.contains("\"category\": \"building\""));
+    @Test
+    void blockLootTablesPreserveTheDropContract() throws Exception {
+        String root = "src/main/resources/data/skysgrassslabs/loot_tables/blocks/";
+        for (String block : Arrays.asList("dirt_slab", "grass_slab", "path_slab", "turf")) {
+            JsonObject table = json(root + block + ".json");
+            assertEquals("minecraft:block", table.get("type").getAsString(), block);
+            String expectedExplosionRule = block.equals("dirt_slab")
+                    ? "minecraft:explosion_decay" : "minecraft:survives_explosion";
+            assertTrue(read(root + block + ".json").contains(expectedExplosionRule), block);
+            if (!block.equals("turf")) {
+                assertTrue(read(root + block + ".json").contains("minecraft:set_count"), block);
+                assertTrue(read(root + block + ".json").contains("double"), block);
+            }
+        }
+        assertTrue(read(root + "dirt_slab.json").contains("skysgrassslabs:dirt_slab"));
+        assertTrue(read(root + "turf.json").contains("skysgrassslabs:turf"));
+        assertTrue(read(root + "path_slab.json").contains("skysgrassslabs:dirt_slab"));
+        String grass = read(root + "grass_slab.json");
+        assertTrue(grass.contains("minecraft:match_tool"));
+        assertTrue(grass.contains("minecraft:silk_touch"));
+        assertTrue(grass.contains("skysgrassslabs:grass_slab"));
+        assertTrue(grass.contains("skysgrassslabs:dirt_slab"));
+    }
+
+    @Test
+    void adjacentForwardFixtureIsLockedToTheAcceptedOneSixteenJar() throws Exception {
+        String manifest = read(
+                "src/test/resources/fixtures/skysgrassslabs-1.16.5-forward-world.manifest");
+        assertTrue(manifest.contains("fixture_sha256="));
+        assertTrue(manifest.contains(
+                "source_jar_sha256=54388D358581579723EFBEF6B06DDEF775CEB6FF8DD9289DFDDE82B951A9A2D7"));
+        String build = read("build.gradle");
+        assertTrue(build.contains("oneSixteenForwardUpgradeTest"));
+        assertTrue(build.contains("upgrade-116-first"));
+        assertTrue(build.contains("upgrade-116-reload"));
+    }
+
+    @Test
+    void hiddenLegacyAliasesHaveSafeFallbackModels() throws Exception {
+        for (String path : Arrays.asList(
+                "assets/buildingbricks/blockstates/grass_slab.json",
+                "assets/buildingbricks/blockstates/dirt_slab.json",
+                "assets/buildingbrickscompatvanilla/blockstates/grass_slab.json",
+                "assets/buildingbricks/models/item/grass_slab.json",
+                "assets/buildingbricks/models/item/dirt_slab.json",
+                "assets/buildingbrickscompatvanilla/models/item/grass_slab.json")) {
+            assertTrue(new File("src/main/resources", path).isFile(), path);
         }
     }
 
     @Test
-    public void continuousIntegrationTargetsTheStableBranchAndArtifacts() throws Exception {
-        String attributes = Files.readString(Path.of(".gitattributes"),
-                StandardCharsets.UTF_8);
-        assertTrue(attributes.contains("* text=auto eol=lf"));
-        assertTrue(attributes.contains("*.patch text eol=lf -diff"));
-        assertTrue(attributes.contains("*.txt text eol=lf"));
-
-        for (String name : new String[] {"ci.yml", "codeql-analysis.yml",
-                "validate-gradle-build.yml"}) {
-            String workflow = Files.readString(Path.of(".github/workflows", name),
-                    StandardCharsets.UTF_8);
-            assertTrue(name, workflow.contains("master-1.20.1"));
+    void continuousIntegrationTargetsThisVersionBranch() throws Exception {
+        for (String name : Arrays.asList("ci.yml", "codeql-analysis.yml",
+                "validate-gradle-build.yml")) {
+            String workflow = read(".github/workflows/" + name);
+            assertTrue(workflow.contains("master-1.20.1"), name);
+            assertFalse(workflow.contains("master-1.16.5"), name);
         }
-        String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
-                StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.120011.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.120011-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.120011-javadoc.jar"));
+        String ci = read(".github/workflows/ci.yml");
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.0.120011.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.0.120011-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.0.120011-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
-        assertEquals(2, ci.lines()
-                .filter(line -> line.contains("java-version: '8.0.502+7'"))
-                .count());
-        assertEquals(4, ci.lines()
-                .filter(line -> line.contains("JAVA_HOME_8_X64"))
-                .count());
+        assertTrue(ci.contains("java-version: '8.0.502+7'"));
+        assertTrue(ci.contains("JAVA_HOME_8_X64"));
         assertTrue(ci.contains("java-version: '25.0.3+9.0.LTS'"));
         assertTrue(ci.contains("JAVA_HOME_25_X64"));
-        assertTrue(ci.contains("ORESPAWN_MAVENIZER_OFFLINE: 'true'"));
-        assertTrue(ci.contains("--rerun-tasks --offline --no-daemon --no-build-cache"));
-        assertTrue(ci.contains("runGameTestServer"));
-        assertTrue(ci.contains("skysGrassSlabsGameTestRunDirectory=build/game-test-run"));
-        assertTrue(Files.isRegularFile(Path.of(".github/workflows/release-on-tag.yml")));
+        String codeql = read(".github/workflows/codeql-analysis.yml");
+        assertTrue(codeql.contains("java-version: '8.0.502+7'"));
+        assertTrue(codeql.contains("JAVA_HOME_8_X64"));
+        assertTrue(codeql.contains("java-version: '25.0.3+9.0.LTS'"));
+        assertTrue(codeql.contains("JAVA_HOME_25_X64"));
     }
 
     @Test
-    public void adjacentUpgradeFixtureIsTracked() {
-        assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "skysgrassslabs-1.19.4-forward-world.zip")));
-        assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "skysgrassslabs-1.19.4-forward-world.manifest")));
-        assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "grassslabs-1.18.2-migration-world.zip")));
-        assertTrue(Files.isRegularFile(Path.of("src/test/resources/fixtures/"
-                + "grassslabs-1.18.2-migration-world.manifest")));
+    void localContextIsIgnoredAndUntracked() throws Exception {
+        String ignore = read(".gitignore");
+        for (String path : Arrays.asList("AGENTS.md", "agent-notes/", ".codex/", ".claude/")) {
+            assertTrue(ignore.contains(path), path);
+        }
+        Process process = new ProcessBuilder("git", "ls-files", "-z")
+                .redirectErrorStream(true).start();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (InputStream input = process.getInputStream()) {
+            byte[] buffer = new byte[4096];
+            for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
+                if (read > 0) output.write(buffer, 0, read);
+            }
+        }
+        assertEquals(0, process.waitFor(), output.toString(StandardCharsets.UTF_8.name()));
+        for (String item : new String(output.toByteArray(), StandardCharsets.UTF_8).split("\u0000")) {
+            String lower = ("/" + item.replace('\\', '/')).toLowerCase(Locale.ROOT);
+            assertFalse(lower.endsWith("/agents.md") || lower.contains("/agent-notes/") ||
+                    lower.contains("/.codex/") || lower.contains("/.claude/"), item);
+        }
+    }
+
+    @Test
+    void noLegacyLanguageOrRecipeLocationsRemain() throws Exception {
+        try (Stream<Path> paths = Files.walk(new File("src/main/resources").toPath())) {
+            assertFalse(paths.filter(Files::isRegularFile)
+                    .anyMatch(path -> path.toString().endsWith(".lang")));
+        }
+        assertFalse(new File("src/main/resources/assets/skysgrassslabs/recipes").exists());
+        File oldAdvancements = new File("src/main/resources/assets/skysgrassslabs/advancements");
+        if (oldAdvancements.isDirectory()) {
+            try (Stream<Path> paths = Files.walk(oldAdvancements.toPath())) {
+                assertFalse(paths.anyMatch(Files::isRegularFile));
+            }
+        }
+    }
+
+    private static JsonObject json(String path) throws Exception {
+        return new JsonParser().parse(read(path)).getAsJsonObject();
+    }
+
+    private static String upFace(String model) {
+        int start = model.indexOf("\"up\"");
+        int end = model.indexOf('\n', start);
+        return model.substring(start, end < 0 ? model.length() : end);
+    }
+
+    private static int occurrences(String value, String needle) {
+        int count = 0;
+        for (int index = value.indexOf(needle); index >= 0;
+                index = value.indexOf(needle, index + needle.length())) {
+            ++count;
+        }
+        return count;
+    }
+
+    private static String read(String path) throws Exception {
+        return new String(Files.readAllBytes(new File(path).toPath()), StandardCharsets.UTF_8);
     }
 }

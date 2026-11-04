@@ -1,17 +1,32 @@
-* text=auto eol=lf
+* text=auto
+.gitattributes text eol=lf
 
 *.bat text eol=crlf
 *.gradle text eol=lf
 *.java text eol=lf
+*.js text eol=lf
 *.json text eol=lf
+*.lang text eol=lf
 *.md text eol=lf
 *.mcmeta text eol=lf
-*.patch text eol=lf -diff
 *.properties text eol=lf
-*.txt text eol=lf
 *.toml text eol=lf
 *.yml text eol=lf
 gradlew text eol=lf
 
 src/generated/**/.cache/cache text eol=lf
 src/generated/**/*.json text eol=lf
+
+# These checksum-locked fixture contracts must keep their original bytes.
+src/test/resources/fixtures/**/biomes.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+src/test/resources/fixtures/skysgrassslabs-1.16.5-forward-biomes.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+src/test/resources/fixtures/grassslabs-1.18.2-expected.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+src/test/resources/fixtures/**/SHA256SUMS text eol=lf
+
+# These five build inputs are verified byte for byte before Mavenizer starts.
+ci-fixtures/tools/** -text
+
+# Keep the historical fixture manifests in their original line-ending format.
+src/test/resources/fixtures/*.manifest text eol=crlf
+src/test/resources/fixtures/skysgrassslabs-1.18.2-forward-world.manifest text eol=lf
+src/test/resources/fixtures/skysgrassslabs-1.19.4-forward-world.manifest text eol=lf

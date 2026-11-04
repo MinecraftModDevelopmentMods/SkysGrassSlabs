@@ -1,0 +1,299 @@
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import java.util.zip.GZIPInputStream
+
+def notices = new JsonSlurper().parse(file('tools/native-log-profiles.json')).profiles
+
+ext.auditNativeLogText = { String text, Map profile, String label ->
+    text = text.replace('\r\n', '\n')
+    List<String> failures = []
+    Map observed = [:]
+    (text =~ /(?s)Unidentified mapping from registry (minecraft:[a-z_\/]+)\n(.*?)(?:\n\n)/).each { match ->
+        Map entries = [:]
+        match[2].readLines().findAll { it.trim() }.each { row ->
+            def entry = row =~ /^\s*(minecraft:[a-z_.]+): (\d+)$/
+            if (!entry.matches() || entries.containsKey(entry[0][1])) {
+                throw new GradleException("${label}: malformed or duplicate registry notice: ${row}")
+            }
+            entries[entry[0][1]] = entry[0][2].toInteger()
+        }
+        if (observed.containsKey(match[1])) {
+            throw new GradleException("${label}: repeated registry notice")
+        }
+        observed[match[1]] = entries
+    }
+    List<String> severe = text.readLines().findAll { it =~ /\/(?:ERROR|FATAL)\]|\[STDERR[\/\]]/ }
+    if (observed && (!profile || observed != profile.mappings)) {
+        throw new GradleException("${label}: unexpected missing registry entries: ${observed}")
+    }
+    Set<String> headers = observed.keySet().collect { "Unidentified mapping from registry ${it}".toString() } as Set
+    if (observed) headers.add('There are unidentified mappings in this world - we are going to attempt to process anyway')
+    Set<String> seen = [] as Set
+    severe.each { line ->
+        // Forge's normal log omits the logger; its debug format retains it.
+        def nativeEntry = line =~ /^\[[^\r\n]+\] \[main\/ERROR\](?: \[net\.minecraftforge\.registries\.GameData\/REGISTRIES\])?: (.+)$/
+        def helper = line =~ /^\[[^\r\n]+\] \[main\/ERROR\](?: \[net\.minecraftforge\.fmllegacy\.FMLWorldPersistenceHook\/WP\])?: This world was saved with mod grasssourcefixture which appears to be missing, things may not work well$/
+        if (nativeEntry.matches() && headers.contains(nativeEntry[0][1]) && seen.add(nativeEntry[0][1])) {
+            return
+        }
+        if (profile?.missing_fixture_helper && helper.matches() && seen.add('empty source fixture helper')) {
+            return
+        }
+        failures.add(line)
+    }
+    if (!seen.containsAll(headers)) failures.add('The native registry notice is incomplete')
+    for (String problem : ['Encountered an unexpected exception', 'Exception stopping the server',
+            'integration audit failed', 'Missing Mods:', 'MissingModsException', 'NoSuchMethodError',
+            'NoClassDefFoundError', 'ExceptionInInitializerError', 'cascading worldgen lag',
+            'Unable to load model', 'Unable to load blockstate', 'outside of the generating region']) {
+        if (text.contains(problem)) failures.add(problem)
+    }
+    if (failures) throw new GradleException("${label}: unexpected runtime failures:\n" + failures.join('\n'))
+}
+
+ext.auditNativeRetiredPoiProof = { Map profile, String label ->
+    if (!profile?.retired_poi_contract) return
+    File sourceFile = file(profile.retired_poi_contract.path)
+    String hash = MessageDigest.getInstance('SHA-256').digest(sourceFile.bytes)
+            .encodeHex().toString().toUpperCase(Locale.ROOT)
+    if (hash != profile.retired_poi_contract.sha256) {
+        throw new GradleException("${label}: the retired POI usage proof changed")
+    }
+    Map source = new JsonSlurper().parse(sourceFile)
+    if (source.source_world_sha256 != profile.sha256 || source.inspected_nbt_values <= 0 ||
+            source.saved_uses.keySet() != ['minecraft:nitwit', 'minecraft:unemployed'] as Set ||
+            source.saved_uses.values().any { it != 0 } ||
+            source.snapshot_entries.any { registry, entries -> profile.mappings[registry] != entries }) {
+        throw new GradleException("${label}: retired POI entries have no matching unused-content proof")
+    }
+}
+
+ext.auditNativeBiomeProof = { Map profile, Collection<String> logs, String label ->
+    Map proof = profile?.native_biome_contract
+    if (!proof) {
+        if (profile && profile.saved_uses != 0) {
+            throw new GradleException("${label}: used registry entries have no native conversion proof")
+        }
+        return
+    }
+    if (profile.static_biome_contract) {
+        File snapshotFile = file(profile.static_biome_contract.path)
+        String hash = MessageDigest.getInstance('SHA-256').digest(snapshotFile.bytes)
+                .encodeHex().toString().toUpperCase(Locale.ROOT)
+        if (hash != profile.static_biome_contract.sha256) {
+            throw new GradleException("${label}: the static biome snapshot proof changed")
+        }
+        Map snapshot = new JsonSlurper().parse(snapshotFile)
+        if (snapshot.source_world_sha256 != profile.sha256 ||
+                snapshot.snapshot_entries != profile.mappings['minecraft:worldgen/biome'] ||
+                snapshot.native_biome_contract_sha256 != proof.sha256 ||
+                snapshot.checked_cells != proof.checked_cells ||
+                snapshot.native_renamed_cells != proof.renamed_cells) {
+            throw new GradleException("${label}: static biome notices have no complete conversion proof")
+        }
+    }
+    if (profile.registry_uses_contract) {
+        File usageFile = file(profile.registry_uses_contract.path)
+        String usageHash = MessageDigest.getInstance('SHA-256').digest(usageFile.bytes)
+                .encodeHex().toString().toUpperCase(Locale.ROOT)
+        if (usageHash != profile.registry_uses_contract.sha256) {
+            throw new GradleException("${label}: the saved registry usage proof changed")
+        }
+        Map usage = new JsonSlurper().parse(usageFile)
+        if (usage.source_world_sha256 != profile.sha256 || usage.mappings != profile.mappings ||
+                usage.numeric_biome_arrays != 0 ||
+                usage.retired_poi_saved_uses.values().any { it != 0 } ||
+                usage.named_biome_cells != proof.checked_cells) {
+            throw new GradleException("${label}: the registry notice is not supported by the saved data")
+        }
+    }
+    File contract = file(proof.path)
+    String digest = MessageDigest.getInstance('SHA-256').digest(contract.bytes).encodeHex().toString().toUpperCase(Locale.ROOT)
+    Map source = new JsonSlurper().parse(contract)
+    if (digest != proof.sha256 || source.source_world_sha256 != profile.sha256
+            || source.source_minecraft != proof.source || source.checked_cells != proof.checked_cells
+            || source.native_renamed_cells != proof.renamed_cells || profile.saved_uses != proof.renamed_cells) {
+        throw new GradleException("${label}: the native biome contract does not match this fixture")
+    }
+    String marker = "GRASS_NATIVE_BIOME_UPGRADE_PASS source=${proof.source} cells=${proof.checked_cells} renamed=${proof.renamed_cells}"
+    if (!logs.any { it.contains(marker) }) {
+        throw new GradleException("${label}: the complete native biome conversion was not verified")
+    }
+}
+
+ext.auditUnusedNativeEntries = { Map profile, String label ->
+    Map contract = profile?.unused_registry_contract
+    if (!contract) return
+    File proofFile = file(contract.path)
+    byte[] contents = proofFile.bytes
+    String digest = MessageDigest.getInstance('SHA-256').digest(contents)
+            .encodeHex().toString().toUpperCase(Locale.ROOT)
+    Map proof = new JsonSlurper().parse(contents)
+    // The biome contract checks saved biome cells separately against the live world.
+    Map unusedMappings = profile.mappings.findAll { registry, entries ->
+        registry != 'minecraft:worldgen/biome'
+    }
+    Set<String> names = unusedMappings.values().collectMany { it.keySet() } as Set
+    if (digest != contract.sha256 || proof.source_world_sha256 != profile.sha256 ||
+            proof.snapshot_entries != unusedMappings || proof.inspected_nbt_values <= 0 ||
+            proof.saved_uses.keySet() != names || proof.saved_uses.values().any { it != 0 }) {
+        throw new GradleException("${label}: the registry notices have no matching unused-content proof")
+    }
+}
+
+ext.auditNativeRuntime = { File directory, String label ->
+    if (fileTree(new File(directory, 'crash-reports')).files) {
+        throw new GradleException("${label}: crash reports are present")
+    }
+    if (!new File(directory, 'logs/latest.log').isFile()) {
+        throw new GradleException("${label}: the complete current log is missing")
+    }
+    String profileName = directory.name.replaceFirst(/-attempt-\d+$/, '')
+    Map profile = notices[profileName]
+    if (profile) {
+        File fixture = file(profile.fixture)
+        String digest = MessageDigest.getInstance('SHA-256').digest(fixture.bytes).encodeHex().toString().toUpperCase(Locale.ROOT)
+        if (digest != profile.sha256) {
+            throw new GradleException("${label}: the registry proof does not match this source fixture")
+        }
+    }
+    auditNativeRetiredPoiProof(profile, label)
+    auditUnusedNativeEntries(profile, label)
+    Map<String, String> completeLogs = [:]
+    fileTree(new File(directory, 'logs')) { include '*.log', '*.log.gz' }.files.each { log ->
+        String text
+        if (log.name.endsWith('.gz')) {
+            new GZIPInputStream(new FileInputStream(log)).withCloseable { text = it.getText('UTF-8') }
+        } else {
+            text = log.getText('UTF-8')
+        }
+        completeLogs[log.name] = text
+    }
+    auditNativeBiomeProof(profile, completeLogs.values(), label)
+    completeLogs.each { name, text ->
+        auditNativeLogText(text, profile, "${label}/${name}")
+    }
+}
+
+tasks.register('verifyNativeLogControls') {
+    group = 'verification'
+    doLast {
+        Map profile = notices['family-115-upgrade-run']
+        String prefix = '[01Nov2026 00:00:00.000] [main/ERROR] [net.minecraftforge.registries.GameData/REGISTRIES]: '
+        String valid = profile.mappings.collect { registry, entries ->
+            prefix + 'Unidentified mapping from registry ' + registry + '\n' +
+                    entries.collect { name, number -> '\t' + name + ': ' + number }.join('\n') + '\n\n'
+        }.join('') + prefix + 'There are unidentified mappings in this world - we are going to attempt to process anyway\n'
+        auditNativeLogText(valid, profile, 'native control')
+        String compact = valid.replace(' [net.minecraftforge.registries.GameData/REGISTRIES]', '')
+        auditNativeLogText(compact, profile, 'compact native control')
+        auditNativeLogText('A clean native reload\n', null, 'clean control')
+        List<List> rejected = [
+                [valid, null],
+                [valid.replace('minecraft:zombie_pigman: 57', 'minecraft:zombie_pigman: 58'), profile],
+                [valid.replace('minecraft:zombie_pigman: 57', 'minecraft:unknown: 57'), profile],
+                [valid.replace('minecraft:zombie_pigman: 57', 'minecraft:zombie_pigman: 57\n\tminecraft:unknown: 58'), profile],
+                [valid.replace('[main/ERROR]', '[Server thread/ERROR]'), profile],
+                [valid.replace('GameData/REGISTRIES', 'Other/REGISTRIES'), profile],
+                [valid.replace('/ERROR]', '/FATAL]'), profile],
+                [valid.replace('minecraft:zombie_pigman: 57', 'malformed entry'), profile],
+                [valid + prefix + 'Unidentified mapping from registry minecraft:unknown\n\tminecraft:unknown: 1\n\n', profile],
+                [valid + prefix + 'An unrelated failure\n', profile],
+                [valid + '[time] [main/INFO] [STDERR/]: hidden stack trace\n', profile],
+                [valid + 'Unable to load model\n', profile],
+                [valid + 'cascading worldgen lag\n', profile],
+                [compact + prefix + 'An unrelated failure\n', profile],
+                [compact.replace('[main/ERROR]', '[Server thread/ERROR]'), profile],
+                [compact.replace('minecraft:zombie_pigman: 57', 'minecraft:zombie_pigman: 58'), profile],
+                [valid.replace('There are unidentified mappings in this world - we are going to attempt to process anyway', 'MissingModsException'), profile]]
+        rejected.eachWithIndex { candidate, index ->
+            boolean failed = false
+            try {
+                auditNativeLogText(candidate[0], candidate[1], "negative control ${index}")
+            } catch (GradleException expected) {
+                failed = true
+            }
+            if (!failed) throw new GradleException("Runtime log negative control ${index} was incorrectly accepted")
+        }
+        Map biomeProfile = notices['family-116-upgrade-run']
+        Map proof = biomeProfile.native_biome_contract
+        String biomeMarker = "GRASS_NATIVE_BIOME_UPGRADE_PASS source=${proof.source} cells=${proof.checked_cells} renamed=${proof.renamed_cells}"
+        auditNativeBiomeProof(biomeProfile, [biomeMarker], 'native biome control')
+        [[], [biomeMarker.replace('renamed=14400', 'renamed=14399')]].each { logs ->
+            boolean failed = false
+            try {
+                auditNativeBiomeProof(biomeProfile, logs, 'incomplete biome control')
+            } catch (GradleException expected) {
+                failed = true
+            }
+            if (!failed) throw new GradleException('An incomplete biome conversion was incorrectly accepted')
+        }
+        Map expanded = notices['family-118-upgrade-run']
+        Map expandedProof = expanded.native_biome_contract
+        String expandedMarker = "GRASS_NATIVE_BIOME_UPGRADE_PASS source=${expandedProof.source} cells=${expandedProof.checked_cells} renamed=${expandedProof.renamed_cells}"
+        auditNativeBiomeProof(expanded, [expandedMarker], 'expanded-height registry control')
+        List<Map> invalidRegistryProfiles = [
+                expanded + [sha256: '0' * 64],
+                expanded + [registry_uses_contract: expanded.registry_uses_contract + [sha256: '0' * 64]]
+        ]
+        invalidRegistryProfiles.each { invalid ->
+            boolean failed = false
+            try {
+                auditNativeBiomeProof(invalid, [expandedMarker], 'unbound registry proof control')
+            } catch (GradleException expected) {
+                failed = true
+            }
+            if (!failed) throw new GradleException('An unbound registry usage proof was incorrectly accepted')
+        }
+        auditNativeRetiredPoiProof(profile, 'unused POI control')
+        List<Map> invalidPoiProfiles = [
+                profile + [sha256: '0' * 64],
+                profile + [retired_poi_contract: profile.retired_poi_contract + [sha256: '0' * 64]],
+                profile + [mappings: profile.mappings + ['minecraft:point_of_interest_type':
+                        ['minecraft:nitwit': 99, 'minecraft:unemployed': 0]]]
+        ]
+        invalidPoiProfiles.each { invalid ->
+            boolean failed = false
+            try {
+                auditNativeRetiredPoiProof(invalid, 'unbound POI proof control')
+            } catch (GradleException expected) {
+                failed = true
+            }
+            if (!failed) throw new GradleException('An unbound POI proof was incorrectly accepted')
+        }
+        Map invalidStatic = biomeProfile + [static_biome_contract:
+                biomeProfile.static_biome_contract + [sha256: '0' * 64]]
+        boolean invalidStaticRejected = false
+        try {
+            auditNativeBiomeProof(invalidStatic, [biomeMarker], 'unbound static biome control')
+        } catch (GradleException expected) {
+            invalidStaticRejected = true
+        }
+        if (!invalidStaticRejected) {
+            throw new GradleException('An unbound static biome proof was incorrectly accepted')
+        }
+        Map unused = notices['family-119-upgrade-run']
+        auditUnusedNativeEntries(unused, 'unused item and sound control')
+        String retiredNotice = unused.mappings.collect { registry, entries ->
+            prefix + 'Unidentified mapping from registry ' + registry + '\n' +
+                    entries.collect { name, number -> '\t' + name + ': ' + number }.join('\n') + '\n\n'
+        }.join('') + prefix + 'There are unidentified mappings in this world - we are going to attempt to process anyway\n'
+        auditNativeLogText(retiredNotice, unused, 'retired item and sound log control')
+        List<Map> invalidUnused = [
+                unused + [sha256: '0' * 64],
+                unused + [unused_registry_contract: unused.unused_registry_contract + [sha256: '0' * 64]],
+                unused + [mappings: unused.mappings + ['minecraft:item': ['minecraft:unexpected': 1235]]]
+        ]
+        invalidUnused.each { invalid ->
+            boolean failed = false
+            try {
+                auditUnusedNativeEntries(invalid, 'unbound unused entries proof control')
+            } catch (GradleException expected) {
+                failed = true
+            }
+            if (!failed) throw new GradleException('An unbound unused registry proof was incorrectly accepted')
+        }
+        logger.lifecycle('NATIVE_LOG_CONTROLS_PASS positive=8 negative={}', rejected.size() + 11)
+    }
+}
+tasks.named('check') { dependsOn tasks.named('verifyNativeLogControls') }

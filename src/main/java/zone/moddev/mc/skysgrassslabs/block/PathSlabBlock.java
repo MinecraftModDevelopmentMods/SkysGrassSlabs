@@ -14,7 +14,9 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceGateBlock;
-import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.material.MapColor;
+import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -22,12 +24,12 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /** Lowered dirt path slab with vanilla covered path decay. */
-public final class PathSlabBlock extends SlabBlock {
+public final class PathSlabBlock extends LegacySlabBlock {
     private static final VoxelShape BOTTOM_PATH = Block.box(0, 0, 0, 16, 7, 16);
     private static final VoxelShape TOP_PATH = Block.box(0, 8, 0, 16, 15, 16);
 
-    public PathSlabBlock(Properties properties) {
-        super(properties);
+    public PathSlabBlock() {
+        super(MapColor.DIRT, SoundType.GRASS, 0.65F, false, false);
     }
 
     @Override
@@ -58,7 +60,7 @@ public final class PathSlabBlock extends SlabBlock {
             return null;
         }
 
-        return placed.getValue(WATERLOGGED) ? SlabTransitions.dirtFor(placed) : placed;
+        return placed.getValue(WATERLOGGED) ? ModBlocks.dirtStateLike(placed) : placed;
     }
 
     @Override
@@ -66,8 +68,9 @@ public final class PathSlabBlock extends SlabBlock {
             FluidState fluid) {
         boolean placed = super.placeLiquid(level, pos, state, fluid);
 
-        if (placed) {
-            level.scheduleTick(pos, this, 1);
+        if (placed && !level.isClientSide()) {
+            BlockState dirt = ModBlocks.dirtStateLike(state.setValue(WATERLOGGED, true));
+            level.setBlock(pos, Block.pushEntitiesUp(state, dirt, level, pos), Block.UPDATE_ALL);
         }
 
         return placed;
@@ -100,7 +103,7 @@ public final class PathSlabBlock extends SlabBlock {
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!canSurvive(state, level, pos)) {
-            BlockState dirt = SlabTransitions.dirtFor(state);
+            BlockState dirt = ModBlocks.dirtStateLike(state);
 
             level.setBlockAndUpdate(pos, Block.pushEntitiesUp(state, dirt, level, pos));
         }

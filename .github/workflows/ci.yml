@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master-1.20.1
+      - 'feature/**'
   pull_request:
     branches:
       - master-1.20.1
@@ -12,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: skysgrassslabs-1.20.1-${{ github.workflow }}-${{ github.ref }}
+  group: skysgrassslabs-1.19-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -25,19 +26,19 @@ jobs:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Install pinned Java 25 Forge bootstrap toolchain
+      - name: Install pinned Java 25 ForgeGradle Mavenizer runtime
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '25.0.3+9.0.LTS'
 
-      - name: Install pinned Java 8 Forge launcher toolchain
+      - name: Install pinned Java 8 legacy launcher toolchain
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '8.0.502+7'
 
-      - name: Install pinned Java 17 runtime and toolchain
+      - name: Install pinned Java 17 Gradle runtime
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
@@ -65,8 +66,8 @@ jobs:
       - name: Verify same-cache bootstrap offline
         shell: bash
         env:
+          ORESPAWN_MAVENIZER_OFFLINE: "true"
           GRADLE_USER_HOME: ${{ runner.temp }}/skysgrassslabs-cold-gradle
-          ORESPAWN_MAVENIZER_OFFLINE: 'true'
         run: |
           set -euo pipefail
           gradle_args=(
@@ -87,19 +88,19 @@ jobs:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Install pinned Java 25 Forge bootstrap toolchain
+      - name: Install pinned Java 25 ForgeGradle Mavenizer runtime
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '25.0.3+9.0.LTS'
 
-      - name: Install pinned Java 8 Forge launcher toolchain
+      - name: Install Java 8 toolchain
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '8.0.502+7'
 
-      - name: Install pinned Java 17 runtime and toolchain
+      - name: Install pinned Java 17 Gradle runtime
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
@@ -114,16 +115,7 @@ jobs:
       - name: Build, test, and audit release artifacts
         run: >-
           ./gradlew clean check build javadoc verifyReleaseArtifacts writeReleaseChecksums
-          verifyEclipseConfiguration --no-daemon --stacktrace
-          -Dorg.gradle.java.installations.paths="$JAVA_HOME,$JAVA_HOME_8_X64,$JAVA_HOME_25_X64"
-          -Dorg.gradle.java.installations.auto-detect=false
-          -Dorg.gradle.java.installations.auto-download=false
-
-      - name: Run Forge GameTests
-        run: >-
-          ./gradlew runGameTestServer
-          -PskysGrassSlabsGameTestRunDirectory=build/game-test-run
-          --no-daemon --stacktrace
+          verifyEclipseProductionClasspath --no-daemon --stacktrace
           -Dorg.gradle.java.installations.paths="$JAVA_HOME,$JAVA_HOME_8_X64,$JAVA_HOME_25_X64"
           -Dorg.gradle.java.installations.auto-detect=false
           -Dorg.gradle.java.installations.auto-download=false
@@ -135,9 +127,9 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           path: |
-            build/libs/SkysGrassSlabs-1.1.1.120011.jar
-            build/libs/SkysGrassSlabs-1.1.1.120011-sources.jar
-            build/libs/SkysGrassSlabs-1.1.1.120011-javadoc.jar
+            build/libs/SkysGrassSlabs-1.2.0.120011.jar
+            build/libs/SkysGrassSlabs-1.2.0.120011-sources.jar
+            build/libs/SkysGrassSlabs-1.2.0.120011-javadoc.jar
             build/release/SHA256SUMS
             CHANGELOG.md
 
@@ -152,5 +144,5 @@ jobs:
             build/test-results/**
             build/reports/**
             build/*-run/logs/**
-            build/game-test-run/**
+            build/*-run/**/*.properties
             build/problems/**

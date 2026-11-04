@@ -1,17 +1,15 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegisterEvent;
+import net.minecraftforge.registries.IForgeRegistry;
 
-/** Narrow compatibility boundary for supported historical slab IDs. */
+/** Narrow compatibility boundary for the supported historical slab IDs. */
 public final class BuildingBricksCompat {
     public static final String MOD_ID = "buildingbricks";
     public static final ResourceLocation GRASS_SLAB_ID =
@@ -26,10 +24,6 @@ public final class BuildingBricksCompat {
     private static Block historicalGrassSlab;
     private static boolean legacyAliasesRegistered;
 
-    public static void register(IEventBus modBus) {
-        modBus.addListener(BuildingBricksCompat::registerAliases);
-    }
-
     public static boolean isInstalled() {
         return ModList.get().isLoaded(MOD_ID);
     }
@@ -39,62 +33,48 @@ public final class BuildingBricksCompat {
     }
 
     public static Block grassSlab() {
-        return resolve(grassSlab, GRASS_SLAB_ID);
+        return grassSlab;
     }
 
     public static Block dirtSlab() {
-        return resolve(dirtSlab, DIRT_SLAB_ID);
+        return dirtSlab;
     }
 
     public static Block historicalGrassSlab() {
-        return resolve(historicalGrassSlab, HISTORICAL_GRASS_SLAB_ID);
+        return historicalGrassSlab;
     }
 
     public static boolean isGrassSlabItem(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return false;
-        }
-        Block grass = grassSlab();
-        Block historical = historicalGrassSlab();
-        return grass != null && stack.is(grass.asItem())
-                || historical != null && stack.is(historical.asItem());
+        if (stack == null || stack.isEmpty()) return false;
+        return grassSlab != null && stack.getItem() == grassSlab.asItem() ||
+                historicalGrassSlab != null && stack.getItem() == historicalGrassSlab.asItem();
     }
 
     static boolean isDirtSlabItem(ItemStack stack) {
-        Block dirt = dirtSlab();
-        return stack != null && !stack.isEmpty() && dirt != null && stack.is(dirt.asItem());
+        return stack != null && !stack.isEmpty() && dirtSlab != null &&
+                stack.getItem() == dirtSlab.asItem();
     }
 
-    private static void registerAliases(RegisterEvent event) {
-        if (isInstalled()) {
-            return;
-        }
-        if (event.getRegistryKey().equals(Registries.BLOCK)) {
-            event.register(Registries.BLOCK, GRASS_SLAB_ID,
-                    () -> grassSlab = alias(true));
-            event.register(Registries.BLOCK, DIRT_SLAB_ID,
-                    () -> dirtSlab = alias(false));
-            event.register(Registries.BLOCK, HISTORICAL_GRASS_SLAB_ID,
-                    () -> historicalGrassSlab = alias(true));
-            legacyAliasesRegistered = true;
-        } else if (event.getRegistryKey().equals(Registries.ITEM) && legacyAliasesRegistered) {
-            event.register(Registries.ITEM, GRASS_SLAB_ID, () -> aliasItem(grassSlab));
-            event.register(Registries.ITEM, DIRT_SLAB_ID, () -> aliasItem(dirtSlab));
-            event.register(Registries.ITEM, HISTORICAL_GRASS_SLAB_ID,
-                    () -> aliasItem(historicalGrassSlab));
-        }
+    public static void registerLegacyAliasBlocks(IForgeRegistry<Block> registry) {
+        if (isInstalled()) return;
+        grassSlab = new LegacySlabAliasBlock(true);
+        dirtSlab = new LegacySlabAliasBlock(false);
+        historicalGrassSlab = new LegacySlabAliasBlock(true);
+        registry.register(GRASS_SLAB_ID, grassSlab);
+        registry.register(DIRT_SLAB_ID, dirtSlab);
+        registry.register(HISTORICAL_GRASS_SLAB_ID, historicalGrassSlab);
+        legacyAliasesRegistered = true;
     }
 
-    private static Block alias(boolean grass) {
-        return new LegacySlabAliasBlock(grass);
+    public static void registerLegacyAliasItems(IForgeRegistry<Item> registry) {
+        if (!legacyAliasesRegistered) return;
+        registry.register(GRASS_SLAB_ID, aliasItem(grassSlab));
+        registry.register(DIRT_SLAB_ID, aliasItem(dirtSlab));
+        registry.register(HISTORICAL_GRASS_SLAB_ID, aliasItem(historicalGrassSlab));
     }
 
     private static Item aliasItem(Block block) {
         return new BlockItem(block, new Item.Properties());
-    }
-
-    private static Block resolve(Block cached, ResourceLocation id) {
-        return cached != null ? cached : ForgeRegistries.BLOCKS.getValue(id);
     }
 
     private BuildingBricksCompat() {

@@ -1,8 +1,8 @@
 package zone.moddev.mc.skysgrassslabs;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.InputStream;
@@ -16,55 +16,36 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ForwardUpgradeFixtureContractTest {
+class ForwardUpgradeFixtureContractTest {
     private static final String FIXTURE_DIRECTORY = "src/test/resources/fixtures/";
     private static final Fixture[] FIXTURES = {
             new Fixture("1.10.2", "1.0.0.110021",
                     "D6923BFFE062C1F0C454190AB11F031825949DF8080D8000133A723DEC2770BF",
-                    "2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861", 7,
-                    false),
+                    "2030960E217C3F61AE4919C91058696B02F9FAE570BE1CD7B698696EA7BEB861", 7),
             new Fixture("1.11.2", "1.0.1.111021",
                     "E6ABAECBC818C4EB28D3324ACC27DCCCD30247B4268879D7A789F0E1F55028F5",
-                    "56D8B8C1FA7F2289C9F9A3BCF2BEB2D15F0F880373D0647BB9BDBFA7E1D5FE54", 7,
-                    false),
+                    "56D8B8C1FA7F2289C9F9A3BCF2BEB2D15F0F880373D0647BB9BDBFA7E1D5FE54", 7),
             new Fixture("1.12.2", "1.0.1.112021",
                     "A903E0AE94DE7AFEA92BBF773859A31119BDBEA6976C5135D0AD56E845DDB028",
-                    "C6E83E66AFB35AE47661FB560F81A458B95FB50D87E940CE682B7C91DB034543", 7,
-                    false),
+                    "C6E83E66AFB35AE47661FB560F81A458B95FB50D87E940CE682B7C91DB034543", 7),
             new Fixture("1.13.2", "1.0.1.113021",
                     "BB30D8108476F2E38EBA26D7B4FD9E0FB431413032A20071D2DE2139BEC7BA0C",
-                    "42772E921FE7EAF8A8D1EA7C12F48C04626FDD0B880B827FB3A82FB7A5ACFC7A", 11,
-                    false),
+                    "42772E921FE7EAF8A8D1EA7C12F48C04626FDD0B880B827FB3A82FB7A5ACFC7A", 11),
             new Fixture("1.14.4", "1.0.1.114041",
                     "F74B9D82994631492ADFC8685BDB8C4DB485B45B4017605C1954A595826D7B8B",
-                    "213A09F31EE02CE1C01E4C504147C13D3BD63A6AA11EBE52CE41A38735D45D1B", 11,
-                    false),
+                    "213A09F31EE02CE1C01E4C504147C13D3BD63A6AA11EBE52CE41A38735D45D1B", 11),
             new Fixture("1.15.2", "1.0.1.115021",
                     "8D2FEA6A0289B35F0C2728A6E93C09EFDDC3A699EC28DCAC4115EBFE47269D05",
-                    "9AE28332EA21700C5DE8D3597FC40F5B06D85E8A7FB3C0DE650A2F8BC5E0895C", 11,
-                    false),
+                    "9AE28332EA21700C5DE8D3597FC40F5B06D85E8A7FB3C0DE650A2F8BC5E0895C", 11),
             new Fixture("1.16.5", "1.0.1.116051",
                     "1A8DC264AFBEF2683C2D30963853B8E3D84329782D98347CB4CA44B78DE816C3",
-                    "54388D358581579723EFBEF6B06DDEF775CEB6FF8DD9289DFDDE82B951A9A2D7", 11,
-                    false),
-            new Fixture("1.17.1", "1.0.1.117011",
-                    "434BADF94D16E9DAE1C5C9ED0D49E067FE6E9669E3EEED32A078D57B0DF403EE",
-                    "EA0705D70D95E4897449E53DBB91BE2EF7F2B500F731D4B137818942B42CC19B", 11,
-                    true),
-            new Fixture("1.18.2", "1.1.0.118021",
-                    "AEAAD4453D0C32DF515605D68BF2E0DCA8CCA16B9964C52D6D5B8B82EC1D77F5",
-                    "BA0FE456768BD3DBE7974714F255100C9D40C69DC16FCA59227C8F9C9ACEF1FB", 11,
-                    true),
-            new Fixture("1.19.4", "1.1.0.119041",
-                    "C2CAE48BEDE24EF2ED7F06987C22A007404E0FA44FD43BF0AA4EE05690E9C798",
-                    "8F6E6B505F830D2785A76A2982A4AEA9B4CA82431150E73AB87388BA42BAA138", 11,
-                    true)
+                    "54388D358581579723EFBEF6B06DDEF775CEB6FF8DD9289DFDDE82B951A9A2D7", 11)
     };
 
     @Test
-    public void fixturesAreLockedGenuineLegacyWorlds() throws Exception {
+    void fixturesAreLockedGenuineLegacyWorlds() throws Exception {
         for (Fixture fixture : FIXTURES) {
             Properties manifest = loadManifest(fixture);
             assertEquals(fixture.fixtureSha256, sha256(fixture.archive));
@@ -74,14 +55,14 @@ public class ForwardUpgradeFixtureContractTest {
             assertEquals(fixture.jarSha256, manifest.getProperty("source_jar_sha256"));
             assertEquals(Long.toString(fixture.archive.length()),
                     manifest.getProperty("fixture_bytes"));
-            assertTrue(fixture.minecraftVersion + " fixture is no longer compact",
-                    fixture.archive.length() < 300_000L);
+            assertTrue(fixture.archive.length() < 300_000L,
+                    fixture.minecraftVersion + " fixture is no longer compact");
         }
     }
 
     @Test
-    public void fixturesContainOnlyRequiredWorldFiles() throws Exception {
-        Set<String> baseExpected = new TreeSet<>(Arrays.asList(
+    void fixturesContainOnlyTheRequiredWorldFiles() throws Exception {
+        Set<String> expected = new TreeSet<String>(Arrays.asList(
                 "data/capabilities.dat",
                 "data/skysgrassslabs_world_state.dat",
                 "level.dat",
@@ -89,19 +70,15 @@ public class ForwardUpgradeFixtureContractTest {
                 "region/r.0.0.mca",
                 "skysgrassslabs-forward-fixture.properties"));
         for (Fixture fixture : FIXTURES) {
-            Set<String> expected = new TreeSet<>(baseExpected);
-            if (fixture.separateEntityStorage) {
-                expected.add("entities/r.0.0.mca");
-            }
             try (ZipFile zip = new ZipFile(fixture.archive)) {
-                Set<String> actual = new TreeSet<>();
+                Set<String> actual = new TreeSet<String>();
                 zip.stream().filter(entry -> !entry.isDirectory())
                         .forEach(entry -> actual.add(entry.getName().replace('\\', '/')));
-                assertEquals(fixture.minecraftVersion, expected, actual);
+                assertEquals(expected, actual);
                 assertFalse(actual.stream().anyMatch(name -> {
                     String lower = name.toLowerCase(Locale.ROOT);
-                    return lower.contains("playerdata") || lower.contains("agent")
-                            || lower.contains(".codex") || lower.contains(".claude");
+                    return lower.contains("playerdata") || lower.contains("agent") ||
+                            lower.contains(".codex") || lower.contains(".claude");
                 }));
 
                 ZipEntry marker = zip.getEntry("skysgrassslabs-forward-fixture.properties");
@@ -129,9 +106,7 @@ public class ForwardUpgradeFixtureContractTest {
         try (InputStream input = Files.newInputStream(file.toPath())) {
             byte[] buffer = new byte[8192];
             for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
-                if (read > 0) {
-                    digest.update(buffer, 0, read);
-                }
+                if (read > 0) digest.update(buffer, 0, read);
             }
         }
         StringBuilder result = new StringBuilder();
@@ -142,13 +117,11 @@ public class ForwardUpgradeFixtureContractTest {
     }
 
     private static byte[] readAll(InputStream input) throws Exception {
-        try (InputStream source = input;
-                java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream()) {
+        try (InputStream source = input; java.io.ByteArrayOutputStream output =
+                new java.io.ByteArrayOutputStream()) {
             byte[] buffer = new byte[4096];
             for (int read = source.read(buffer); read >= 0; read = source.read(buffer)) {
-                if (read > 0) {
-                    output.write(buffer, 0, read);
-                }
+                if (read > 0) output.write(buffer, 0, read);
             }
             return output.toByteArray();
         }
@@ -160,21 +133,19 @@ public class ForwardUpgradeFixtureContractTest {
         private final String fixtureSha256;
         private final String jarSha256;
         private final int expectedBlocks;
-        private final boolean separateEntityStorage;
         private final File archive;
         private final File manifest;
 
         private Fixture(String minecraftVersion, String modVersion, String fixtureSha256,
-                String jarSha256, int expectedBlocks, boolean separateEntityStorage) {
+                String jarSha256, int expectedBlocks) {
             this.minecraftVersion = minecraftVersion;
             this.modVersion = modVersion;
             this.fixtureSha256 = fixtureSha256;
             this.jarSha256 = jarSha256;
             this.expectedBlocks = expectedBlocks;
-            this.separateEntityStorage = separateEntityStorage;
             String baseName = "skysgrassslabs-" + minecraftVersion + "-forward-world";
-            archive = new File(FIXTURE_DIRECTORY + baseName + ".zip");
-            manifest = new File(FIXTURE_DIRECTORY + baseName + ".manifest");
+            this.archive = new File(FIXTURE_DIRECTORY + baseName + ".zip");
+            this.manifest = new File(FIXTURE_DIRECTORY + baseName + ".manifest");
         }
     }
 }

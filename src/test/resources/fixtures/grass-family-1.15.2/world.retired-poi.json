@@ -1,0 +1,15 @@
+{
+  "source_world_sha256": "15CF16E1CE347C1D85B524D07B9D167AE82423AE240F354F617648EB5FF6D93C",
+  "snapshot_entries": {
+    "minecraft:point_of_interest_type": {
+      "minecraft:nitwit": 11,
+      "minecraft:unemployed": 0
+    }
+  },
+  "saved_uses": {
+    "minecraft:nitwit": 0,
+    "minecraft:unemployed": 0
+  },
+  "inspected_nbt_values": 225955,
+  "reason": "These retired vanilla POI names occur only in the registry snapshot"
+}

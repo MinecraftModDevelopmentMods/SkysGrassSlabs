@@ -1,0 +1,26 @@
+{
+  "source_world_sha256": "1A8DC264AFBEF2683C2D30963853B8E3D84329782D98347CB4CA44B78DE816C3",
+  "snapshot_entries": {
+    "minecraft:point_of_interest_type": {
+      "minecraft:nitwit": 11,
+      "minecraft:unemployed": 0
+    },
+    "minecraft:block": {
+      "minecraft:sign": 150,
+      "minecraft:wall_sign": 155
+    }
+  },
+  "saved_uses": {
+    "minecraft:nitwit": 0,
+    "minecraft:unemployed": 0,
+    "minecraft:sign": 0,
+    "minecraft:wall_sign": 0
+  },
+  "inspected_nbt_values": 1372,
+  "inspected_records": {
+    "nbt_files": 4,
+    "nbt_values": 1372,
+    "region_files": 1,
+    "region_records": 1
+  }
+}

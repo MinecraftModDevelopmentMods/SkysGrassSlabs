@@ -33,7 +33,7 @@ public final class GrassSlabsMigrationGameTests {
         BlockState convertedGrass = GrassSlabsMigrationHandler.replacement(grass,
                 GrassSlabsMigrationHandler.LegacyKind.GRASS_SLAB,
                 Blocks.DIRT.defaultBlockState());
-        require(helper, convertedGrass.is(ModBlocks.GRASS_SLAB.get())
+        require(helper, convertedGrass.is(ModBlocks.GRASS_SLAB)
                         && convertedGrass.getValue(SlabBlock.TYPE) == SlabType.TOP
                         && convertedGrass.getValue(SlabBlock.WATERLOGGED)
                         && !convertedGrass.getValue(SnowyDirtBlock.SNOWY),
@@ -44,7 +44,7 @@ public final class GrassSlabsMigrationGameTests {
         BlockState convertedDirt = GrassSlabsMigrationHandler.replacement(dirt,
                 GrassSlabsMigrationHandler.LegacyKind.DIRT_SLAB,
                 Blocks.DIRT.defaultBlockState());
-        require(helper, convertedDirt.is(ModBlocks.DIRT_SLAB.get())
+        require(helper, convertedDirt.is(ModBlocks.DIRT_SLAB)
                         && convertedDirt.getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
                 "dirt slab state was not preserved");
 
@@ -54,7 +54,7 @@ public final class GrassSlabsMigrationGameTests {
         BlockState convertedPath = GrassSlabsMigrationHandler.replacement(path,
                 GrassSlabsMigrationHandler.LegacyKind.PATH_SLAB,
                 Blocks.DIRT.defaultBlockState());
-        require(helper, convertedPath.is(ModBlocks.PATH_SLAB.get())
+        require(helper, convertedPath.is(ModBlocks.PATH_SLAB)
                         && convertedPath.getValue(SlabBlock.TYPE) == SlabType.TOP
                         && convertedPath.getValue(SlabBlock.WATERLOGGED),
                 "path slab state was not preserved");
@@ -86,7 +86,7 @@ public final class GrassSlabsMigrationGameTests {
         BlockState unsafe = GrassSlabsMigrationHandler.replacement(carpet,
                 GrassSlabsMigrationHandler.LegacyKind.GRASS_CARPET,
                 Blocks.STONE.defaultBlockState());
-        require(helper, safe != null && safe.is(ModBlocks.TURF.get()),
+        require(helper, safe != null && safe.is(ModBlocks.TURF),
                 "dirt-supported grass carpet did not become turf");
         require(helper, unsafe == null, "unsafe grass carpet was not preserved");
 
