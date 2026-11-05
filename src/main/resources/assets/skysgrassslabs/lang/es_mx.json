@@ -2,5 +2,11 @@
   "block.skysgrassslabs.dirt_slab": "Losa de tierra",
   "block.skysgrassslabs.grass_slab": "Losa de pasto",
   "block.skysgrassslabs.path_slab": "Losa de sendero de pasto",
-  "block.skysgrassslabs.turf": "Tapete de pasto"
+  "block.skysgrassslabs.turf": "Tapete de pasto",
+  "config.skysgrassslabs.generateGrassSlabs": "Generar losas de césped",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs": "Reemplazar losas antiguas",
+  "config.skysgrassslabs.generateGrassSlabs.tooltip": "Añade losas de hierba a pendientes nuevas del mundo normal. Con Terrain Smoother, solo controla la hierba. Los chunks existentes no cambian. Reinicia Minecraft.",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip": "Opción de compatibilidad con mundos antiguos. Déjala desactivada en packs normales de Minecraft 1.21.1. Las losas antiguas se recuperan automáticamente. Reinicia Minecraft.",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent": "Reemplazar contenido de Grass Slabs",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent.tooltip": "Convierte el contenido compatible de Grass Slabs mientras está instalado. La recuperación automática sigue activa al quitarlo. Reinicia Minecraft."
 }

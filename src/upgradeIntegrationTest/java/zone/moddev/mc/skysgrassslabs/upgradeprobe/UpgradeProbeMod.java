@@ -31,7 +31,9 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.ForgeRegistries;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsCompat;
@@ -48,6 +50,12 @@ public final class UpgradeProbeMod {
     private static String observedStates = "";
 
     public UpgradeProbeMod() {
+        if (System.getProperty("skysgrassslabs.clientProbePhase") != null) {
+            if (FMLEnvironment.dist == Dist.CLIENT) {
+                ClientRuntimeProbe.register();
+            }
+            return;
+        }
         ServerStartedEvent.BUS.addListener(UpgradeProbeMod::serverStarted);
         TickEvent.ServerTickEvent.Post.BUS.addListener(UpgradeProbeMod::serverTick);
     }

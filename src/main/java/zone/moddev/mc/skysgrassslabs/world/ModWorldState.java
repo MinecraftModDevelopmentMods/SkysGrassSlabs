@@ -16,7 +16,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraft.util.datafix.DataFixTypes;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 
 /** Persistent schema and aggregate historical-slab migration totals. */
@@ -24,10 +23,12 @@ public final class ModWorldState extends SavedData {
     public static final String DATA_NAME = "skysgrassslabs_world_state";
     public static final int SCHEMA_VERSION = 1;
     public static final int MIGRATION_VERSION = 1;
-    private static final SavedDataType<ModWorldState> TYPE = new SavedDataType<>(
+    // Older saves may have no DataVersion. The vanilla map fixer would move
+    // our counters out of the data section, so let our codec read them directly.
+    static final SavedDataType<ModWorldState> TYPE = new SavedDataType<>(
             Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, DATA_NAME), ModWorldState::new,
             CompoundTag.CODEC.xmap(ModWorldState::new, ModWorldState::saveTag),
-            DataFixTypes.SAVED_DATA_MAP_DATA);
+            null);
 
     private long migratedChunks;
     private long migratedGrassBlocks;
@@ -327,7 +328,7 @@ public final class ModWorldState extends SavedData {
         }
     }
 
-    private CompoundTag saveTag() {
+    CompoundTag saveTag() {
         CompoundTag tag = new CompoundTag();
         tag.putInt("schema_version", SCHEMA_VERSION);
         tag.putInt("buildingbricks_migration_version", MIGRATION_VERSION);
