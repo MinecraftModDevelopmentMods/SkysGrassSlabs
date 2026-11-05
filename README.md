@@ -5,7 +5,7 @@ thin layer of turf. Grass spreads naturally between full blocks and slabs,
 while new Overworld terrain uses grass slabs to soften suitable one block
 steps.
 
-This branch is for Minecraft 1.21.1. Version `1.1.1.121011` requires Forge
+This branch is for Minecraft 1.21.1. Version `1.2.0.121011` requires Forge
 52.1.0 or a compatible Forge 52 build and Java 21.
 
 ## Installation
@@ -20,6 +20,7 @@ or updating world changing mods.
 - Combine two matching slabs into the corresponding vanilla block.
 - Let grass spread between full blocks, slabs and turf.
 - Use a shovel on dirt or grass slabs to create lowered dirt path slabs.
+- Craft two matching dirt or grass slabs back into their original block.
 - Cut turf from grass without consuming the shovel.
 - Let sheep eat turf and regrow their wool.
 - Add grass slabs to suitable slopes in newly generated Overworld chunks.
@@ -34,7 +35,7 @@ or updating world changing mods.
 - [Gameplay and recipes](docs/GAMEPLAY.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Upgrading an older world](docs/WORLD-UPGRADES.md)
-- [Release notes](docs/RELEASE-1.1.1.121011.md)
+- [Release notes](docs/RELEASE-1.2.0.121011.md)
 
 ## License
 

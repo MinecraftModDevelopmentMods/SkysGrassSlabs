@@ -10,7 +10,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.util.datafix.DataFixTypes;
 
 /** Persistent schema and aggregate historical-slab migration totals. */
 public final class ModWorldState extends SavedData {
@@ -56,10 +55,13 @@ public final class ModWorldState extends SavedData {
         if (!(level instanceof ServerLevel serverLevel)) {
             return new ModWorldState();
         }
-        SavedData.Factory<ModWorldState> factory = new SavedData.Factory<>(
-                ModWorldState::new, (tag, registries) -> new ModWorldState(tag),
-                DataFixTypes.SAVED_DATA_MAP_DATA);
-        return serverLevel.getDataStorage().computeIfAbsent(factory, DATA_NAME);
+        return serverLevel.getDataStorage().computeIfAbsent(factory(), DATA_NAME);
+    }
+
+    static SavedData.Factory<ModWorldState> factory() {
+        // Older Grass Slabs saves may have no DataVersion. The vanilla map
+        // fixer would move our counters out of the data section in those saves.
+        return new SavedData.Factory<>(ModWorldState::new, (tag, registries) -> new ModWorldState(tag), null);
     }
 
     public void recordChunk() {

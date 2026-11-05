@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowLayerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LightEngine;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Vanilla light and water rules adapted for slab identities. */
@@ -37,6 +38,7 @@ final class SoilLifecycle {
         // block's own collision shape.
         BlockState lightState = state.is(ModBlocks.GRASS_SLAB.get())
                 || state.is(ModBlocks.TURF.get())
+                || GrassSlabsApi.isGrassForm(state)
                 ? Blocks.AIR.defaultBlockState() : state;
         int blocked = LightEngine.getLightBlockInto(level, lightState, pos, cover, above,
                 Direction.UP, cover.getLightBlock(level, above));
