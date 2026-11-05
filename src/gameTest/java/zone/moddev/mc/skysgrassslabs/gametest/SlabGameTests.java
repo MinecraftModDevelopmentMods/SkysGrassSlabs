@@ -268,14 +268,17 @@ public final class SlabGameTests {
         require(helper, grass.canSustainPlant(bottom, helper.getLevel(), pos, Direction.UP,
                 Blocks.DANDELION.defaultBlockState()).isFalse(),
                 "bottom grass slab sustained a plant");
-        require(helper, !grass.canSustainPlant(top, helper.getLevel(), pos, Direction.UP,
-                Blocks.DANDELION.defaultBlockState()).isFalse(),
-                "top grass slab rejected a plant");
-
         helper.getLevel().setBlock(pos, top, Block.UPDATE_ALL);
+        require(helper, Blocks.DANDELION.defaultBlockState().canSurvive(helper.getLevel(), pos.above())
+                        && Blocks.OAK_SAPLING.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
+                "flowers and saplings must survive on a top grass slab");
+        require(helper, !Blocks.WHEAT.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
+                "grass slabs must not replace farmland");
         require(helper, Blocks.SNOW.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
                 "snow did not survive on a top grass slab");
         helper.getLevel().setBlock(pos, bottom, Block.UPDATE_ALL);
+        require(helper, !Blocks.DANDELION.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
+                "a flower survived on a bottom grass slab");
         require(helper, !Blocks.SNOW.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
                 "snow survived on a bottom grass slab");
         BlockState snowBlockAppearance = grass.updateShape(top, Direction.UP,

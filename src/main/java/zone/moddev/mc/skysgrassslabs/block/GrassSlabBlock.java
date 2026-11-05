@@ -117,8 +117,7 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
                 || direction != Direction.UP) {
             return TriState.FALSE;
         }
-        return Blocks.GRASS_BLOCK.defaultBlockState()
-                .canSustainPlant(level, pos, direction, plant);
+        return PlantSoilView.supports(Blocks.GRASS_BLOCK.defaultBlockState(), level, pos, direction, plant);
     }
 
     @Override
