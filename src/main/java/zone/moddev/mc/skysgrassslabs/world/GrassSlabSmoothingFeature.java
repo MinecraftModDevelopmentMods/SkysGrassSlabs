@@ -9,6 +9,7 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,6 +19,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 import zone.moddev.mc.skysgrassslabs.config.SkysGrassSlabsConfig;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
@@ -36,7 +38,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         WorldGenLevel level = context.level();
-        if (!SkysGrassSlabsConfig.isSmoothingActive()
+        if (GrassSlabsApi.hasSmoothingOwner() || !SkysGrassSlabsConfig.isSmoothingActive()
                 || level.getLevel().dimension() != Level.OVERWORLD) {
             return false;
         }
@@ -44,7 +46,12 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 ? level.getChunk(region.getCenter().x, region.getCenter().z)
                 : level.getChunk(context.origin());
         ChunkPos ownerPos = owner.getPos();
-        if (LegacyWorldDataHook.isLegacyChunk(ownerPos.x, ownerPos.z)) {
+        if (LegacyWorldDataHook.isSavedOverworldChunk(ownerPos.x, ownerPos.z)) {
+            return false;
+        }
+        StructureProtection structures = StructureProtection.read(owner, position ->
+                level.hasChunk(position.x, position.z) ? level.getChunk(position.x, position.z) : null);
+        if (!structures.canInspectSafely()) {
             return false;
         }
 
@@ -52,6 +59,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
         Arrays.fill(buffer.heights, MISSING);
         Arrays.fill(buffer.grass, false);
         Arrays.fill(buffer.candidates, false);
+        Arrays.fill(buffer.originalTargets, null);
         BlockPos.MutableBlockPos cursor = buffer.cursor;
 
         for (int haloZ = 0; haloZ < HALO_WIDTH; ++haloZ) {
@@ -72,7 +80,9 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 if (surfaceY != MISSING) {
                     cursor.set(chunk.getPos().getMinBlockX() + x, surfaceY,
                             chunk.getPos().getMinBlockZ() + z);
-                    buffer.grass[index] = chunk.getBlockState(cursor).is(Blocks.GRASS_BLOCK);
+                    BlockState surface = chunk.getBlockState(cursor);
+                    buffer.grass[index] = surface.is(Blocks.GRASS_BLOCK)
+                            || surface.is(Blocks.DIRT) && isGrassCap(chunk.getBlockState(cursor.above()));
                 }
             }
         }
@@ -88,7 +98,11 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 }
                 cursor.set(minX + localX, y + 1, minZ + localZ);
                 BlockState target = owner.getBlockState(cursor);
-                boolean clear = target.isAir() && owner.getBlockEntityNbt(cursor) == null;
+                if (structures.contains(cursor) || structures.contains(cursor.below())
+                        || target.getBlock() instanceof DoublePlantBlock && structures.contains(cursor.above())) {
+                    continue;
+                }
+                boolean clear = SmoothingFoliage.canReplace(level, owner, cursor);
                 boolean dry = target.getFluidState().isEmpty();
                 cursor.setY(y);
                 BlockState support = owner.getBlockState(cursor);
@@ -97,11 +111,15 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
                 int south = haloIndex(localX + 1, localZ + 2);
                 int west = haloIndex(localX, localZ + 1);
                 int east = haloIndex(localX + 2, localZ + 1);
-                buffer.candidates[localZ << 4 | localX] = SmoothingDecision.shouldPlace(
+                int index = localZ << 4 | localX;
+                buffer.candidates[index] = SmoothingDecision.shouldPlace(
                         y, buffer.heights[north], buffer.heights[south],
                         buffer.heights[west], buffer.heights[east], buffer.grass[center],
                         buffer.grass[north], buffer.grass[south], buffer.grass[west],
                         buffer.grass[east], clear, dry, supported);
+                if (buffer.candidates[index]) {
+                    buffer.originalTargets[index] = target;
+                }
             }
         }
 
@@ -118,12 +136,21 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
             int localZ = index >>> 4;
             int y = buffer.heights[haloIndex(localX + 1, localZ + 1)];
             cursor.set(minX + localX, y + 1, minZ + localZ);
-            if (!level.ensureCanWrite(cursor) || !owner.getBlockState(cursor).isAir()
-                    || !owner.getFluidState(cursor).isEmpty()
-                    || owner.getBlockEntityNbt(cursor) != null) {
+            BlockState target = buffer.originalTargets[index];
+            boolean tallPlant = target.getBlock() instanceof DoublePlantBlock;
+            if (!level.ensureCanWrite(cursor) || !level.ensureCanWrite(cursor.below())
+                    || tallPlant && !level.ensureCanWrite(cursor.above())
+                    || owner.getBlockState(cursor) != target
+                    || !SmoothingFoliage.canReplace(level, owner, cursor)) {
                 continue;
             }
             owner.setBlockState(cursor, slab, false);
+            if (owner.getBlockState(cursor) != slab) {
+                continue;
+            }
+            if (tallPlant) {
+                owner.setBlockState(cursor.above(), Blocks.AIR.defaultBlockState(), false);
+            }
             cursor.setY(y);
             if (owner.getBlockState(cursor).is(Blocks.GRASS_BLOCK)) {
                 owner.setBlockState(cursor, Blocks.DIRT.defaultBlockState(), false);
@@ -135,14 +162,37 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
 
     private static int surfaceY(ChunkAccess chunk, int localX, int localZ,
             BlockPos.MutableBlockPos cursor) {
-        int y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, localX, localZ);
+        // The generation map is not retained on every finished chunk at the border.
+        // The live surface map counts the same blocks and is already up to date there.
+        Heightmap.Types heightmap = Heightmap.Types.WORLD_SURFACE_WG;
+        if (!chunk.hasPrimedHeightmap(heightmap)) {
+            heightmap = Heightmap.Types.WORLD_SURFACE;
+            if (!chunk.hasPrimedHeightmap(heightmap)) {
+                return MISSING;
+            }
+        }
+        int y = chunk.getHeight(heightmap, localX, localZ);
         int minY = chunk.getMinBuildHeight();
         int x = chunk.getPos().getMinBlockX() + localX;
         int z = chunk.getPos().getMinBlockZ() + localZ;
-        while (y >= minY && chunk.getBlockState(cursor.set(x, y, z)).isAir()) {
+        while (y >= minY) {
+            BlockState state = chunk.getBlockState(cursor.set(x, y, z));
+            if (!state.isAir() && !SmoothingFoliage.isPlant(state)) {
+                break;
+            }
+            --y;
+        }
+        if (y > minY && isGrassCap(chunk.getBlockState(cursor.set(x, y, z)))
+                && chunk.getBlockState(cursor.below()).is(Blocks.DIRT)) {
             --y;
         }
         return y >= minY ? y : MISSING;
+    }
+
+    private static boolean isGrassCap(BlockState state) {
+        return state.is(ModBlocks.GRASS_SLAB.get())
+                && state.getValue(SlabBlock.TYPE) == SlabType.BOTTOM
+                && !state.getValue(SlabBlock.WATERLOGGED);
     }
 
     private static int haloIndex(int x, int z) {
@@ -153,6 +203,7 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
         private final int[] heights = new int[HALO_WIDTH * HALO_WIDTH];
         private final boolean[] grass = new boolean[HALO_WIDTH * HALO_WIDTH];
         private final boolean[] candidates = new boolean[256];
+        private final BlockState[] originalTargets = new BlockState[256];
         private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
     }
 }

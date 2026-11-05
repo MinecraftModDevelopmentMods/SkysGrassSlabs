@@ -75,28 +75,40 @@ function initializeCoreMod() {
                 'name': 'net.neoforged.neoforge.common.CommonHooks'
             },
             'transformer': function(classNode) {
-                var patched = false;
-                for (var methodIndex = 0; methodIndex < classNode.methods.size(); ++methodIndex) {
-                    var method = classNode.methods.get(methodIndex);
-                    if (method.desc !== '(Lnet/minecraft/nbt/CompoundTag;'
-                            + 'Lnet/minecraft/world/level/storage/LevelStorageSource$LevelDirectory;)V') {
-                        continue;
+                var readMethods = 0;
+                var writeMethods = 0;
+                var owner = 'zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook';
+                for (var index = 0; index < classNode.methods.size(); ++index) {
+                    var method = classNode.methods.get(index);
+                    var reading = method.name === 'readAdditionalLevelSaveData' &&
+                            method.desc === '(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/world/level/storage/LevelStorageSource$LevelDirectory;)V';
+                    var writing = method.name === 'writeAdditionalLevelSaveData' &&
+                            method.desc === '(Lnet/minecraft/world/level/storage/WorldData;' +
+                                    'Lnet/minecraft/nbt/CompoundTag;)V';
+                    if (!reading && !writing) continue;
+                    if (reading) ++readMethods;
+                    else ++writeMethods;
+                    var callback = reading ? 'captureLegacyLevelData' : 'writeLegacyLevelData';
+                    var existingCalls = 0;
+                    for (var instruction = method.instructions.getFirst(); instruction !== null;
+                            instruction = instruction.getNext()) {
+                        if (instruction instanceof MethodInsnNode && instruction.owner === owner &&
+                                instruction.name === callback) ++existingCalls;
                     }
+                    if (existingCalls > 1) {
+                        throw new Error("Sky's Grass Slabs found duplicate NeoForge 21.1 level hooks");
+                    }
+                    if (existingCalls === 1) continue;
                     var prefix = new InsnList();
-                    prefix.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                    prefix.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                    prefix.add(new MethodInsnNode(
-                            Opcodes.INVOKESTATIC,
-                            'zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook',
-                            'captureLegacyLevelData',
-                            '(Lnet/minecraft/nbt/CompoundTag;'
-                                    + 'Lnet/minecraft/world/level/storage/LevelStorageSource$LevelDirectory;)V',
-                            false));
+                    prefix.add(new VarInsnNode(Opcodes.ALOAD, reading ? 0 : 1));
+                    if (reading) prefix.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                    prefix.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, callback,
+                            reading ? '(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/world/level/storage/LevelStorageSource$LevelDirectory;)V' :
+                                    '(Lnet/minecraft/nbt/CompoundTag;)V', false));
                     method.instructions.insert(prefix);
-                    patched = true;
                 }
-                if (!patched) {
-                    throw new Error("Sky's Grass Slabs could not patch NeoForge 21.1 level data");
+                if (readMethods !== 1 || writeMethods !== 1) {
+                    throw new Error("Sky's Grass Slabs could not find the exact NeoForge 21.1 level methods");
                 }
                 return classNode;
             }
@@ -110,28 +122,56 @@ function initializeCoreMod() {
                 var patched = false;
                 for (var methodIndex = 0; methodIndex < classNode.methods.size(); ++methodIndex) {
                     var method = classNode.methods.get(methodIndex);
-                    if (method.desc.indexOf('Ljava/util/function/Supplier;'
-                            + 'Lnet/minecraft/nbt/CompoundTag;') < 0
-                            || !method.desc.endsWith('Lnet/minecraft/nbt/CompoundTag;')) {
+                    if (method.desc !== '(Lnet/minecraft/resources/ResourceKey;' +
+                            'Ljava/util/function/Supplier;Lnet/minecraft/nbt/CompoundTag;Ljava/util/Optional;)' +
+                            'Lnet/minecraft/nbt/CompoundTag;') {
                         continue;
                     }
+
+                    var owner = 'zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook';
+                    var preparations = 0;
+                    var finalizations = 0;
+                    var returns = 0;
+                    for (var existing = method.instructions.getFirst(); existing !== null;
+                            existing = existing.getNext()) {
+                        if (existing.getOpcode() === Opcodes.ARETURN) {
+                            ++returns;
+                        }
+                        if (existing instanceof MethodInsnNode && existing.owner === owner) {
+                            if (existing.name === 'prepareLegacyChunk') ++preparations;
+                            if (existing.name === 'finalizeLegacyChunk') ++finalizations;
+                        }
+                    }
+                    if (returns === 0) {
+                        throw new Error("Sky's Grass Slabs found no NeoForge 21.1 chunk return");
+                    }
+                    if (preparations !== 0 || finalizations !== 0) {
+                        if (preparations !== 1 || finalizations !== returns) {
+                            throw new Error("Sky's Grass Slabs found a partial NeoForge 21.1 chunk patch");
+                        }
+                        patched = true;
+                        continue;
+                    }
+
                     var prefix = new InsnList();
                     prefix.add(new VarInsnNode(Opcodes.ALOAD, 3));
                     prefix.add(new MethodInsnNode(
                             Opcodes.INVOKESTATIC,
-                            'zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook',
+                            owner,
                             'prepareLegacyChunk',
                             '(Lnet/minecraft/nbt/CompoundTag;)V',
                             false));
                     method.instructions.insert(prefix);
+
                     for (var instruction = method.instructions.getFirst(); instruction !== null;
                             instruction = instruction.getNext()) {
                         if (instruction.getOpcode() === Opcodes.ARETURN) {
                             method.instructions.insertBefore(instruction, new MethodInsnNode(
                                     Opcodes.INVOKESTATIC,
-                                    'zone/moddev/mc/skysgrassslabs/compat/LegacyWorldDataHook',
+                                    owner,
                                     'finalizeLegacyChunk',
-                                    '(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;',
+                                    '(Lnet/minecraft/nbt/CompoundTag;)' +
+                                    'Lnet/minecraft/nbt/CompoundTag;',
                                     false));
                         }
                     }

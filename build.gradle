@@ -573,6 +573,8 @@ tasks.matching { it.name == 'prepareRunGameTestServer' || it.name == 'runGameTes
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {
+    // Empty resource directories should not change the jar.
+    includeEmptyDirs = false
     preserveFileTimestamps = false
     reproducibleFileOrder = true
 }

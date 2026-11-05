@@ -5,12 +5,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.concurrent.ConcurrentCommentedConfig;
 import org.apache.commons.lang3.tuple.Pair;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.IConfigSpec.ILoadedConfig;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
 /** Common configuration and one-time migration from the 1.10 configuration file. */
 public final class SkysGrassSlabsConfig {
@@ -23,7 +29,12 @@ public final class SkysGrassSlabsConfig {
 
     private static final Common COMMON;
     private static final ModConfigSpec SPEC;
+    private static volatile ModConfig commonConfig;
     private static volatile boolean compatibilitySuppressed;
+    private static boolean settingsActivated;
+    private static boolean activeGrassGeneration;
+    private static boolean activeLegacyReplacement;
+    private static boolean activeGrassSlabsReplacement;
 
     static {
         Pair<Common, ModConfigSpec> pair = new ModConfigSpec.Builder().configure(Common::new);
@@ -31,8 +42,13 @@ public final class SkysGrassSlabsConfig {
         SPEC = pair.getRight();
     }
 
-    public static void register(ModContainer modContainer) {
-        modContainer.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+    public static void register(IEventBus modBus, ModContainer container) {
+        container.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+        modBus.addListener((ModConfigEvent.Loading event) -> {
+            if (event.getConfig().getSpec() == SPEC) {
+                commonConfig = event.getConfig();
+            }
+        });
     }
 
     public static void migrateLegacyConfig() {
@@ -65,7 +81,7 @@ public final class SkysGrassSlabsConfig {
             return true;
         } catch (IOException exception) {
             SkysGrassSlabs.LOGGER.warn("Could not migrate the legacy Sky's Grass Slabs config; "
-                    + "built-in defaults will be used", exception);
+                    + "NeoForge defaults will be used", exception);
             return false;
         }
     }
@@ -94,19 +110,71 @@ public final class SkysGrassSlabsConfig {
     }
 
     public static boolean generateGrassSlabs() {
-        return COMMON.generateGrassSlabs.get();
+        return settingsActivated ? activeGrassGeneration : COMMON.generateGrassSlabs.get();
     }
 
     public static boolean forceReplaceBuildingBricksSlabs() {
-        return COMMON.forceReplaceBuildingBricksSlabs.get();
+        return settingsActivated ? activeLegacyReplacement : COMMON.forceReplaceBuildingBricksSlabs.get();
     }
 
     public static boolean forceReplaceGrassSlabsModContent() {
-        return COMMON.forceReplaceGrassSlabsModContent.get();
+        return settingsActivated ? activeGrassSlabsReplacement : COMMON.forceReplaceGrassSlabsModContent.get();
+    }
+
+    public static boolean configuredGrassSlabsReplacement() {
+        return COMMON.forceReplaceGrassSlabsModContent.getRaw();
+    }
+
+    /** Keep a running world on its startup settings when the Config screen saves new choices. */
+    public static void activateSettingsForThisRun() {
+        activeGrassGeneration = COMMON.generateGrassSlabs.get();
+        activeLegacyReplacement = COMMON.forceReplaceBuildingBricksSlabs.get();
+        activeGrassSlabsReplacement = COMMON.forceReplaceGrassSlabsModContent.get();
+        settingsActivated = true;
+    }
+
+    public static boolean configuredGrassGeneration() {
+        return COMMON.generateGrassSlabs.getRaw();
+    }
+
+    public static boolean configuredLegacyReplacement() {
+        return COMMON.forceReplaceBuildingBricksSlabs.getRaw();
+    }
+
+    public static void saveForNextStart(boolean generateGrass, boolean replaceLegacy) {
+        saveForNextStart(generateGrass, replaceLegacy, configuredGrassSlabsReplacement());
+    }
+
+    public static void saveForNextStart(boolean generateGrass, boolean replaceLegacy,
+            boolean replaceGrassSlabs) {
+        ModConfig config = commonConfig;
+        ILoadedConfig loaded = config == null ? null : config.getLoadedConfig();
+        if (loaded == null) {
+            throw new IllegalStateException("Grass Slabs settings have not loaded yet");
+        }
+        CommentedConfig values = loaded.config();
+        // Keep all three changes together under NightConfig's write lock, then
+        // let NeoForge save the file and notify any reload listeners.
+        if (values instanceof ConcurrentCommentedConfig concurrent) {
+            concurrent.bulkCommentedUpdate(view -> {
+                setChoices(view, generateGrass, replaceLegacy, replaceGrassSlabs);
+            });
+        } else {
+            setChoices(values, generateGrass, replaceLegacy, replaceGrassSlabs);
+        }
+        loaded.save();
+    }
+
+    private static void setChoices(CommentedConfig values, boolean generateGrass,
+            boolean replaceLegacy, boolean replaceGrassSlabs) {
+        values.set("worldgen." + GENERATE_GRASS_SLABS, generateGrass);
+        values.set("compat." + FORCE_REPLACE_BUILDINGBRICKS_SLABS, replaceLegacy);
+        values.set("compat." + FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, replaceGrassSlabs);
     }
 
     public static boolean isSmoothingActive() {
-        return generateGrassSlabs() && !compatibilitySuppressed;
+        return generateGrassSlabs() && !compatibilitySuppressed
+                && GrassSlabsApi.ownerAllowsGeneration();
     }
 
     public static void suppressSmoothingForThisRun() {
@@ -115,6 +183,7 @@ public final class SkysGrassSlabsConfig {
 
     static void resetRunStateForTests() {
         compatibilitySuppressed = false;
+        settingsActivated = false;
     }
 
     private static final class Common {
