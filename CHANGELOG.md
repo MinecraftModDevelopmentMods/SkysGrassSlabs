@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0.2603002
+
+- Grass Slabs can share grass growth and path behaviour with Building Pieces.
+- Terrain Smoother takes over new terrain when installed, with the usual Grass Slabs setting for grass pieces.
+
 ## 1.1.3.2603002 - Minecraft 26.3 (NeoForge)
 
 - Fixed crashes when starting the mod or loading a world with newer NeoForge

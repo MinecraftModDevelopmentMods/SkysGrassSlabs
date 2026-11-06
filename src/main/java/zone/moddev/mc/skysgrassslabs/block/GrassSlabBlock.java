@@ -2,6 +2,7 @@ package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.TriState;
 
@@ -13,12 +14,14 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.placement.VegetationPlacements;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ScheduledTickAccess;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BonemealSource;
@@ -30,8 +33,11 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.TreeFeature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.neoforged.neoforge.common.extensions.IBlockExtension;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
+import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Grass slab with target aware spreading and top slab vegetation behaviour. */
@@ -104,6 +110,16 @@ public final class GrassSlabBlock extends SlabBlock
     }
 
     @Override
+    public boolean onTreeGrow(BlockState state, WorldGenLevel level,
+            BiConsumer<BlockPos, BlockState> placeBlock, RandomSource random, BlockPos pos,
+            TreeFeature tree) {
+        // Trees decorating a chunk can reach slabs that were already saved.
+        return level instanceof WorldGenRegion region
+                && region.getLevel().dimension() == Level.OVERWORLD
+                && LegacyWorldDataHook.isSavedOverworldChunk(pos.getX() >> 4, pos.getZ() >> 4);
+    }
+
+    @Override
     public TriState canSustainPlant(BlockState state, BlockGetter level, BlockPos pos,
             Direction direction, BlockState plant) {
 
@@ -111,7 +127,7 @@ public final class GrassSlabBlock extends SlabBlock
                 || direction != Direction.UP) {
             return TriState.FALSE;
         }
-        return TriState.TRUE;
+        return PlantSoilView.supports(Blocks.GRASS_BLOCK.defaultBlockState(), level, pos, direction, plant);
     }
 
     @Override
@@ -186,8 +202,6 @@ public final class GrassSlabBlock extends SlabBlock
     }
 
     private static void dirtifyGrassSupport(Level level, BlockPos pos) {
-        if (!level.isClientSide() && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
-            level.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_CLIENTS);
-        }
+        GrassSlabsApi.repairSupport(level, pos);
     }
 }

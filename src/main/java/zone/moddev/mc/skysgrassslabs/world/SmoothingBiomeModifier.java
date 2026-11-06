@@ -11,6 +11,7 @@ import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.neoforged.neoforge.common.world.BiomeGenerationSettingsBuilder;
 import net.neoforged.neoforge.common.world.BiomeModifier;
 import net.neoforged.neoforge.common.world.ModifiableBiomeInfo.BiomeInfo;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
 /** Adds the smoother before vegetation in every non-Nether, non-End biome. */
 public final class SmoothingBiomeModifier implements BiomeModifier {
@@ -20,10 +21,9 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
     private SmoothingBiomeModifier() {
     }
 
-    @Override
     public void modify(Holder<Biome> biome, Phase phase, BiomeInfo.Builder builder) {
         Holder<PlacedFeature> smoothing = WorldgenBootstrap.placedFeature();
-        if (phase != Phase.AFTER_EVERYTHING || smoothing == null
+        if (phase != Phase.AFTER_EVERYTHING || smoothing == null || GrassSlabsApi.hasSmoothingOwner()
                 || biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END)) {
             return;
         }
@@ -35,7 +35,7 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
         }
     }
 
-    /** Newer NeoForge builds provide registry access alongside the biome. */
+    @Override
     public void modify(RegistryAccess registries, Holder<Biome> biome,
             Phase phase, BiomeInfo.Builder builder) {
         modify(biome, phase, builder);
