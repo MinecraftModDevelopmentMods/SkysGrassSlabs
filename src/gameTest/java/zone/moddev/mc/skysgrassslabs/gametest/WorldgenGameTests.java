@@ -1,6 +1,7 @@
 package zone.moddev.mc.skysgrassslabs.gametest;
 
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.Identifier;
@@ -9,6 +10,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
@@ -52,6 +54,8 @@ public final class WorldgenGameTests {
 
         BlockPos center = new BlockPos(owner.getMinBlockX() + 8, y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, center, center.east());
+        helper.getLevel().setBlock(center.above(), Blocks.SHORT_GRASS.defaultBlockState(),
+                Block.UPDATE_ALL);
 
         BlockPos border = new BlockPos(owner.getMinBlockX(), y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, border, border.west());
@@ -70,6 +74,18 @@ public final class WorldgenGameTests {
         helper.getLevel().setBlock(chest, Blocks.CHEST.defaultBlockState(), Block.UPDATE_ALL);
 
         helper.runAfterDelay(5, () -> {
+            // The test uses live chunks, so prepare the worldgen heightmap
+            // that the normal generation pipeline supplies before decoration.
+            var level = helper.getLevel();
+            var surfaceTypes = Set.of(Heightmap.Types.WORLD_SURFACE_WG);
+            for (int chunkX = owner.x() - 1; chunkX <= owner.x() + 1; chunkX++) {
+                for (int chunkZ = owner.z() - 1; chunkZ <= owner.z() + 1; chunkZ++) {
+                    if (level.hasChunk(chunkX, chunkZ)) {
+                        Heightmap.primeHeightmaps(level.getChunk(chunkX, chunkZ), surfaceTypes);
+                    }
+                }
+            }
+
             GrassSlabSmoothingFeature feature = new GrassSlabSmoothingFeature(
                     NoneFeatureConfiguration.CODEC);
             FeaturePlaceContext<NoneFeatureConfiguration> context = new FeaturePlaceContext<>(
@@ -79,7 +95,7 @@ public final class WorldgenGameTests {
                     center, NoneFeatureConfiguration.INSTANCE);
             require(helper, feature.place(context), "controlled feature pass made no changes");
             require(helper, helper.getLevel().getBlockState(center.above())
-                    .is(ModBlocks.GRASS_SLAB.get()), "one-block transition was not smoothed");
+                    .is(ModBlocks.GRASS_SLAB.get()), "short grass prevented a valid one-block transition");
             require(helper, helper.getLevel().getBlockState(border.above())
                     .is(ModBlocks.GRASS_SLAB.get()), "owning-chunk border transition was not smoothed");
             require(helper, helper.getLevel().getBlockState(border.west().above())

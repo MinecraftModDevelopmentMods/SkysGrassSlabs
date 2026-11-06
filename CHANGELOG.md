@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0.2602002
+
+- Grass Slabs can share grass growth and path behaviour with Building Pieces.
+- Terrain Smoother takes over new terrain when installed, with the usual Grass Slabs setting for grass pieces.
+
 ## 1.1.2.2602002 - Minecraft 26.2 (NeoForge)
 
 - Corrected snowy grass slabs so their top surface uses snow instead of green

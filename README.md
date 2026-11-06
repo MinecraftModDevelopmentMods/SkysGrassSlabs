@@ -5,7 +5,7 @@ thin layer of turf. Grass spreads naturally between full blocks and slabs,
 while new Overworld terrain uses grass slabs to soften suitable one block
 steps.
 
-This branch is for Minecraft 26.2. Version `1.1.2.2602002` requires NeoForge
+This branch is for Minecraft 26.2. Version `1.2.0.2602002` requires NeoForge
 26.2.0.45-beta and Java 25.
 
 ## Installation
@@ -13,6 +13,9 @@ This branch is for Minecraft 26.2. Version `1.1.2.2602002` requires NeoForge
 Place the mod jar in the `mods` folder. It must be installed on both the client
 and server for multiplayer. Back up an existing world before adding, removing
 or updating world changing mods.
+
+When Sky’s Terrain Smoother is installed, it handles new terrain for both mods.
+Grass Slabs still controls whether it places grass pieces.
 
 ## Highlights
 
@@ -34,7 +37,7 @@ or updating world changing mods.
 - [Gameplay and recipes](docs/GAMEPLAY.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Upgrading an older world](docs/WORLD-UPGRADES.md)
-- [Release notes](docs/RELEASE-1.1.2.2602002.md)
+- [Release notes](docs/RELEASE-1.2.0.2602002.md)
 
 ## License
 

@@ -338,6 +338,7 @@ tasks.register('writeReleaseChecksums') {
     group = 'verification'
     dependsOn tasks.named('verifyReleaseArtifacts')
     def output = layout.buildDirectory.file('release/SHA256SUMS')
+    inputs.files(releaseFiles.map { names -> names.collect { layout.buildDirectory.file("libs/${it}") } })
     outputs.file(output)
     doLast {
         File libs = layout.buildDirectory.dir('libs').get().asFile
@@ -575,6 +576,38 @@ tasks.matching { it.name == 'prepareRunGameTestServer' || it.name == 'runGameTes
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {
+    includeEmptyDirs = false
     preserveFileTimestamps = false
     reproducibleFileOrder = true
+}
+
+def upgradeIntegrationClasses = layout.buildDirectory.dir(
+        'upgrade-integration-fixture/classes')
+tasks.register('compileUpgradeIntegrationTestMod', JavaCompile) {
+    dependsOn tasks.named('classes')
+    source fileTree('src/upgradeIntegrationTest/java')
+    classpath = files(sourceSets.main.output, sourceSets.main.compileClasspath)
+    destinationDirectory = upgradeIntegrationClasses
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+    options.encoding = 'UTF-8'
+}
+tasks.register('upgradeIntegrationTestModJar', Jar) {
+    dependsOn tasks.named('compileUpgradeIntegrationTestMod')
+    archiveFileName = 'upgradeprobe.jar'
+    destinationDirectory = layout.buildDirectory.dir('upgrade-integration-fixture')
+    from upgradeIntegrationClasses
+    exclude '**/InstalledGrassSlabsTestMod.class'
+    from 'src/upgradeIntegrationTest/resources'
+}
+tasks.register('installedGrassSlabsIntegrationTestModJar', Jar) {
+    dependsOn tasks.named('compileUpgradeIntegrationTestMod')
+    archiveFileName = 'installed-grassslabs-upgradeprobe.jar'
+    destinationDirectory = layout.buildDirectory.dir('upgrade-integration-fixture')
+    from upgradeIntegrationClasses
+    from 'src/upgradeIntegrationTest/installed-grassslabs'
+}
+tasks.named('check').configure {
+    dependsOn tasks.named('upgradeIntegrationTestModJar')
+    dependsOn tasks.named('installedGrassSlabsIntegrationTestModJar')
 }
