@@ -32,6 +32,7 @@ import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.neoforged.neoforge.common.ItemAbility;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Grass slab with target aware spreading and top slab vegetation behaviour. */
@@ -118,7 +119,7 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
                 || direction != Direction.UP) {
             return TriState.FALSE;
         }
-        return TriState.TRUE;
+        return PlantSoilView.supports(Blocks.GRASS_BLOCK.defaultBlockState(), level, pos, direction, plant);
     }
 
     @Override
@@ -190,8 +191,6 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     private static void dirtifyGrassSupport(Level level, BlockPos pos) {
-        if (!level.isClientSide() && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
-            level.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_CLIENTS);
-        }
+        GrassSlabsApi.repairSupport(level, pos);
     }
 }

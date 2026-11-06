@@ -2,5 +2,11 @@
   "block.skysgrassslabs.dirt_slab": "Eanstufn",
   "block.skysgrassslabs.grass_slab": "Grosstufn",
   "block.skysgrassslabs.path_slab": "Steigstufn",
-  "block.skysgrassslabs.turf": "Grassodn"
+  "block.skysgrassslabs.turf": "Grassodn",
+  "config.skysgrassslabs.generateGrassSlabs": "Grasstufen erzeugen",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs": "Alte Stufen ersetzen",
+  "config.skysgrassslabs.generateGrassSlabs.tooltip": "Fügt Grasplatten an neuen Hängen der Oberwelt hinzu. Mit Terrain Smoother steuert dies nur Gras. Bestehende Chunks bleiben unverändert. Minecraft neu starten.",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip": "Kompatibilitätseinstellung für alte Welten. In normalen 1.21.1-Modpacks ausgeschaltet lassen. Alte Platten werden automatisch wiederhergestellt. Minecraft neu starten.",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent": "Grass Slabs-Inhalte ersetzen",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent.tooltip": "Wandelt unterstützte Inhalte von Grass Slabs um, solange die Mod installiert ist. Nach dem Entfernen bleibt die automatische Wiederherstellung aktiv. Minecraft neu starten."
 }
