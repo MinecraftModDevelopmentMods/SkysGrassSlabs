@@ -5,8 +5,8 @@ thin layer of turf. Grass spreads naturally between full blocks and slabs,
 while new Overworld terrain uses grass slabs to soften suitable one block
 steps.
 
-This branch is for Minecraft 26.3. Version `1.1.2.2603001` requires Forge
-66.0.0 or a compatible Forge 66 build and Java 25.
+This branch is for Minecraft 26.3. Version `1.2.0.2603001` requires Forge
+66.0.2 or a compatible Forge 66 build and Java 25.
 
 ## Installation
 
@@ -17,7 +17,8 @@ or updating world changing mods.
 ## Highlights
 
 - Place dirt, grass and dirt path slabs in either half of a block.
-- Combine two matching slabs into the corresponding vanilla block.
+- Combine two matching slabs into the corresponding vanilla block,
+  or craft them back into a block.
 - Let grass spread between full blocks, slabs and turf.
 - Use a shovel on dirt or grass slabs to create lowered dirt path slabs.
 - Cut turf from grass without consuming the shovel.
@@ -29,12 +30,15 @@ or updating world changing mods.
 - Recover selected grass slabs and grass carpet when replacing a compatible
   older mod.
 
+Sky's Terrain Smoother handles generation when installed. Grass Slabs' own
+generation setting still decides whether grass is included.
+
 ## Guides
 
 - [Gameplay and recipes](docs/GAMEPLAY.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Upgrading an older world](docs/WORLD-UPGRADES.md)
-- [Release notes](docs/RELEASE-1.1.2.2603001.md)
+- [Release notes](docs/RELEASE-1.2.0.2603001.md)
 
 ## License
 

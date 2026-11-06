@@ -10,6 +10,7 @@ import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraftforge.common.world.BiomeModifier;
 import net.minecraftforge.common.world.ModifiableBiomeInfo.BiomeInfo;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
 /** Adds the smoother before vegetation in every non-Nether, non-End biome. */
 public final class SmoothingBiomeModifier implements BiomeModifier {
@@ -22,7 +23,7 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
     @Override
     public void modify(Holder<Biome> biome, Phase phase, BiomeInfo.Builder builder) {
         Holder<PlacedFeature> smoothing = WorldgenBootstrap.placedFeature();
-        if (phase != Phase.AFTER_EVERYTHING || smoothing == null
+        if (phase != Phase.AFTER_EVERYTHING || smoothing == null || GrassSlabsApi.hasSmoothingOwner()
                 || biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END)) {
             return;
         }

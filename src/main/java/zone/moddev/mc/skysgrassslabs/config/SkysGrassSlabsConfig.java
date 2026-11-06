@@ -5,12 +5,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import com.electronwill.nightconfig.core.CommentedConfig;
 import org.apache.commons.lang3.tuple.Pair;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
 /** Common configuration and one-time migration from the 1.10 configuration file. */
 public final class SkysGrassSlabsConfig {
@@ -23,7 +26,12 @@ public final class SkysGrassSlabsConfig {
 
     private static final Common COMMON;
     private static final ForgeConfigSpec SPEC;
+    private static CommentedConfig loadedValues;
     private static volatile boolean compatibilitySuppressed;
+    private static boolean settingsActivated;
+    private static boolean activeGrassGeneration;
+    private static boolean activeLegacyReplacement;
+    private static boolean activeGrassSlabsReplacement;
 
     static {
         Pair<Common, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder().configure(Common::new);
@@ -33,6 +41,11 @@ public final class SkysGrassSlabsConfig {
 
     public static void register(FMLJavaModLoadingContext context) {
         context.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+        ModConfigEvent.Loading.getBus(context.getModBusGroup()).addListener(event -> {
+            if (event.getConfig().getSpec() == SPEC) {
+                loadedValues = event.getConfig().getConfigData();
+            }
+        });
     }
 
     public static void migrateLegacyConfig() {
@@ -94,19 +107,66 @@ public final class SkysGrassSlabsConfig {
     }
 
     public static boolean generateGrassSlabs() {
-        return COMMON.generateGrassSlabs.get();
+        return settingsActivated ? activeGrassGeneration : configuredGrassGeneration();
     }
 
     public static boolean forceReplaceBuildingBricksSlabs() {
-        return COMMON.forceReplaceBuildingBricksSlabs.get();
+        return settingsActivated ? activeLegacyReplacement : configuredLegacyReplacement();
     }
 
     public static boolean forceReplaceGrassSlabsModContent() {
+        return settingsActivated ? activeGrassSlabsReplacement : configuredGrassSlabsReplacement();
+    }
+
+    public static boolean configuredGrassSlabsReplacement() {
         return COMMON.forceReplaceGrassSlabsModContent.get();
     }
 
+    /** Keep a running world on its startup settings when the Config screen saves new choices. */
+    public static void activateSettingsForThisRun() {
+        activeGrassGeneration = configuredGrassGeneration();
+        activeLegacyReplacement = configuredLegacyReplacement();
+        activeGrassSlabsReplacement = configuredGrassSlabsReplacement();
+        settingsActivated = true;
+    }
+
+    public static boolean configuredGrassGeneration() {
+        return COMMON.generateGrassSlabs.get();
+    }
+
+    public static boolean configuredLegacyReplacement() {
+        return COMMON.forceReplaceBuildingBricksSlabs.get();
+    }
+
+    public static void saveForNextStart(boolean generateGrass, boolean replaceLegacy) {
+        saveForNextStart(generateGrass, replaceLegacy, configuredGrassSlabsReplacement());
+    }
+
+    public static void saveForNextStart(boolean generateGrass, boolean replaceLegacy,
+            boolean replaceGrassSlabs) {
+        if (loadedValues == null) {
+            throw new IllegalStateException("Grass Slabs settings have not loaded yet");
+        }
+        // Forge autosaves each edit. Publish the complete choices together so
+        // its file watcher cannot reload between the three setting changes.
+        CommentedConfig pending = CommentedConfig.copy(loadedValues);
+        CommentedConfig worldgen = CommentedConfig.copy(loadedValues.get("worldgen"));
+        CommentedConfig compatibility = CommentedConfig.copy(loadedValues.get("compat"));
+        worldgen.set(GENERATE_GRASS_SLABS, generateGrass);
+        compatibility.set(FORCE_REPLACE_BUILDINGBRICKS_SLABS, replaceLegacy);
+        compatibility.set(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, replaceGrassSlabs);
+        pending.set("worldgen", worldgen);
+        pending.set("compat", compatibility);
+        loadedValues.putAll(pending);
+        // Refresh the screen's choices while retaining the active session's
+        // startup settings until Minecraft is restarted.
+        SPEC.afterReload();
+        SPEC.save();
+    }
+
     public static boolean isSmoothingActive() {
-        return generateGrassSlabs() && !compatibilitySuppressed;
+        return generateGrassSlabs() && !compatibilitySuppressed
+                && GrassSlabsApi.ownerAllowsGeneration();
     }
 
     public static void suppressSmoothingForThisRun() {
@@ -115,6 +175,7 @@ public final class SkysGrassSlabsConfig {
 
     static void resetRunStateForTests() {
         compatibilitySuppressed = false;
+        settingsActivated = false;
     }
 
     private static final class Common {

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/shared_grass_forms_keep_their_orientation_and_water",
+  "max_ticks": 100,
+  "structure": "forge:empty8x4x8"
+}

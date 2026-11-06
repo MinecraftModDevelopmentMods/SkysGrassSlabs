@@ -47,6 +47,7 @@ import net.minecraftforge.gametest.GameTestPrefix;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSpread;
@@ -707,6 +708,52 @@ public final class SlabGameTests {
         return recipe.matches(grid, helper.getLevel())
                 && recipe.assemble(grid)
                         .is(ModBlocks.GRASS_SLAB_ITEM.get());
+    }
+
+    @GameTest(structure = EMPTY)
+    public static void sharedGrassFormsKeepTheirOrientationAndWater(GameTestHelper helper) {
+        for (SlabType half : new SlabType[] {SlabType.BOTTOM, SlabType.TOP}) {
+            for (boolean waterlogged : new boolean[] {false, true}) {
+                BlockState dirt = ModBlocks.DIRT_SLAB.get().defaultBlockState()
+                        .setValue(SlabBlock.TYPE, half).setValue(SlabBlock.WATERLOGGED, waterlogged);
+                BlockState grass = GrassSlabsApi.grassFor(dirt);
+                require(helper, grass != null && grass.is(ModBlocks.GRASS_SLAB.get()),
+                        "The shared catalogue is missing a native grass slab form");
+                require(helper, grass.getValue(SlabBlock.TYPE) == half
+                                && grass.getValue(SlabBlock.WATERLOGGED) == waterlogged,
+                        "The shared catalogue changed a slab's orientation or water");
+                require(helper, GrassSlabsApi.dirtFor(grass) == dirt
+                                && GrassSlabsApi.isSpreadingGrassForm(grass) == !waterlogged,
+                        "The shared catalogue changed the dirt form or wet grass behaviour");
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(structure = EMPTY)
+    public static void twoMatchingSlabsCraftBackToOneBlock(GameTestHelper helper) {
+        verifyRecombination(helper, "dirt_from_slabs",
+                new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get()), Blocks.DIRT);
+        verifyRecombination(helper, "grass_from_slabs",
+                new ItemStack(ModBlocks.GRASS_SLAB_ITEM.get()), Blocks.GRASS_BLOCK);
+        helper.succeed();
+    }
+
+    private static void verifyRecombination(GameTestHelper helper, String recipeName,
+            ItemStack slab, Block fullBlock) {
+        CraftingRecipe recipe = (CraftingRecipe) helper.getLevel().recipeAccess()
+                .byKey(ResourceKey.create(Registries.RECIPE,
+                        Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, recipeName)))
+                .orElseThrow().value();
+        CraftingInput grid = craftingGrid(2, 1, slab.copy(), slab.copy());
+        require(helper, recipe.matches(grid, helper.getLevel()),
+                "Matching slabs did not fit the recombination recipe");
+        ItemStack result = recipe.assemble(grid);
+        require(helper, result.is(fullBlock.asItem()) && result.getCount() == 1,
+                "Two slabs must give back exactly one full block");
+        CraftingInput singleSlab = craftingGrid(1, 1, slab.copy());
+        require(helper, !recipe.matches(singleSlab, helper.getLevel()),
+                "A single slab must not give back a full block");
     }
 
     private static CraftingInput craftingGrid(int width, int height, ItemStack... stacks) {

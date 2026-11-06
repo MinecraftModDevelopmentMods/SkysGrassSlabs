@@ -1,6 +1,8 @@
 package zone.moddev.mc.skysgrassslabs.mixin;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.storage.LevelStorageSource;
+import net.minecraft.world.level.storage.WorldData;
 import net.minecraftforge.common.ForgeHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,5 +18,11 @@ abstract class ForgeHooksMixin {
             LevelStorageSource.LevelStorageAccess access,
             LevelStorageSource.LevelDirectory levelDirectory, CallbackInfo callback) {
         LegacyWorldDataHook.captureLegacyLevelData(access, levelDirectory);
+    }
+
+    @Inject(method = "writeAdditionalLevelSaveData", at = @At("TAIL"))
+    private static void skysgrassslabs$preserveLegacyLevelData(
+            WorldData worldData, CompoundTag levelTag, CallbackInfo callback) {
+        LegacyWorldDataHook.writeLegacyLevelData(levelTag);
     }
 }

@@ -23,11 +23,12 @@ abstract class SimpleRegionStorageMixin {
 
     @Inject(
             method = "upgradeChunkTag(Lnet/minecraft/nbt/CompoundTag;ILnet/minecraft/nbt/CompoundTag;I)Lnet/minecraft/nbt/CompoundTag;",
-            at = @At("RETURN"), cancellable = true)
+            // Older compatibility mixins may cancel later return callbacks.
+            at = @At("RETURN"), order = 900)
     private void skysgrassslabs$finalizeLegacyChunk(CompoundTag chunk,
             int fallbackDataVersion, @Nullable CompoundTag context, int targetDataVersion,
             CallbackInfoReturnable<CompoundTag> callback) {
-        callback.setReturnValue(LegacyWorldDataHook.finalizeLegacyChunk(
-                callback.getReturnValue()));
+        // The hook updates the tag in place, so other mods can finish upgrading it too.
+        LegacyWorldDataHook.finalizeLegacyChunk(callback.getReturnValue());
     }
 }
