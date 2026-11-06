@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/two_matching_slabs_craft_back_to_one_block",
+  "max_ticks": 100,
+  "structure": "forge:empty8x4x8"
+}
