@@ -44,6 +44,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSpread;
@@ -267,14 +268,17 @@ public final class SlabGameTests {
         require(helper, grass.canSustainPlant(bottom, helper.getLevel(), pos, Direction.UP,
                 Blocks.DANDELION.defaultBlockState()).isFalse(),
                 "bottom grass slab sustained a plant");
-        require(helper, !grass.canSustainPlant(top, helper.getLevel(), pos, Direction.UP,
-                Blocks.DANDELION.defaultBlockState()).isFalse(),
-                "top grass slab rejected a plant");
-
         helper.getLevel().setBlock(pos, top, Block.UPDATE_ALL);
+        require(helper, Blocks.DANDELION.defaultBlockState().canSurvive(helper.getLevel(), pos.above())
+                        && Blocks.OAK_SAPLING.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
+                "flowers and saplings must survive on a top grass slab");
+        require(helper, !Blocks.WHEAT.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
+                "grass slabs must not replace farmland");
         require(helper, Blocks.SNOW.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
                 "snow did not survive on a top grass slab");
         helper.getLevel().setBlock(pos, bottom, Block.UPDATE_ALL);
+        require(helper, !Blocks.DANDELION.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
+                "a flower survived on a bottom grass slab");
         require(helper, !Blocks.SNOW.defaultBlockState().canSurvive(helper.getLevel(), pos.above()),
                 "snow survived on a bottom grass slab");
         BlockState snowBlockAppearance = grass.updateShape(top, Direction.UP,
@@ -688,6 +692,51 @@ public final class SlabGameTests {
         return recipe.matches(grid, helper.getLevel())
                 && recipe.assemble(grid, helper.getLevel().registryAccess())
                         .is(ModBlocks.GRASS_SLAB_ITEM.get());
+    }
+
+    @GameTest(template = EMPTY, batch = "slabs_family")
+    public static void sharedGrassFormsKeepTheirOrientationAndWater(GameTestHelper helper) {
+        for (SlabType half : new SlabType[] {SlabType.BOTTOM, SlabType.TOP}) {
+            for (boolean waterlogged : new boolean[] {false, true}) {
+                BlockState dirt = ModBlocks.DIRT_SLAB.get().defaultBlockState()
+                        .setValue(SlabBlock.TYPE, half).setValue(SlabBlock.WATERLOGGED, waterlogged);
+                BlockState grass = GrassSlabsApi.grassFor(dirt);
+                require(helper, grass != null && grass.is(ModBlocks.GRASS_SLAB.get()),
+                        "The shared catalogue is missing a native grass slab form");
+                require(helper, grass.getValue(SlabBlock.TYPE) == half
+                                && grass.getValue(SlabBlock.WATERLOGGED) == waterlogged,
+                        "The shared catalogue changed a slab's orientation or water");
+                require(helper, GrassSlabsApi.dirtFor(grass) == dirt
+                                && GrassSlabsApi.isSpreadingGrassForm(grass) == !waterlogged,
+                        "The shared catalogue changed the dirt form or wet grass behaviour");
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = "slabs_family")
+    public static void twoMatchingSlabsCraftBackToOneBlock(GameTestHelper helper) {
+        verifyRecombination(helper, "dirt_from_slabs",
+                new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get()), Blocks.DIRT);
+        verifyRecombination(helper, "grass_from_slabs",
+                new ItemStack(ModBlocks.GRASS_SLAB_ITEM.get()), Blocks.GRASS_BLOCK);
+        helper.succeed();
+    }
+
+    private static void verifyRecombination(GameTestHelper helper, String recipeName,
+            ItemStack slab, Block fullBlock) {
+        CraftingRecipe recipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
+                .byKey(ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, recipeName))
+                .orElseThrow().value();
+        CraftingInput grid = craftingGrid(2, 1, slab.copy(), slab.copy());
+        require(helper, recipe.matches(grid, helper.getLevel()),
+                "Matching slabs did not fit the recombination recipe");
+        ItemStack result = recipe.assemble(grid, helper.getLevel().registryAccess());
+        require(helper, result.is(fullBlock.asItem()) && result.getCount() == 1,
+                "Two slabs must give back exactly one full block");
+        CraftingInput singleSlab = craftingGrid(1, 1, slab.copy());
+        require(helper, !recipe.matches(singleSlab, helper.getLevel()),
+                "A single slab must not give back a full block");
     }
 
     private static CraftingInput craftingGrid(int width, int height, ItemStack... stacks) {

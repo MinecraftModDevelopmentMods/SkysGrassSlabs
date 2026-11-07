@@ -1,6 +1,6 @@
 # Configuration
 
-NeoForge creates `config/skysgrassslabs-common.toml` after the mod starts for the
+Forge creates `config/skysgrassslabs-common.toml` after the mod starts for the
 first time. Stop the game or server before editing it, then restart to apply
 changes. On a dedicated server, the server's configuration controls world
 generation and world upgrades.
@@ -13,9 +13,14 @@ kept. An existing TOML file always takes priority.
 
 `worldgen.generateGrassSlabs=true`
 
+In the Mods list, select Sky’s Grass Slabs and open Config to edit these
+choices. They take effect the next time Minecraft starts.
+
 When enabled, suitable one block slopes in newly generated Overworld chunks
 may receive grass slabs. Set this to `false` to leave new terrain unchanged.
 The setting never adds or removes slabs in chunks that already exist.
+If Sky’s Terrain Smoother is installed, it handles generation for both mods.
+This setting still controls whether that smoother places grass pieces.
 
 ## Legacy slab replacement
 

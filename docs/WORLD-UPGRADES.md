@@ -1,12 +1,12 @@
 # Upgrading an older world
 
 Always make a complete copy of the world before changing its Minecraft or
-NeoForge version. Test the copy first and keep the original until the upgraded
+Forge version. Test the copy first and keep the original until the upgraded
 world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.1.1.121012.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.2.0.121012.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -15,13 +15,12 @@ when their chunks are first opened. Old top and bottom slab orientations are
 retained and begin dry. Keep the mod installed during the first upgraded start
 so unopened chunks can be converted when they are later visited.
 
-Minecraft 1.13.2 through 1.21.1 worlds already use named block states. Their
+Minecraft 1.13.2 through 1.20.6 worlds already use named block states. Their
 orientation, snowy and waterlogged states load through Minecraft's normal
 upgrade process.
 
-World smoothing still affects only newly generated chunks. Chunks indexed as
-part of an older world are not treated as new terrain by the smoothing
-feature.
+World smoothing affects only new terrain. It skips chunks already saved in
+your world, even if Minecraft still needs to finish decorating them.
 
 ## Supported older slab IDs
 
@@ -30,7 +29,7 @@ original mod is absent. Slab orientation, stack counts and custom item data are
 retained.
 
 Other older shapes such as stairs, vertical slabs, corners and steps are not
-part of this migration. NeoForge may report them as missing and may remove them
+part of this migration. Forge may report them as missing and may remove them
 after offering its normal backup and confirmation screen. Do not continue
 unless losing those unsupported blocks is acceptable for that copy of the
 world.
@@ -56,7 +55,7 @@ carpet produces an item which is converted to turf.
 
 Stairs, dirt carpet, dirt path carpet, mycelium variants and podzol variants do
 not have matching blocks in Sky's Grass Slabs. They are not converted. Read
-NeoForge's complete missing content warning before continuing without the older
+Forge's complete missing content warning before continuing without the older
 mod.
 
 When both mods remain installed, their content is left alone by default. See
@@ -65,9 +64,9 @@ When both mods remain installed, their content is left alone by default. See
 ## Modpack checklist
 
 1. Back up the complete instance and world.
-2. Update NeoForge and every required mod to a matching Minecraft 1.21.1 build.
+2. Update Forge and every required mod to a matching Minecraft 1.21.1 build.
 3. Install the 1.21.1 Sky's Grass Slabs jar before the first upgraded start.
-4. Read the complete NeoForge missing content list before confirming it.
+4. Read the complete Forge missing content list before confirming it.
 5. Check representative slabs, turf, paths, inventories and old terrain.
 6. Stop and start the upgraded copy once more, then repeat the checks.
 

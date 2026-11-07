@@ -315,6 +315,7 @@ tasks.register('writeReleaseChecksums') {
     group = 'verification'
     dependsOn tasks.named('verifyReleaseArtifacts')
     def output = layout.buildDirectory.file('release/SHA256SUMS')
+    inputs.files(releaseFiles.map { names -> names.collect { layout.buildDirectory.file("libs/${it}") } })
     outputs.file(output)
     doLast {
         File libs = layout.buildDirectory.dir('libs').get().asFile
@@ -573,6 +574,8 @@ tasks.matching { it.name == 'prepareRunGameTestServer' || it.name == 'runGameTes
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {
+    // Empty resource directories should not change the jar.
+    includeEmptyDirs = false
     preserveFileTimestamps = false
     reproducibleFileOrder = true
 }
