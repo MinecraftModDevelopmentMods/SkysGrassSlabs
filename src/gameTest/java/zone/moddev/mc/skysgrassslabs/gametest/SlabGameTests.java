@@ -28,6 +28,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BonemealSource;
@@ -188,19 +189,27 @@ public final class SlabGameTests {
 
     @GameTest(structure = EMPTY)
     public static void grassLifecycleInteroperatesWithVanilla(GameTestHelper helper) {
-        setClockTime(helper, 6000);
         BlockPos dirtPos = helper.absolutePos(new BlockPos(1, 2, 1));
         BlockPos sourcePos = dirtPos.east();
-        helper.getLevel().setBlock(dirtPos.west().above(), Blocks.GLOWSTONE.defaultBlockState(), 3);
         helper.getLevel().setBlock(dirtPos, ModBlocks.DIRT_SLAB.get().defaultBlockState(), 3);
         helper.getLevel().setBlock(sourcePos, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
         BlockPos grassPos = helper.absolutePos(new BlockPos(1, 2, 3));
         BlockPos vanillaDirt = grassPos.east();
-        helper.getLevel().setBlock(grassPos.west().above(), Blocks.GLOWSTONE.defaultBlockState(), 3);
         helper.getLevel().setBlock(grassPos, ModBlocks.GRASS_SLAB.get().defaultBlockState(), 3);
         helper.getLevel().setBlock(vanillaDirt, Blocks.DIRT.defaultBlockState(), 3);
 
-        helper.runAfterDelay(20, () -> {
+        // Other tests share the world clock. Light the four exposed faces independently of daylight.
+        List<BlockPos> soilPositions = List.of(dirtPos, sourcePos, grassPos, vanillaDirt);
+        for (BlockPos pos : soilPositions) {
+            helper.getLevel().setBlock(pos.above(2), Blocks.LIGHT.defaultBlockState(), Block.UPDATE_ALL);
+        }
+
+        helper.startSequence().thenWaitUntil(() -> {
+            for (BlockPos pos : soilPositions) {
+                int light = helper.getLevel().getBrightness(LightLayer.BLOCK, pos.above());
+                require(helper, light >= 9, "Grass test block light has not reached " + pos + ": " + light);
+            }
+        }).thenExecute(() -> {
             ((DirtSlabBlock) ModBlocks.DIRT_SLAB.get()).randomTick(
                     helper.getLevel().getBlockState(dirtPos), helper.getLevel(), dirtPos,
                     new FixedRandom(2, 3, 1));
@@ -226,8 +235,7 @@ public final class SlabGameTests {
             require(helper,
                     helper.getLevel().getBlockState(grassPos).is(ModBlocks.DIRT_SLAB.get()),
                     "covered grass slab did not decay");
-            helper.succeed();
-        });
+        }).thenSucceed();
     }
 
     @GameTest(structure = EMPTY)
