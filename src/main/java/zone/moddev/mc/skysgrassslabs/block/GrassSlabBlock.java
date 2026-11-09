@@ -2,6 +2,7 @@ package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import net.minecraft.util.RandomSource;
 
 import javax.annotation.Nullable;
@@ -12,6 +13,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.placement.VegetationPlacements;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -29,8 +31,11 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.TreeFeature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraftforge.common.IPlantable;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
+import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Grass slab with target aware spreading and top slab vegetation behaviour. */
@@ -99,6 +104,16 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
             level.setBlock(pos, repaired, Block.UPDATE_CLIENTS);
         }
         GrassSpread.spreadFrom(level, pos, random, pos.below());
+    }
+
+    @Override
+    public boolean onTreeGrow(BlockState state, LevelReader level,
+            BiConsumer<BlockPos, BlockState> placeBlock, RandomSource random, BlockPos pos,
+            TreeFeature tree) {
+        // Trees decorating a chunk can reach slabs that were already saved.
+        return level instanceof WorldGenRegion region
+                && region.getLevel().dimension() == Level.OVERWORLD
+                && LegacyWorldDataHook.isSavedOverworldChunk(pos.getX() >> 4, pos.getZ() >> 4);
     }
 
     @Override
@@ -181,8 +196,6 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     private static void dirtifyGrassSupport(Level level, BlockPos pos) {
-        if (!level.isClientSide() && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
-            level.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_CLIENTS);
-        }
+        GrassSlabsApi.repairSupport(level, pos);
     }
 }

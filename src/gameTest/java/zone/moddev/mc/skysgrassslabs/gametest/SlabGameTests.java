@@ -28,6 +28,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BonemealSource;
@@ -47,6 +48,7 @@ import net.minecraftforge.gametest.GameTestPrefix;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSpread;
@@ -187,19 +189,27 @@ public final class SlabGameTests {
 
     @GameTest(structure = EMPTY)
     public static void grassLifecycleInteroperatesWithVanilla(GameTestHelper helper) {
-        setClockTime(helper, 6000);
         BlockPos dirtPos = helper.absolutePos(new BlockPos(1, 2, 1));
         BlockPos sourcePos = dirtPos.east();
-        helper.getLevel().setBlock(dirtPos.west().above(), Blocks.GLOWSTONE.defaultBlockState(), 3);
         helper.getLevel().setBlock(dirtPos, ModBlocks.DIRT_SLAB.get().defaultBlockState(), 3);
         helper.getLevel().setBlock(sourcePos, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
         BlockPos grassPos = helper.absolutePos(new BlockPos(1, 2, 3));
         BlockPos vanillaDirt = grassPos.east();
-        helper.getLevel().setBlock(grassPos.west().above(), Blocks.GLOWSTONE.defaultBlockState(), 3);
         helper.getLevel().setBlock(grassPos, ModBlocks.GRASS_SLAB.get().defaultBlockState(), 3);
         helper.getLevel().setBlock(vanillaDirt, Blocks.DIRT.defaultBlockState(), 3);
 
-        helper.runAfterDelay(20, () -> {
+        // Other tests share the world clock. Light the four exposed faces independently of daylight.
+        List<BlockPos> soilPositions = List.of(dirtPos, sourcePos, grassPos, vanillaDirt);
+        for (BlockPos pos : soilPositions) {
+            helper.getLevel().setBlock(pos.above(2), Blocks.LIGHT.defaultBlockState(), Block.UPDATE_ALL);
+        }
+
+        helper.startSequence().thenWaitUntil(() -> {
+            for (BlockPos pos : soilPositions) {
+                int light = helper.getLevel().getBrightness(LightLayer.BLOCK, pos.above());
+                require(helper, light >= 9, "Grass test block light has not reached " + pos + ": " + light);
+            }
+        }).thenExecute(() -> {
             ((DirtSlabBlock) ModBlocks.DIRT_SLAB.get()).randomTick(
                     helper.getLevel().getBlockState(dirtPos), helper.getLevel(), dirtPos,
                     new FixedRandom(2, 3, 1));
@@ -225,8 +235,7 @@ public final class SlabGameTests {
             require(helper,
                     helper.getLevel().getBlockState(grassPos).is(ModBlocks.DIRT_SLAB.get()),
                     "covered grass slab did not decay");
-            helper.succeed();
-        });
+        }).thenSucceed();
     }
 
     @GameTest(structure = EMPTY)
@@ -707,6 +716,52 @@ public final class SlabGameTests {
         return recipe.matches(grid, helper.getLevel())
                 && recipe.assemble(grid)
                         .is(ModBlocks.GRASS_SLAB_ITEM.get());
+    }
+
+    @GameTest(structure = EMPTY)
+    public static void sharedGrassFormsKeepTheirOrientationAndWater(GameTestHelper helper) {
+        for (SlabType half : new SlabType[] {SlabType.BOTTOM, SlabType.TOP}) {
+            for (boolean waterlogged : new boolean[] {false, true}) {
+                BlockState dirt = ModBlocks.DIRT_SLAB.get().defaultBlockState()
+                        .setValue(SlabBlock.TYPE, half).setValue(SlabBlock.WATERLOGGED, waterlogged);
+                BlockState grass = GrassSlabsApi.grassFor(dirt);
+                require(helper, grass != null && grass.is(ModBlocks.GRASS_SLAB.get()),
+                        "The shared catalogue is missing a native grass slab form");
+                require(helper, grass.getValue(SlabBlock.TYPE) == half
+                                && grass.getValue(SlabBlock.WATERLOGGED) == waterlogged,
+                        "The shared catalogue changed a slab's orientation or water");
+                require(helper, GrassSlabsApi.dirtFor(grass) == dirt
+                                && GrassSlabsApi.isSpreadingGrassForm(grass) == !waterlogged,
+                        "The shared catalogue changed the dirt form or wet grass behaviour");
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(structure = EMPTY)
+    public static void twoMatchingSlabsCraftBackToOneBlock(GameTestHelper helper) {
+        verifyRecombination(helper, "dirt_from_slabs",
+                new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get()), Blocks.DIRT);
+        verifyRecombination(helper, "grass_from_slabs",
+                new ItemStack(ModBlocks.GRASS_SLAB_ITEM.get()), Blocks.GRASS_BLOCK);
+        helper.succeed();
+    }
+
+    private static void verifyRecombination(GameTestHelper helper, String recipeName,
+            ItemStack slab, Block fullBlock) {
+        CraftingRecipe recipe = (CraftingRecipe) helper.getLevel().recipeAccess()
+                .byKey(ResourceKey.create(Registries.RECIPE,
+                        Identifier.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, recipeName)))
+                .orElseThrow().value();
+        CraftingInput grid = craftingGrid(2, 1, slab.copy(), slab.copy());
+        require(helper, recipe.matches(grid, helper.getLevel()),
+                "Matching slabs did not fit the recombination recipe");
+        ItemStack result = recipe.assemble(grid);
+        require(helper, result.is(fullBlock.asItem()) && result.getCount() == 1,
+                "Two slabs must give back exactly one full block");
+        CraftingInput singleSlab = craftingGrid(1, 1, slab.copy());
+        require(helper, !recipe.matches(singleSlab, helper.getLevel()),
+                "A single slab must not give back a full block");
     }
 
     private static CraftingInput craftingGrid(int width, int height, ItemStack... stacks) {

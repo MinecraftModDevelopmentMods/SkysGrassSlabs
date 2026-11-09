@@ -37,15 +37,15 @@ def mavenizerLicense = mavenizerToolsDirectory.file('LICENSE-MAVENIZER.txt')
 def mavenizerReadme = mavenizerToolsDirectory.file('README.md')
 def mavenizerFixtureChecksums = [
         (mavenizerCompatibilityJar.asFile):
-                '4150926F33A696B2088AB2675C1C3B45745CE4F9F2DEB31CCD88C9ADC834062F',
+                '9DA1F44821D89B16B3E181CA89057F44CD3FC3F3383EA5A16442872E67E30F35',
         (mavenizerRuleManifest.asFile):
-                '829400D74ECB1BF0CC6107D9980B8328365E3F56D9A5342002D8DF340571BDB7',
+                'C765A5F65FB9CD176F3CE08CB0CFCA814D06E649940E2BF169CD8943AFC30B26',
         (mavenizerSourcePatch.asFile):
-                '9F0C34529D41C9CD5804C32608FE548D09A0AC3A95D337EE2EF4377680C1B2DD',
+                'BBD82C6BD96206DEA2FE2673F4D7E76FBA92884032455BBFD5CCD59045C5E271',
         (mavenizerLicense.asFile):
                 '20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331',
         (mavenizerReadme.asFile):
-                'A35B80BA8D7557A31E0378787C06FE86C8C627061BF313A6886205F62A46C09F'
+                'A611E2BF14E29761B99BF7D3F0FD44AF151DD09A69968C0CFAEC384BD0E7A666'
 ]
 
 // ForgeGradle invokes Mavenizer while configuring the project. Verify the
@@ -550,7 +550,7 @@ def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompati
         }
 
         def parsed = new JsonSlurper().parse(mavenizerRuleManifest.asFile)
-        String target = 'net.minecraftforge:forge:26.3-66.0.0'
+        String target = 'net.minecraftforge:forge:26.3-66.0.2'
         if (parsed.schema != 1 || parsed.targets.keySet() != [target] as Set) {
             throw new GradleException('Mavenizer target-rule manifest has unexpected targets or schema')
         }
@@ -605,7 +605,7 @@ def verifyMavenizerCompatibilityFixture = tasks.register('verifyMavenizerCompati
         String licenseText = mavenizerLicense.asFile.getText('UTF-8')
         if (!readme.contains('6968241ce7a0a902cdc1c534b976e8373a423091')
                 || !readme.contains('Temurin `25.0.3+9`')
-                || !readme.contains('26.3-66.0.0')) {
+                || !readme.contains('26.3-66.0.2')) {
             throw new GradleException('Mavenizer provenance, target, or Java 25 build instructions are incomplete')
         }
         if (!patchText.contains('SourceCompatibilityPatcher.java')
@@ -686,7 +686,7 @@ def releaseFiles = provider {
 tasks.register('verifyReleaseMetadata') {
     group = 'verification'
     doLast {
-        if (project.minecraft_version != '26.3' || project.forge_version != '66.0.0' ||
+        if (project.minecraft_version != '26.3' || project.forge_version != '66.0.2' ||
                 project.mapping_channel != 'official' || project.mapping_version != '26.3' ||
                 project.loader_name != 'forge' || project.loader_code != '1' ||
                 project.java_version != '25' || project.java_toolchain_version != '25.0.3+9' ||
@@ -770,7 +770,7 @@ tasks.register('verifyReleaseArtifacts') {
             String metadata = zip.getInputStream(zip.getEntry('META-INF/mods.toml'))
                     .getText(StandardCharsets.UTF_8.name())
             if (!metadata.contains('versionRange="[26.3,26.4,)"') ||
-                    !metadata.contains('versionRange="[66,)"')) {
+                    !metadata.contains('versionRange="[66.0.2,67)"')) {
                 throw new GradleException('Packaged Forge metadata targets the wrong version')
             }
 
@@ -802,6 +802,7 @@ tasks.register('writeReleaseChecksums') {
     group = 'verification'
     dependsOn tasks.named('verifyReleaseArtifacts')
     def output = layout.buildDirectory.file('release/SHA256SUMS')
+    inputs.files(releaseFiles.map { names -> names.collect { layout.buildDirectory.file("libs/${it}") } })
     outputs.file(output)
     doLast {
         File libs = layout.buildDirectory.dir('libs').get().asFile
@@ -1174,6 +1175,7 @@ tasks.named('eclipse').configure {
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {
+    includeEmptyDirs = false
     preserveFileTimestamps = false
     reproducibleFileOrder = true
 }

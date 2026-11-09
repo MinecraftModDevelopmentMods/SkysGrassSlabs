@@ -2,5 +2,11 @@
   "block.skysgrassslabs.dirt_slab": "Dirt Slab",
   "block.skysgrassslabs.grass_slab": "Grass Slab",
   "block.skysgrassslabs.path_slab": "Grass Path Slab",
-  "block.skysgrassslabs.turf": "Turf"
+  "block.skysgrassslabs.turf": "Turf",
+  "config.skysgrassslabs.generateGrassSlabs": "Generate grass slabs",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs": "Replace legacy slabs",
+  "config.skysgrassslabs.generateGrassSlabs.tooltip": "Add grass slabs to new Overworld slopes. With Terrain Smoother, this controls grass only. Existing chunks stay unchanged. Restart Minecraft.",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip": "Legacy compatibility setting. Leave off in normal Minecraft 1.21.1 packs. Recovery of old slabs is automatic. Restart Minecraft.",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent": "Replace Grass Slabs content",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent.tooltip": "Convert supported Grass Slabs content while that mod is installed. Automatic recovery after removal stays enabled. Restart Minecraft."
 }

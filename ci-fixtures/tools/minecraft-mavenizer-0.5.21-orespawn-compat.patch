@@ -371,7 +371,7 @@ index 0000000..3451901
 +{
 +  "schema": 1,
 +  "targets": {
-+    "net.minecraftforge:forge:26.3-66.0.0": {
++    "net.minecraftforge:forge:26.3-66.0.2": {
 +      "expectedApplications": 0,
 +      "rules": []
 +    }
@@ -379,4 +379,3 @@ index 0000000..3451901
 +}
 -- 
 2.55.0.windows.3
-

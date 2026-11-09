@@ -44,12 +44,14 @@ public final class LegacyWorldDataHook {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final BitSet SUPPORTED_BLOCK_IDS = new BitSet();
     private static final Set<Long> LEGACY_CHUNKS = ConcurrentHashMap.newKeySet();
+    private static final Set<Long> SAVED_OVERWORLD_CHUNKS = ConcurrentHashMap.newKeySet();
     private static final Set<Identifier> SKY_IDS = new LinkedHashSet<>();
     private static final Set<Identifier> HISTORICAL_IDS = new LinkedHashSet<>();
     private static final String PRESERVE_CHUNK_MARKER =
             "SkysGrassSlabsLegacyPreserveChunk";
     private static final String SIDECAR_NAME = "skysgrassslabs_legacy_registry.dat";
     private static volatile boolean legacyWorldActive;
+    private static CompoundTag legacyFmlData = new CompoundTag();
     private static boolean registered;
 
     static {
@@ -90,9 +92,9 @@ public final class LegacyWorldDataHook {
         }
         Path levelPath = levelDirectory.path();
         if (root.contains("FML")) {
-            prepareLegacyWorld(levelPath.toFile(), root.getCompoundOrEmpty("FML"));
+            prepareLegacyWorld(levelPath.toFile(), root.getCompoundOrEmpty("FML"), true);
         } else if (root.contains("fml")) {
-            prepareLegacyWorld(levelPath.toFile(), root.getCompoundOrEmpty("fml"));
+            prepareLegacyWorld(levelPath.toFile(), root.getCompoundOrEmpty("fml"), false);
         } else {
             prepareLegacyWorld(levelPath.resolve("level.dat").toFile());
         }
@@ -101,20 +103,24 @@ public final class LegacyWorldDataHook {
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
         File levelDat = event.getServer().getWorldPath(LevelResource.LEVEL_DATA_FILE).toFile();
         prepareLegacyWorld(levelDat);
+        snapshotSavedOverworldChunks(levelDat.getParentFile());
     }
 
     static synchronized void prepareLegacyWorld(File levelDat) {
         legacyWorldActive = false;
+        legacyFmlData = new CompoundTag();
         LEGACY_CHUNKS.clear();
         if (!levelDat.isFile()) {
+            readSidecar(levelDat.getParentFile());
             return;
         }
         try (FileInputStream input = new FileInputStream(levelDat)) {
             CompoundTag root = NbtIo.readCompressed(input, NbtAccounter.unlimitedHeap());
             if (root.contains("FML")) {
-                CompoundTag registries = root.getCompoundOrEmpty("FML")
-                        .getCompoundOrEmpty("Registries");
+                CompoundTag fmlData = root.getCompoundOrEmpty("FML");
+                CompoundTag registries = fmlData.getCompoundOrEmpty("Registries");
                 if (registries.contains("minecraft:blocks")) {
+                    legacyFmlData = fmlData.copy();
                     CompoundTag blocks = registries.getCompoundOrEmpty("minecraft:blocks");
                     install(levelDat.getParentFile(), blocks);
                     writeSidecar(levelDat.getParentFile(), blocks);
@@ -124,17 +130,21 @@ public final class LegacyWorldDataHook {
         } catch (IOException exception) {
             LOGGER.warn("Could not inspect '{}' for legacy Sky's Grass Slabs registry data",
                     levelDat, exception);
-            return;
         }
         readSidecar(levelDat.getParentFile());
     }
 
-    private static synchronized void prepareLegacyWorld(File worldDirectory, CompoundTag fmlData) {
+    private static synchronized void prepareLegacyWorld(File worldDirectory, CompoundTag fmlData,
+            boolean uppercase) {
         legacyWorldActive = false;
+        legacyFmlData = new CompoundTag();
         LEGACY_CHUNKS.clear();
         if (fmlData.contains("Registries")) {
             CompoundTag registries = fmlData.getCompoundOrEmpty("Registries");
             if (registries.contains("minecraft:blocks")) {
+                if (uppercase) {
+                    legacyFmlData = fmlData.copy();
+                }
                 CompoundTag blocks = registries.getCompoundOrEmpty("minecraft:blocks");
                 install(worldDirectory, blocks);
                 writeSidecar(worldDirectory, blocks);
@@ -144,14 +154,22 @@ public final class LegacyWorldDataHook {
         readSidecar(worldDirectory);
     }
 
+    /** Keep the old numeric registry alongside Forge's current lowercase snapshot. */
+    public static synchronized void writeLegacyLevelData(CompoundTag levelTag) {
+        if (!legacyFmlData.isEmpty() && !levelTag.contains("FML")) {
+            levelTag.put("FML", legacyFmlData.copy());
+        }
+    }
+
     private static void readSidecar(File worldDirectory) {
         File sidecar = sidecar(worldDirectory);
         if (!sidecar.isFile()) {
             return;
         }
         try (FileInputStream input = new FileInputStream(sidecar)) {
-            install(worldDirectory, NbtIo.readCompressed(input,
-                    NbtAccounter.unlimitedHeap()).getCompoundOrEmpty("Blocks"));
+            CompoundTag snapshot = NbtIo.readCompressed(input, NbtAccounter.unlimitedHeap());
+            snapshot.getCompound("FML").ifPresent(tag -> legacyFmlData = tag.copy());
+            install(worldDirectory, snapshot.getCompoundOrEmpty("Blocks"));
         } catch (IOException exception) {
             LOGGER.warn("Could not read legacy Sky's Grass Slabs registry sidecar '{}'",
                     sidecar, exception);
@@ -162,7 +180,7 @@ public final class LegacyWorldDataHook {
         int mapped = installLegacyBlockStates(blockSnapshot);
         legacyWorldActive = mapped > 0;
         if (legacyWorldActive) {
-            int indexed = indexLegacyChunks(worldDirectory);
+            int indexed = indexRegionChunks(worldDirectory, LEGACY_CHUNKS);
             LOGGER.info("Prepared {} legacy slab states and protected {} existing Overworld "
                     + "chunks from '{}'", mapped, indexed, worldDirectory);
         }
@@ -179,6 +197,9 @@ public final class LegacyWorldDataHook {
             Files.createDirectories(parent.toPath());
             CompoundTag root = new CompoundTag();
             root.put("Blocks", blockSnapshot.copy());
+            if (!legacyFmlData.isEmpty()) {
+                root.put("FML", legacyFmlData.copy());
+            }
             try (FileOutputStream output = new FileOutputStream(temporary)) {
                 NbtIo.writeCompressed(root, output);
             }
@@ -233,6 +254,20 @@ public final class LegacyWorldDataHook {
 
     public static boolean isLegacyChunk(int chunkX, int chunkZ) {
         return legacyWorldActive && LEGACY_CHUNKS.contains(chunkKey(chunkX, chunkZ));
+    }
+
+    static void snapshotSavedOverworldChunks(File worldDirectory) {
+        if (legacyWorldActive) {
+            SAVED_OVERWORLD_CHUNKS.clear();
+            SAVED_OVERWORLD_CHUNKS.addAll(LEGACY_CHUNKS);
+        } else {
+            indexRegionChunks(worldDirectory, SAVED_OVERWORLD_CHUNKS);
+        }
+    }
+
+    /** A saved chunk may still go through decoration when the world next opens. */
+    public static boolean isSavedOverworldChunk(int chunkX, int chunkZ) {
+        return SAVED_OVERWORLD_CHUNKS.contains(chunkKey(chunkX, chunkZ)) || isLegacyChunk(chunkX, chunkZ);
     }
 
     private static int installLegacyBlockStates(CompoundTag blockSnapshot) {
@@ -321,15 +356,15 @@ public final class LegacyWorldDataHook {
         return false;
     }
 
-    private static int indexLegacyChunks(File worldDirectory) {
-        LEGACY_CHUNKS.clear();
-        indexLegacyRegionDirectory(new File(worldDirectory, "region"));
-        indexLegacyRegionDirectory(worldDirectory.toPath().resolve("dimensions")
-                .resolve("minecraft").resolve("overworld").resolve("region").toFile());
-        return LEGACY_CHUNKS.size();
+    private static int indexRegionChunks(File worldDirectory, Set<Long> chunks) {
+        chunks.clear();
+        indexRegionDirectory(new File(worldDirectory, "region"), chunks);
+        indexRegionDirectory(worldDirectory.toPath().resolve("dimensions")
+                .resolve("minecraft").resolve("overworld").resolve("region").toFile(), chunks);
+        return chunks.size();
     }
 
-    private static void indexLegacyRegionDirectory(File regionDirectory) {
+    private static void indexRegionDirectory(File regionDirectory, Set<Long> chunks) {
         File[] regionFiles = regionDirectory.listFiles((directory, name) ->
                 name.startsWith("r.") && (name.endsWith(".mca") || name.endsWith(".mcr")));
         if (regionFiles == null) {
@@ -362,12 +397,12 @@ public final class LegacyWorldDataHook {
                     int offset = index * 4;
                     if ((locations[offset] | locations[offset + 1]
                             | locations[offset + 2] | locations[offset + 3]) != 0) {
-                        LEGACY_CHUNKS.add(chunkKey(regionX * 32 + (index & 31),
+                        chunks.add(chunkKey(regionX * 32 + (index & 31),
                                 regionZ * 32 + (index >> 5)));
                     }
                 }
             } catch (IOException exception) {
-                LOGGER.warn("Could not inspect legacy chunk locations in '{}'", regionFile,
+                LOGGER.warn("Could not inspect saved chunk locations in '{}'", regionFile,
                         exception);
             }
         }

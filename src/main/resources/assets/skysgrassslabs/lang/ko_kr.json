@@ -2,5 +2,11 @@
   "block.skysgrassslabs.dirt_slab": "흙 반 블록",
   "block.skysgrassslabs.grass_slab": "잔디 블록 반 블록",
   "block.skysgrassslabs.path_slab": "잔디 길 반 블록",
-  "block.skysgrassslabs.turf": "잔디"
+  "block.skysgrassslabs.turf": "잔디",
+  "config.skysgrassslabs.generateGrassSlabs": "잔디 반 블록 생성",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs": "이전 모드 반 블록 교체",
+  "config.skysgrassslabs.generateGrassSlabs.tooltip": "새로 생성되는 오버월드 경사면에 잔디 반 블록을 놓습니다. Terrain Smoother가 있으면 잔디에만 적용됩니다. 기존 청크는 바뀌지 않습니다. Minecraft를 다시 시작해야 합니다.",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip": "이전 월드용 호환 설정입니다. 일반적인 Minecraft 1.21.1 팩에서는 꺼 두세요. 이전 반 블록은 자동으로 복구됩니다. 다시 시작해야 합니다.",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent": "Grass Slabs 콘텐츠 교체",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent.tooltip": "Grass Slabs가 설치되어 있을 때 지원되는 콘텐츠를 변환합니다. 모드를 제거한 뒤에도 자동 복구는 유지됩니다. Minecraft를 다시 시작하세요."
 }

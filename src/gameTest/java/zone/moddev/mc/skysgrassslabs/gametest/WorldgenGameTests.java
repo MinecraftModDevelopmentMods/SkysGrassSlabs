@@ -53,6 +53,8 @@ public final class WorldgenGameTests {
 
         BlockPos center = new BlockPos(owner.getMinBlockX() + 8, y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, center, center.east());
+        helper.getLevel().setBlock(center.above(), Blocks.SHORT_GRASS.defaultBlockState(),
+                Block.UPDATE_ALL);
 
         BlockPos border = new BlockPos(owner.getMinBlockX(), y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, border, border.west());
@@ -78,7 +80,7 @@ public final class WorldgenGameTests {
                     RandomSource.create(19780401L), center),
                     "controlled feature pass made no changes");
             require(helper, helper.getLevel().getBlockState(center.above())
-                    .is(ModBlocks.GRASS_SLAB.get()), "one-block transition was not smoothed");
+                    .is(ModBlocks.GRASS_SLAB.get()), "short grass prevented a valid one-block transition");
             require(helper, helper.getLevel().getBlockState(border.above())
                     .is(ModBlocks.GRASS_SLAB.get()), "owning-chunk border transition was not smoothed");
             require(helper, helper.getLevel().getBlockState(border.west().above())
