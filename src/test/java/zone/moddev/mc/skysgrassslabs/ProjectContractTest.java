@@ -88,6 +88,7 @@ public class ProjectContractTest {
         assertTrue(properties.contains("loader_code=2"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(workflow.contains("confirm_live_publication:"));
+        assertTrue(workflow.contains("curseforge-retry-attempts: 1"));
         assertFalse(workflow.contains("    environment:\n      name: release"));
         assertTrue(workflow.contains("CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}"));
         assertTrue(workflow.contains("MAVEN_UPLOAD_URL: ${{ secrets.MAVEN_UPLOAD_URL }}"));
