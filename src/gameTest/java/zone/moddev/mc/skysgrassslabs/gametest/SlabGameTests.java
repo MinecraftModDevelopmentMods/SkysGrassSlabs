@@ -785,6 +785,44 @@ public final class SlabGameTests {
         }
     }
 
+    @GameTest(template = EMPTY, batch = "slabs025")
+    public static void slabJoiningRespectsEntityCollision(GameTestHelper helper) {
+        BlockPos position = helper.absolutePos(new BlockPos(2, 2, 2));
+        BlockState slab = ModBlocks.DIRT_SLAB.get().defaultBlockState();
+        helper.getLevel().setBlock(position, slab, Block.UPDATE_ALL);
+        var occupant = helper.spawn(EntityType.COW, new BlockPos(2, 2, 2));
+        occupant.setPos(position.getX() + .5, position.getY() + .5, position.getZ() + .5);
+        require(helper, !helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
+                        CollisionContext.empty()), "The join fixture needs an obstructed upper half");
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        ItemStack held = new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get());
+        player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        held.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false)));
+        require(helper, helper.getLevel().getBlockState(position).equals(slab) && held.getCount() == 1,
+                "Joining slabs must not put a full block inside an entity or consume the item");
+        occupant.discard();
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = "slabs025")
+    public static void turfGreeningRespectsAdventurePermissions(GameTestHelper helper) {
+        BlockPos position = helper.absolutePos(new BlockPos(2, 2, 2));
+        BlockState dirt = ModBlocks.DIRT_SLAB.get().defaultBlockState();
+        helper.getLevel().setBlock(position, dirt, Block.UPDATE_ALL);
+        Player player = helper.makeMockPlayer(GameType.ADVENTURE);
+        player.getAbilities().mayBuild = false;
+        require(helper, !player.getAbilities().mayBuild, "The permission fixture must be in adventure mode");
+        ItemStack held = new ItemStack(ModBlocks.TURF_ITEM.get());
+        player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        held.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false)));
+        require(helper, helper.getLevel().getBlockState(position).equals(dirt) && held.getCount() == 1,
+                "Turf greening must respect adventure placement permissions");
+        helper.succeed();
+    }
+
+
     private static final class FixedRandom extends LegacyRandomSource {
         private final int[] values;
         private int index;
