@@ -56,7 +56,8 @@ public final class NormalizingSlabItem extends BlockItem {
             return InteractionResult.FAIL;
         }
         BlockState combined = combinedBlock.defaultBlockState();
-        if (!level.setBlock(pos, combined, Block.UPDATE_ALL_IMMEDIATE)) {
+        if (!level.isUnobstructed(combined, pos, net.minecraft.world.phys.shapes.CollisionContext.empty())
+                || !level.setBlock(pos, combined, Block.UPDATE_ALL_IMMEDIATE)) {
             return InteractionResult.FAIL;
         }
         SoundType sound = combined.getSoundType();

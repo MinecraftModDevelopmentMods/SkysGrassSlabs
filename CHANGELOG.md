@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1.2603001
+
+- Improve snow caps beside higher snowy ground and on exposed cold slopes.
+- Keep different crafting results on separate recipe-book buttons.
+- Prevent slab joining through entities and respect building permissions when using turf.
+
+
 ## 1.2.0.2603001 - Minecraft 26.3
 
 - Craft two matching dirt or grass slabs back into a full block.

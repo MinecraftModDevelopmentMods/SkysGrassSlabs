@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:slab/turf_greening_respects_adventure_permissions",
+  "max_ticks": 100,
+  "structure": "forge:empty8x4x8"
+}
