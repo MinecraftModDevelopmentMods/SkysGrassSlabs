@@ -299,6 +299,19 @@ public final class SlabGameTests {
         require(helper, !clearDirt.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY),
                 "dirt slab retained its snowy appearance after snow was removed");
 
+        BlockPos terrace = pos.east();
+        helper.getLevel().setBlock(terrace, Blocks.GRASS_BLOCK.defaultBlockState(), Block.UPDATE_ALL);
+        helper.getLevel().setBlock(terrace.above(), Blocks.SNOW.defaultBlockState(), Block.UPDATE_ALL);
+        BlockState raisedSnow = grass.updateShape(bottom, Direction.EAST,
+                helper.getLevel().getBlockState(terrace), helper.getLevel(), pos, terrace);
+        require(helper, raisedSnow.getValue(GrassSlabBlock.SNOWY),
+                "snow on the higher terrace did not give the slab its snowy top");
+        helper.getLevel().setBlock(terrace.above(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        BlockState clearedTerrace = grass.updateShape(raisedSnow, Direction.EAST,
+                helper.getLevel().getBlockState(terrace), helper.getLevel(), pos, terrace);
+        require(helper, !clearedTerrace.getValue(GrassSlabBlock.SNOWY),
+                "slab retained snow after the higher terrace was cleared");
+
         BlockState wetGrass = top.setValue(SlabBlock.WATERLOGGED, true);
         helper.getLevel().setBlock(pos, wetGrass, Block.UPDATE_ALL);
         grass.randomTick(wetGrass, helper.getLevel(), pos, RandomSource.create(3L));

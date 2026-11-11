@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1.121012 - Minecraft 1.21.1 (NeoForge)
+
+- Give slabs a snowy top beside a raised snow-covered terrace.
+
 ## 1.1.1.121012 - Minecraft 1.21.1 (NeoForge)
 
 - Corrected snowy grass slabs so their exposed top uses the snow texture
