@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "group": "skys/result/minecraft/dirt",  "type": "minecraft:crafting_shaped",
   "pattern": [
     "SS"
   ],

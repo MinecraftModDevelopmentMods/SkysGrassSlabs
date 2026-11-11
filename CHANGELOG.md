@@ -2,6 +2,7 @@
 
 ## 1.2.1.121012 - Minecraft 1.21.1 (NeoForge)
 
+- Keep different crafting results on separate recipe-book buttons.
 - Keep slab joins from placing a full block inside a player or creature.
 - Respect adventure-mode placement permissions when applying turf to dirt slabs.
 - Give slabs a snowy top beside a raised snow-covered terrace.
