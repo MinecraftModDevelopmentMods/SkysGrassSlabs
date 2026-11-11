@@ -3,6 +3,7 @@
 ## 1.2.1.121012 - Minecraft 1.21.1 (NeoForge)
 
 - Give slabs a snowy top beside a raised snow-covered terrace.
+- Keep exposed slabs snowy in cold areas where snow layers cannot settle.
 
 ## 1.1.1.121012 - Minecraft 1.21.1 (NeoForge)
 

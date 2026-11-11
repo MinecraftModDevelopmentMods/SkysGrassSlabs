@@ -6,6 +6,9 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.state.BlockState;
 
 /** Computes the visual snow cap from nearby vanilla snow. */
@@ -30,7 +33,11 @@ final class SnowySlabAppearance {
                 return true;
             }
         }
-        return false;
+        // Partial tops cannot support vanilla snow layers, but exposed cold ground still needs its snow cap.
+        return level instanceof LevelReader reader
+                && reader.getBiome(pos).value().coldEnoughToSnow(pos)
+                && reader.getHeight(Heightmap.Types.MOTION_BLOCKING, pos.getX(), pos.getZ()) <= pos.getY() + 1
+                && reader.getBrightness(LightLayer.BLOCK, pos.above()) < 10;
     }
 
     private static BlockState readState(BlockGetter level, BlockPos pos) {

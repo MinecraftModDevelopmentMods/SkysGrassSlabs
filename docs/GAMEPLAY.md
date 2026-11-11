@@ -25,7 +25,8 @@ normal durability damage. Dirt path slabs do not spread grass or support
 plants.
 
 Grass and dirt slabs show a snow covered top and snowy side edges when vanilla
-snow is nearby. This is a visual effect and does not add collision height.
+snow is nearby or the slab is exposed to snowfall in a cold biome. This is a
+visual effect and does not add collision height.
 
 ## Turf
 
