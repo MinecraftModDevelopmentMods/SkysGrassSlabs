@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1.121012 - Minecraft 1.21.1 (NeoForge)
+
+- Keep different crafting results on separate recipe-book buttons.
+- Keep slab joins from placing a full block inside a player or creature.
+- Respect adventure-mode placement permissions when applying turf to dirt slabs.
+- Give slabs a snowy top beside a raised snow-covered terrace.
+- Keep exposed slabs snowy in cold areas where snow layers cannot settle.
+
 ## 1.1.1.121012 - Minecraft 1.21.1 (NeoForge)
 
 - Corrected snowy grass slabs so their exposed top uses the snow texture

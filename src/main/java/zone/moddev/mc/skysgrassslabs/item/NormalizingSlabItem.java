@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.phys.shapes.CollisionContext;
 
 /** Slab item that normalizes a matching pair to its vanilla full block. */
 public final class NormalizingSlabItem extends BlockItem {
@@ -56,6 +57,9 @@ public final class NormalizingSlabItem extends BlockItem {
             return InteractionResult.FAIL;
         }
         BlockState combined = combinedBlock.defaultBlockState();
+        if (!level.isUnobstructed(combined, pos, CollisionContext.empty())) {
+            return InteractionResult.FAIL;
+        }
         if (!level.setBlock(pos, combined, Block.UPDATE_ALL_IMMEDIATE)) {
             return InteractionResult.FAIL;
         }
