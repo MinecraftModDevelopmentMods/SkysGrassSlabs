@@ -19,6 +19,8 @@ public final class GrassSlabsApi {
     private static final Map<IBlockState, IBlockState> DIRT = new LinkedHashMap<>();
     private static final java.util.Set<IBlockState> NON_SPREADING = new java.util.HashSet<>();
     private static final Map<IBlockState, IBlockState> SUPPORTS = new LinkedHashMap<>();
+    private static final java.util.Set<IBlockState> SNOW = new java.util.HashSet<>();
+    private static final java.util.Set<net.minecraft.block.Block> SNOW_BLOCKS = new java.util.HashSet<>();
     private static final Map<String, java.util.function.BiFunction<IBlockState, IBlockState, IBlockState>> SPREAD_RULES = new LinkedHashMap<>();
     private static String smoothingOwner;
     private static boolean ownerEnabled, configurationLoaded, frozen;
@@ -147,6 +149,32 @@ public final class GrassSlabsApi {
 
     public static IBlockState dirtFor(IBlockState grass) {
         return GRASS.get(canonical(grass));
+    }
+
+    /** Register physical snow pieces during initialization, not grass with a calculated snow cap. */
+    public static void registerSnowForm(IBlockState snow) {
+        if (frozen) {
+            throw new IllegalStateException("Snow form registration is closed");
+        }
+        if (snow == null || snow.getBlock() == Blocks.AIR || snow.getBlock().hasTileEntity(snow)) {
+            throw new IllegalArgumentException("Snow forms need a non-air, non-tile block state");
+        }
+        IBlockState canonicalSnow = canonical(snow);
+        if (isSnowForm(canonicalSnow) || !SNOW.add(canonicalSnow)) {
+            throw new IllegalArgumentException("Conflicting snow form mapping");
+        }
+        SNOW_BLOCKS.add(canonicalSnow.getBlock());
+    }
+
+    /** Physical snow is authoritative; derived grass colours never count as another snow source. */
+    public static boolean isSnowForm(IBlockState state) {
+        return state != null && (state.getBlock() == Blocks.SNOW || state.getBlock() == Blocks.SNOW_LAYER
+                || SNOW_BLOCKS.contains(state.getBlock()) && SNOW.contains(canonical(state)));
+    }
+
+    /** Share the same calculated snow appearance across grass slabs and optional finer pieces. */
+    public static boolean hasSnowAppearance(IBlockAccess world, BlockPos pos) {
+        return zone.moddev.mc.skysgrassslabs.block.SnowySlabAppearance.hasNearbySnow(world, pos);
     }
 
     public static void configurationLoaded() {

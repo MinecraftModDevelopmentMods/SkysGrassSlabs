@@ -104,6 +104,8 @@ minecraft {
     runs {
         configureEach {
             workingDir.convention layout.projectDirectory.dir(developmentRunDirectory)
+            // Supply the target before ForgeGradle expands its inherited launch environment.
+            environment 'MC_VERSION', project.minecraft_version.toString()
             systemProperty 'forge.logging.console.level', 'debug'
         }
         register('client')

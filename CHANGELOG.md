@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0.112021
+
+- Show snowy slab edges beside higher snow-covered ground and on exposed cold slopes.
+- Recognise snow pieces supplied by other Sky mods, without changing saved slab metadata.
+- Keep climate-only snow caps out from under roofs and away from strong block light.
+
 ## 1.1.2.112021
 
 - Added the missing recipe-book unlocks for crafting and rebuilding pieces.
