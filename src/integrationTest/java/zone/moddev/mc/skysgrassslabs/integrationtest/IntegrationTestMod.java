@@ -1456,6 +1456,7 @@ public final class IntegrationTestMod {
         verifyGrassCoveringAndSnow(world, player, origin.add(10, 0, 0));
         checks += 12;
         checks += verifyColdSnowAppearance(world, origin.add(2, 70, 2));
+        checks += verifySettledSnowSupport(world, origin.add(2, 75, 2));
         verifyTurfEating(world, origin.add(10, 0, 6));
         checks += 7;
         verifyFlattening(world, player, origin.add(0, 0, 4));
@@ -1679,6 +1680,36 @@ public final class IntegrationTestMod {
                 require(!snowy, "Visual snow state persisted after snow removal for " + blockId(block) + " " + half);
             }
         }
+    }
+
+    private static int verifySettledSnowSupport(World world, BlockPos pos) {
+        clearBox(world, pos.add(-1, -1, -1), pos.add(1, 3, 1));
+        world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
+        int checks = 0;
+        for (Block block : new Block[] { ModBlocks.GRASS_SLAB, ModBlocks.DIRT_SLAB, ModBlocks.PATH_SLAB }) {
+            for (BlockSlab.EnumBlockHalf half : BlockSlab.EnumBlockHalf.values()) {
+                IBlockState state = block.getDefaultState().withProperty(BlockSlab.HALF, half);
+                world.setBlockState(pos, state, 2);
+                boolean supported = block != ModBlocks.PATH_SLAB && half == BlockSlab.EnumBlockHalf.TOP;
+                require(Blocks.SNOW_LAYER.canPlaceBlockAt(world, pos.up()) == supported,
+                        "Snow needs a complete full-height slab top: " + state);
+                if (block == ModBlocks.PATH_SLAB) {
+                    world.setBlockState(pos.up(), Blocks.SNOW_LAYER.getDefaultState(), 2);
+                    block.neighborChanged(state, world, pos, Blocks.SNOW_LAYER, pos.up());
+                    require(world.isAirBlock(pos.up()) && world.getBlockState(pos).equals(state),
+                            "A path update clears unsupported snow without changing its half");
+                }
+                checks++;
+            }
+        }
+        world.setBlockState(pos, defaultState(ModBlocks.TURF), 2);
+        require(!Blocks.SNOW_LAYER.canPlaceBlockAt(world, pos.up()), "Turf cannot support hovering snow");
+        world.setBlockState(pos, Blocks.STONE.getDefaultState(), 2);
+        require(Blocks.SNOW_LAYER.canPlaceBlockAt(world, pos.up()), "Full-block snow control");
+        world.setBlockToAir(pos);
+        world.setBlockToAir(pos.down());
+        System.out.println("GRASS_SLABS_SNOW_SETTLEMENT_PASS states=8 native_rule=true path_metadata=true");
+        return checks + 2;
     }
 
     private static int verifyColdSnowAppearance(World world, BlockPos pos) {

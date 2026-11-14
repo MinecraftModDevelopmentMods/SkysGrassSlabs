@@ -26,6 +26,9 @@ strong block light prevents this climate-only cap. The appearance is calculated
 as the world is drawn, so removing the snow updates it without changing saved
 metadata. It adds no height, does not melt independently and drops no snowballs.
 
+Snow layers can settle on top grass and dirt slabs. Bottom slabs, lowered paths
+and turf cannot support a layer at full-block height.
+
 ## Turf
 
 Turf is a one pixel high layer that behaves much like carpet. It can be placed

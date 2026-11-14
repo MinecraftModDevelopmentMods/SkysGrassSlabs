@@ -2,6 +2,7 @@
 
 ## 1.2.0.112021
 
+- Stop snow layers hovering above lowered path slabs.
 - Show snowy slab edges beside higher snow-covered ground and on exposed cold slopes.
 - Recognise snow pieces supplied by other Sky mods, without changing saved slab metadata.
 - Keep climate-only snow caps out from under roofs and away from strong block light.
