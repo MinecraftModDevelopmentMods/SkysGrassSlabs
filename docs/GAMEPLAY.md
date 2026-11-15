@@ -19,9 +19,15 @@ Use a compatible shovel on a dirt or grass slab to make a lowered path slab.
 The slab stays in the same half of the block and the shovel takes the normal
 durability damage. Path slabs do not spread grass or support plants.
 
-Grass and dirt slabs show a snow covered top and snowy side edges when vanilla
-snow is nearby. This is a visual effect: it adds no height, does not melt
-independently and does not drop snowballs.
+Grass and dirt slabs show a snow covered top and snowy side edges near snow,
+including snow on the next higher terrace and registered snow pieces. Exposed
+cold ground also receives its cap without waiting for a snow layer. A roof or
+strong block light prevents this climate-only cap. The appearance is calculated
+as the world is drawn, so removing the snow updates it without changing saved
+metadata. It adds no height, does not melt independently and drops no snowballs.
+
+Snow layers can settle on top grass and dirt slabs. Bottom slabs, lowered paths
+and turf cannot support a layer at full-block height.
 
 ## Turf
 

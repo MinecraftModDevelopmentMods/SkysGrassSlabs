@@ -26,5 +26,14 @@ repair. `registerSpreadRule` can match grass to its source family; return null
 to use the default registered pair. Callbacks must not load chunks or write to
 the world. Registration closes at load completion.
 
+`registerSnowForm(state)` identifies a physical snow shape. Register each
+orientation during initialization; do not register grass with a calculated
+snow cap. Air, tile entities, duplicate entries and late registrations are
+rejected. `isSnowForm(state)` recognises those states and vanilla snow, while
+`hasSnowAppearance(world, pos)` shares the slab appearance rule with finer
+pieces. It checks nearby physical snow, higher terraces and exposed cold
+ground without loading neighbouring chunks. Derived snowy grass flags do not
+become new snow sources. These additions retain API version 1.
+
 Without an integration mod, these extra mappings and rules remain empty and
 the standalone generator continues to handle suitable new Overworld slopes.

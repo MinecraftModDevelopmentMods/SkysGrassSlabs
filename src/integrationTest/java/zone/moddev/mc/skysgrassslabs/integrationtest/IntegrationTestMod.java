@@ -1455,6 +1455,8 @@ public final class IntegrationTestMod {
         checks += 13;
         verifyGrassCoveringAndSnow(world, player, origin.add(10, 0, 0));
         checks += 12;
+        checks += verifyColdSnowAppearance(world, origin.add(2, 70, 2));
+        checks += verifySettledSnowSupport(world, origin.add(2, 75, 2));
         verifyTurfEating(world, origin.add(10, 0, 6));
         checks += 7;
         verifyFlattening(world, player, origin.add(0, 0, 4));
@@ -1659,6 +1661,7 @@ public final class IntegrationTestMod {
 
                 world.setBlockState(pos.down(), Blocks.STONE.getDefaultState(), 3);
                 world.setBlockState(pos, state, 3);
+                world.setBlockState(pos.up(3), Blocks.GLASS.getDefaultState(), 2);
 
                 BlockPos snow = half == BlockSlab.EnumBlockHalf.TOP ? pos.east() : pos.up();
 
@@ -1676,6 +1679,90 @@ public final class IntegrationTestMod {
                         : actual.getValue(BlockDirt.SNOWY);
                 require(!snowy, "Visual snow state persisted after snow removal for " + blockId(block) + " " + half);
             }
+        }
+    }
+
+    private static int verifySettledSnowSupport(World world, BlockPos pos) {
+        clearBox(world, pos.add(-1, -1, -1), pos.add(1, 3, 1));
+        world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
+        int checks = 0;
+        for (Block block : new Block[] { ModBlocks.GRASS_SLAB, ModBlocks.DIRT_SLAB, ModBlocks.PATH_SLAB }) {
+            for (BlockSlab.EnumBlockHalf half : BlockSlab.EnumBlockHalf.values()) {
+                IBlockState state = block.getDefaultState().withProperty(BlockSlab.HALF, half);
+                world.setBlockState(pos, state, 2);
+                boolean supported = block != ModBlocks.PATH_SLAB && half == BlockSlab.EnumBlockHalf.TOP;
+                require(Blocks.SNOW_LAYER.canPlaceBlockAt(world, pos.up()) == supported,
+                        "Snow needs a complete full-height slab top: " + state);
+                if (block == ModBlocks.PATH_SLAB) {
+                    world.setBlockState(pos.up(), Blocks.SNOW_LAYER.getDefaultState(), 2);
+                    block.neighborChanged(state, world, pos, Blocks.SNOW_LAYER, pos.up());
+                    require(world.isAirBlock(pos.up()) && world.getBlockState(pos).equals(state),
+                            "A path update clears unsupported snow without changing its half");
+                }
+                checks++;
+            }
+        }
+        world.setBlockState(pos, defaultState(ModBlocks.TURF), 2);
+        require(!Blocks.SNOW_LAYER.canPlaceBlockAt(world, pos.up()), "Turf cannot support hovering snow");
+        world.setBlockState(pos, Blocks.STONE.getDefaultState(), 2);
+        require(Blocks.SNOW_LAYER.canPlaceBlockAt(world, pos.up()), "Full-block snow control");
+        world.setBlockToAir(pos);
+        world.setBlockToAir(pos.down());
+        System.out.println("GRASS_SLABS_SNOW_SETTLEMENT_PASS states=8 native_rule=true path_metadata=true");
+        return checks + 2;
+    }
+
+    private static int verifyColdSnowAppearance(World world, BlockPos pos) {
+        Chunk chunk = world.getChunk(pos);
+        byte[] biomes = chunk.getBiomeArray();
+        int column = (pos.getZ() & 15) << 4 | pos.getX() & 15;
+        byte originalBiome = biomes[column];
+        try {
+            biomes[column] = (byte) net.minecraft.world.biome.Biome.getIdForBiome(
+                    net.minecraft.init.Biomes.ICE_PLAINS);
+            for (int height = pos.getY(); height < 256; height++) {
+                world.setBlockToAir(new BlockPos(pos.getX(), height, pos.getZ()));
+            }
+            world.setBlockState(pos.down(), Blocks.STONE.getDefaultState(), 2);
+            Block grassSlab = ModBlocks.GRASS_SLAB;
+            IBlockState slab = stateFromMetadata(grassSlab, 1);
+            world.setBlockState(pos, slab, 2);
+            net.minecraft.world.ChunkCache cache = new net.minecraft.world.ChunkCache(
+                    world, pos.add(-2, -2, -2), pos.add(2, 4, 2), 1);
+            require(zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.hasSnowAppearance(world, pos),
+                    "Exposed cold ground needs a calculated snow cap without waiting for a snow layer");
+            require(zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.hasSnowAppearance(cache, pos),
+                    "A render/pathfinding cache must use its own world's weather");
+            require(grassSlab.getActualState(slab, cache, pos).getValue(BlockGrass.SNOWY)
+                            && metadata(ModBlocks.GRASS_SLAB, world.getBlockState(pos)) == 1,
+                    "Cold appearance must not change the saved slab orientation");
+
+            world.setBlockState(pos.up(3), Blocks.GLASS.getDefaultState(), 2);
+            require(!zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.hasSnowAppearance(world, pos)
+                            && !zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.hasSnowAppearance(cache, pos),
+                    "A glass roof must stop the climate-only snow cap in both access paths");
+            world.setBlockToAir(pos.up(3));
+            world.setBlockState(pos.east(2), Blocks.GLOWSTONE.getDefaultState(), 3);
+            world.checkLightFor(net.minecraft.world.EnumSkyBlock.BLOCK, pos.up());
+            require(world.getLightFor(net.minecraft.world.EnumSkyBlock.BLOCK, pos.up()) >= 10
+                            && !zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.hasSnowAppearance(world, pos),
+                    "Strong block light must stop the climate-only snow cap");
+            world.setBlockToAir(pos.east(2));
+            boolean closed = false;
+            try {
+                zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.registerSnowForm(Blocks.SNOW.getDefaultState());
+            } catch (IllegalStateException expected) {
+                closed = expected.getMessage().equals("Snow form registration is closed");
+            }
+            require(closed, "Snow registration must close before a world starts");
+            SkysGrassSlabs.logger.info("SGS_COLD_SNOW_PASS checks=6 cache=true roof=true light=true metadata=true");
+            return 6;
+        } finally {
+            biomes[column] = originalBiome;
+            world.setBlockToAir(pos);
+            world.setBlockToAir(pos.up());
+            world.setBlockToAir(pos.east(2));
+            world.setBlockToAir(pos.up(3));
         }
     }
 

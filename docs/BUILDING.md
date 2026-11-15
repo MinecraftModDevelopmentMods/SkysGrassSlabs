@@ -3,6 +3,10 @@
 Use the Gradle wrapper with Java 17 and set `SGS_JAVA8_HOME` to the Java 8
 installation used for Minecraft. Run these commands from the checkout:
 
+The legacy Forge setup uses a checksum-pinned SpecialSource build tool from
+Maven Central because its original download address no longer reliably serves
+the jar. One online setup is needed before an empty cache can be used offline.
+
 ```text
 gradlew clean check build javadoc genEclipseRuns verifyEclipseProductionClasspath verifyReleaseArtifacts writeReleaseChecksums
 ```

@@ -45,6 +45,21 @@ public final class ClientProbeTestMod {
     private boolean configScreenVerified;
 
     @Mod.EventHandler
+    public void prepare(net.minecraftforge.fml.common.event.FMLPreInitializationEvent event) {
+        if (Boolean.getBoolean("skysgrassslabs.clientProbe")) {
+            if (org.lwjgl.opengl.Display.isCreated()) {
+                org.lwjgl.opengl.Display.setLocation(-10000, -10000);
+            }
+            if (org.lwjgl.input.Mouse.isCreated()) {
+                org.lwjgl.input.Mouse.setGrabbed(false);
+            }
+            Minecraft.getMinecraft().gameSettings.pauseOnLostFocus = false;
+            // This disposable client uses an offline test identity, not a Mojang account.
+            Minecraft.getMinecraft().getSession().setProperties(new com.mojang.authlib.properties.PropertyMap());
+        }
+    }
+
+    @Mod.EventHandler
     public void initialize(FMLInitializationEvent event) {
         if (Boolean.getBoolean("skysgrassslabs.clientProbe")) {
             MinecraftForge.EVENT_BUS.register(this);
@@ -93,6 +108,7 @@ public final class ClientProbeTestMod {
                     }
                     break;
                 case 2:
+                    finishDisconnect(minecraft);
                     if (minecraft.world == null && stateTicks >= 100) {
                         minecraft.launchIntegratedServer(WORLD_DIRECTORY, "Sky's Grass Slabs Client Smoke",
                                 new WorldSettings(81726354L, GameType.CREATIVE, false, false, WorldType.DEFAULT));
@@ -110,6 +126,7 @@ public final class ClientProbeTestMod {
                     }
                     break;
                 case 4:
+                    finishDisconnect(minecraft);
                     if (minecraft.world == null && stateTicks >= 40) {
                         writeMarker();
                         minecraft.shutdown();
@@ -169,8 +186,17 @@ public final class ClientProbeTestMod {
     }
 
     private static void stopIntegratedServer(Minecraft minecraft) {
+        // Stop the local server while it can still service its shutdown task.
+        minecraft.getIntegratedServer().initiateShutdown();
         if (minecraft.world != null) {
             minecraft.world.sendQuittingDisconnectingPacket();
+        }
+    }
+
+    private void finishDisconnect(Minecraft minecraft) {
+        // Let packets already queued by the local server finish before clearing the world.
+        if (stateTicks != 20) {
+            return;
         }
 
         minecraft.loadWorld(null);

@@ -11,7 +11,9 @@ Use a shovel on a dirt or grass slab to make a lowered path.
 
 Grass follows the surrounding biome colours and spreads between blocks, slabs
 and turf. Covered grass, or grass left in the dark, turns back into dirt.
-Nearby snow gives dirt and grass slabs snowy edges.
+Nearby snow gives dirt and grass slabs snowy edges, including snow on the next
+higher terrace. Exposed cold slopes also receive their snow cap without
+waiting for a snow layer. Roofs and strong block light prevent that effect.
 
 Cut turf by crafting a grass block or grass slab with a shovel. You get the
 turf, keep the shovel unchanged, and leave a dirt block or slab in the grid.
