@@ -13,6 +13,10 @@ Grass follows the surrounding biome colours and spreads between blocks, slabs
 and turf. Covered grass, or grass left in the dark, turns back into dirt.
 Nearby snow gives dirt and grass slabs snowy edges.
 
+Snow caps follow nearby snow, including snow on the next terrace up. Exposed
+ground in cold biomes also gets a cap, while roofs and strong block light block
+that weather effect. Piece orientations stay unchanged.
+
 Cut turf by crafting a grass block or grass slab with a shovel. You get the
 turf, keep the shovel unchanged, and leave a dirt block or slab in the grid.
 Lay turf on dirt, or use it on a dirt slab to make a grass slab. Sheep can eat
@@ -26,7 +30,7 @@ covers the other recipes, plant support and drops.
 
 By default, grass slabs soften suitable one-block slopes in new Overworld
 chunks. Existing terrain stays as it is. To turn generation off, select the mod
-in **Mods → Config**, save your choice and restart Minecraft. You can also edit
+in **Mods Ã¢â€ â€™ Config**, save your choice and restart Minecraft. You can also edit
 `config/skysgrassslabs.cfg`; see [configuration](docs/CONFIGURATION.md).
 
 The mod works on its own. If you install

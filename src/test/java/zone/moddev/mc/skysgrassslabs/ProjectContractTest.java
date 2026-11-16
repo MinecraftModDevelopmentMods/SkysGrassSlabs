@@ -41,7 +41,7 @@ class ProjectContractTest {
         assertTrue(properties.contains("minecraft_version=1.10.2"));
         assertTrue(properties.contains("forge_version=12.18.3.2511"));
         assertTrue(properties.contains("mapping_version=29-1.10.2"));
-        assertTrue(properties.contains("mod_version=1.1.1.110021"));
+        assertTrue(properties.contains("mod_version=1.2.0.110021"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=8.0.502+7"));
     }
