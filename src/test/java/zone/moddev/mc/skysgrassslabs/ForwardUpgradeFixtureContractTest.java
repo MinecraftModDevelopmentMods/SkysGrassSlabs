@@ -80,6 +80,10 @@ public class ForwardUpgradeFixtureContractTest {
             new Fixture("26.1.2", "1.1.0.2601021",
                     "0AFFA1D367F8582BD77F83830FA872D6C441B2DD1D6EB8D0AAA979D6CF760F6F",
                     "EE631FF66EF3AD11DF1F48D562C19762DB84AE2E603839CBA7A51044F99ACF5A", 11,
+                    true, true),
+            new Fixture("26.2", "1.1.2.2602001",
+                    "040A997B439F2367A765B1B914C6B190B3B0382A3C8EBB846123B7B1DA5042AF",
+                    "647838AE25835DD2B4C4E06BDBBD3D6040F229718CB59347EC8B75806FC504EB", 11,
                     true, true)
     };
 
@@ -110,7 +114,7 @@ public class ForwardUpgradeFixtureContractTest {
                 "skysgrassslabs-forward-fixture.properties"));
         for (Fixture fixture : FIXTURES) {
             Set<String> expected;
-            if (fixture.namespacedWorldData) {
+            if (fixture.namespacedOverworld) {
                 expected = new TreeSet<>(Arrays.asList(
                         "data/minecraft/world_gen_settings.dat",
                         "dimensions/minecraft/overworld/data/forge/capabilities.dat",
@@ -195,7 +199,7 @@ public class ForwardUpgradeFixtureContractTest {
         private final String jarSha256;
         private final int expectedBlocks;
         private final boolean separateEntityStorage;
-        private final boolean namespacedWorldData;
+        private final boolean namespacedOverworld;
         private final File archive;
         private final File manifest;
 
@@ -207,14 +211,14 @@ public class ForwardUpgradeFixtureContractTest {
 
         private Fixture(String minecraftVersion, String modVersion, String fixtureSha256,
                 String jarSha256, int expectedBlocks, boolean separateEntityStorage,
-                boolean namespacedWorldData) {
+                boolean namespacedOverworld) {
             this.minecraftVersion = minecraftVersion;
             this.modVersion = modVersion;
             this.fixtureSha256 = fixtureSha256;
             this.jarSha256 = jarSha256;
             this.expectedBlocks = expectedBlocks;
             this.separateEntityStorage = separateEntityStorage;
-            this.namespacedWorldData = namespacedWorldData;
+            this.namespacedOverworld = namespacedOverworld;
             String baseName = "skysgrassslabs-" + minecraftVersion + "-forward-world";
             archive = new File(FIXTURE_DIRECTORY + baseName + ".zip");
             manifest = new File(FIXTURE_DIRECTORY + baseName + ".manifest");
