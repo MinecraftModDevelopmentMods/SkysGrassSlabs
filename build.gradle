@@ -14,6 +14,8 @@ plugins {
     id 'net.minecraftforge.gradle' version '7.0.34'
 }
 
+apply from: 'gradle/legacy-tools.gradle'
+
 group = project.mod_group
 version = project.mod_version
 base.archivesName = 'SkysGrassSlabs'
@@ -35,6 +37,7 @@ ext.display_version = project.mod_version
 ext.release_tag = project.mod_version
 
 def pinnedJava8 = providers.environmentVariable('SGS_JAVA8_HOME')
+        .orElse(providers.environmentVariable('JAVA_HOME_8_X64'))
 def exactJava8Spec = pinnedJava8.isPresent() ?
         org.gradle.jvm.toolchain.internal.SpecificInstallationToolchainSpec.fromJavaHome(
                 project.services.get(org.gradle.api.internal.provider.PropertyFactory), file(pinnedJava8.get())) : null

@@ -13,6 +13,10 @@ Grass follows the surrounding biome colours and spreads between blocks, slabs
 and turf. Covered grass, or grass left in the dark, turns back into dirt.
 Nearby snow gives dirt and grass slabs snowy edges.
 
+Snow caps follow nearby snow, including snow on the next terrace up. Exposed
+ground in cold biomes also gets a cap, while roofs and strong block light block
+that weather effect. Piece orientations stay unchanged.
+
 Cut turf by crafting a grass block or grass slab with a shovel. You get the
 turf, keep the shovel unchanged, and leave a dirt block or slab in the grid.
 Lay turf on dirt, or use it on a dirt slab to make a grass slab. Sheep can eat

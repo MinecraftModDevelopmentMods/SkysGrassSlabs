@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0.110021
+
+Grass slabs now pick up snow on higher terraces and exposed cold ground. Their snow caps remain visual, so saved orientations and drops stay unchanged.
+
+
 ## 1.1.1.110021 - Minecraft 1.10.2
 
 - Added a Config screen to the Mods list, with help for each setting. Changes
