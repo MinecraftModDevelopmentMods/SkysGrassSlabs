@@ -30,7 +30,7 @@ covers the other recipes, plant support and drops.
 
 By default, grass slabs soften suitable one-block slopes in new Overworld
 chunks. Existing terrain stays as it is. To turn generation off, select the mod
-in **Mods Ã¢â€ â€™ Config**, save your choice and restart Minecraft. You can also edit
+in **Mods â†’ Config**, save your choice and restart Minecraft. You can also edit
 `config/skysgrassslabs.cfg`; see [configuration](docs/CONFIGURATION.md).
 
 The mod works on its own. If you install
