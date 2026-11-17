@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.1.2603002
+
+- Match snowy terraces and exposed cold ground when selecting slab snow caps.
+- Respect entity collisions when combining slabs into a full block.
+- Respect adventure-mode placement permissions when greening a dirt slab with turf.
+- Keep saved world-state recovery messages independent of the Minecraft version.
+
+
+## 1.2.0.2603002
+
+- Grass Slabs can share grass growth and path behaviour with Building Pieces.
+- Terrain Smoother takes over new terrain when installed, with the usual Grass Slabs setting for grass pieces.
+
 ## 1.1.3.2603002 - Minecraft 26.3 (NeoForge)
 
 - Fixed crashes when starting the mod or loading a world with newer NeoForge

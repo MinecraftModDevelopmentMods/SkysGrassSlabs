@@ -4,14 +4,17 @@ Sky's Grass Slabs adds dirt, grass and lowered dirt path slabs, plus a thin
 layer of turf. Grass spreads between blocks, slabs and turf, and grass slabs
 soften one block steps in newly generated Overworld terrain.
 
-This branch is for Minecraft 26.3. Version `1.1.3.2603002` requires NeoForge
-26.3.0.1-beta or a compatible newer 26.3 build, and Java 25.
+This branch is for Minecraft 26.3. Version `1.2.1.2603002` requires NeoForge
+26.3.0.99 or a compatible newer 26.3 build, and Java 25.
 
 ## Installation
 
 Place the mod jar in the `mods` folder. It must be installed on both the client
 and server for multiplayer. Back up an existing world before adding, removing
 or updating world changing mods.
+
+When Sky’s Terrain Smoother is installed, it handles new terrain for both mods.
+Grass Slabs still controls whether it places grass pieces.
 
 ## Using the mod
 
@@ -31,17 +34,17 @@ read the upgrade guide before removing one from an existing world.
 
 ## This update
 
-Version `1.1.3.2603002` fixes crashes when starting the mod or loading a world
-with newer NeoForge 26.3 builds. Earlier 26.3 builds still work. You can keep
-your existing worlds and `skysgrassslabs-common.toml`; no settings need to be
-changed.
+Grass slabs now pick up snow on higher terraces and exposed cold ground.
+Combining slabs respects entity collisions, and laying turf on a dirt slab
+respects adventure-mode placement permissions. Existing worlds, orientations
+and configuration files stay compatible.
 
 ## Guides
 
 - [Gameplay and recipes](docs/GAMEPLAY.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Upgrading an older world](docs/WORLD-UPGRADES.md)
-- [Release notes](docs/RELEASE-1.1.3.2603002.md)
+- [Release notes](docs/RELEASE-1.2.1.2603002.md)
 
 ## License
 

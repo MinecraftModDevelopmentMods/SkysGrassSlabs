@@ -2,5 +2,11 @@
   "block.skysgrassslabs.dirt_slab": "土のハーフブロック",
   "block.skysgrassslabs.grass_slab": "草ブロックのハーフブロック",
   "block.skysgrassslabs.path_slab": "草の道のハーフブロック",
-  "block.skysgrassslabs.turf": "芝生"
+  "block.skysgrassslabs.turf": "芝生",
+  "config.skysgrassslabs.generateGrassSlabs": "草のハーフブロックを生成",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs": "旧MODのハーフブロックを置換",
+  "config.skysgrassslabs.generateGrassSlabs.tooltip": "新しく生成されるオーバーワールドの斜面に草のハーフブロックを置きます。Terrain Smoother導入時は草だけを設定します。既存のチャンクは変わりません。Minecraftの再起動が必要です。",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip": "古いワールド用の互換設定です。通常のMinecraft 1.21.1環境では無効のままにしてください。古いハーフブロックは自動で復元されます。再起動が必要です。",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent": "Grass Slabs のブロックを置換",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent.tooltip": "Grass Slabs が導入されている間、対応するブロックを変換します。削除後の自動復元は有効のままです。Minecraft の再起動が必要です。"
 }

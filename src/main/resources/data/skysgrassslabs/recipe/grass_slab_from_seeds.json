@@ -5,5 +5,8 @@
     "skysgrassslabs:dirt_slab",
     "#c:seeds"
   ],
-  "result": { "id": "skysgrassslabs:grass_slab" }
+  "result": {
+    "id": "skysgrassslabs:grass_slab"
+  },
+  "group": "skys/result/skysgrassslabs/grass_slab"
 }
