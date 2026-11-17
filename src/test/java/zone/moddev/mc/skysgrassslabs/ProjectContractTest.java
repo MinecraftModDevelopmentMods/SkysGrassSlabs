@@ -64,8 +64,9 @@ public class ProjectContractTest {
         digits = digits.substring(0, digits.length() - 2);
         int minor = Integer.parseInt(digits.substring(digits.length() - 2));
         int major = Integer.parseInt(digits.substring(0, digits.length() - 2));
-        assertEquals("master-26.3", "master-" + major + "." + minor
-                + (patch == 0 ? "" : "." + patch));
+        String loaderSuffix = suffix.endsWith("2") ? "-neo" : "";
+        assertEquals("master-26.3-neo", "master-" + major + "." + minor
+                + (patch == 0 ? "" : "." + patch) + loaderSuffix);
         assertTrue(workflow.contains("target_suffix=\"${BASH_REMATCH[1]}\""));
         assertTrue(workflow.contains("\"master-$mc_major.$mc_minor.$mc_patch$loader_suffix\""));
 
@@ -73,6 +74,7 @@ public class ProjectContractTest {
         assertTrue(properties.contains("loader_code=2"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(workflow.contains("confirm_live_publication:"));
+        assertTrue(workflow.contains("curseforge-retry-attempts: 1"));
         assertFalse(workflow.contains("    environment:\n      name: release"));
         assertTrue(workflow.contains("CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}"));
         assertTrue(workflow.contains("MAVEN_UPLOAD_URL: ${{ secrets.MAVEN_UPLOAD_URL }}"));
