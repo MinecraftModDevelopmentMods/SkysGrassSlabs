@@ -9,5 +9,6 @@
   "result": {
     "id": "minecraft:dirt"
   },
-  "category": "building"
+  "category": "building",
+  "group": "skys/result/minecraft/dirt"
 }

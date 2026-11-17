@@ -5,5 +5,8 @@
     "minecraft:dirt",
     "#c:seeds"
   ],
-  "result": { "id": "minecraft:grass_block" }
+  "result": {
+    "id": "minecraft:grass_block"
+  },
+  "group": "skys/result/minecraft/grass_block"
 }
