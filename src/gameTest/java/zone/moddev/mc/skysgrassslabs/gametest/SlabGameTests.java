@@ -811,19 +811,32 @@ public final class SlabGameTests {
         occupant.setPos(position.getX() + .5, position.getY() + .5, position.getZ() + .5);
         require(helper, helper.getLevel().addFreshEntity(occupant),
                 "The collision fixture cow must be registered in its test chunk");
-        require(helper, !helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
-                        CollisionContext.empty()), "The join fixture needs an obstructed upper half");
-        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-        ItemStack held = new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get());
-        player.setItemInHand(InteractionHand.MAIN_HAND, held);
-        held.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
-                new BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false)));
-        require(helper, helper.getLevel().getBlockState(position).equals(slab) && held.getCount() == 1,
-                "Joining slabs must not put a full block inside an entity or consume the item");
-        occupant.discard();
-        require(helper, helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
-                        CollisionContext.empty()), "Removing the cow clears the full block's collision space");
-        helper.succeed();
+        // Loaded test chunks can expose their entities a tick after insertion.
+        // Wait for the fixture, then run the placement assertions exactly once.
+        helper.startSequence()
+                .thenWaitUntil(() -> require(helper,
+                        helper.getLevel().getEntitiesOfClass(occupant.getClass(), occupant.getBoundingBox())
+                                .contains(occupant),
+                        "The collision fixture cow must be visible to the level"))
+                .thenExecute(() -> {
+                    SkysGrassSlabs.LOGGER.debug("Slab collision fixture ready on tick {} at {}",
+                            helper.getTick(), position);
+                    require(helper, !helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
+                                    CollisionContext.empty()),
+                            "The join fixture needs an obstructed upper half");
+                    Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+                    ItemStack held = new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get());
+                    player.setItemInHand(InteractionHand.MAIN_HAND, held);
+                    held.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
+                            new BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false)));
+                    require(helper, helper.getLevel().getBlockState(position).equals(slab) && held.getCount() == 1,
+                            "Joining slabs must not put a full block inside an entity or consume the item");
+                    occupant.discard();
+                    require(helper, helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
+                                    CollisionContext.empty()),
+                            "Removing the cow clears the full block's collision space");
+                })
+                .thenSucceed();
     }
 
     public static void turfGreeningRespectsAdventurePermissions(GameTestHelper helper) {
