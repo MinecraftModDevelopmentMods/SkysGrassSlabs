@@ -803,8 +803,14 @@ public final class SlabGameTests {
         BlockState slab = ModBlocks.DIRT_SLAB.get().defaultBlockState();
         helper.getLevel().setBlock(position, slab, Block.UPDATE_ALL);
         var occupant = EntityTypes.COW.create(helper.getLevel(), EntitySpawnReason.COMMAND);
-        helper.getLevel().addFreshEntity(occupant);
+        require(helper, occupant != null, "The collision fixture needs a cow");
+        occupant.setNoAi(true);
+        occupant.setNoGravity(true);
+        // GameTests can run far from spawn. Set the position before the world
+        // assigns the entity to a chunk and starts tracking its collisions.
         occupant.setPos(position.getX() + .5, position.getY() + .5, position.getZ() + .5);
+        require(helper, helper.getLevel().addFreshEntity(occupant),
+                "The collision fixture cow must be registered in its test chunk");
         require(helper, !helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
                         CollisionContext.empty()), "The join fixture needs an obstructed upper half");
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
@@ -815,6 +821,8 @@ public final class SlabGameTests {
         require(helper, helper.getLevel().getBlockState(position).equals(slab) && held.getCount() == 1,
                 "Joining slabs must not put a full block inside an entity or consume the item");
         occupant.discard();
+        require(helper, helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
+                        CollisionContext.empty()), "Removing the cow clears the full block's collision space");
         helper.succeed();
     }
 
