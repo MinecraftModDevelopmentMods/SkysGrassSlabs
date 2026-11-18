@@ -37,7 +37,7 @@ Turf spreads grass to nearby dirt and dirt slabs. Placing turf directly on a
 dirt slab consumes the turf and changes the slab into a grass slab without
 changing whether it is in the top or bottom half.
 
-Sheep can eat turf and regrow their wool. Turf eaten while `mobGriefing` is
+Sheep can eat turf and regrow their wool. Turf eaten while `minecraft:mob_griefing` is
 enabled is removed without dropping an item.
 
 ## Crafting

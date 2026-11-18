@@ -22,7 +22,7 @@ side="BOTH"
 [[dependencies.skysgrassslabsupgradeprobe]]
 modId="skysgrassslabs"
 type="required"
-versionRange="[1.2.0.2602002]"
+versionRange="[1.2.1.2602002]"
 ordering="AFTER"
 side="BOTH"
 

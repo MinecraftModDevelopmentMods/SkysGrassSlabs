@@ -42,7 +42,7 @@ public class ConfigSaveTest {
         try (var writer = Files.newBufferedWriter(file)) {
             new TomlWriter().write(defaults, writer);
         }
-        container.tracker.loadConfigs(ModConfig.Type.COMMON, directory);
+        container.tracker.loadConfigs(NeoForgeConfigType.local(), directory);
         try {
             CommentedConfig values = container.config.getLoadedConfig().config();
             values.set("compat.unrelated", "kept");
@@ -74,7 +74,7 @@ public class ConfigSaveTest {
             assertEquals("A pack setting", saved.getComment("compat.unrelated").trim());
             assertEquals(42, (int) saved.get("other.setting"));
         } finally {
-            container.tracker.unloadConfigs(ModConfig.Type.COMMON);
+            container.tracker.unloadConfigs(NeoForgeConfigType.local());
             SkysGrassSlabsConfig.resetRunStateForTests();
         }
     }

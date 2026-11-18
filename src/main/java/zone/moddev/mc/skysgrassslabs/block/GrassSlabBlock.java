@@ -2,6 +2,7 @@ package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.TriState;
 
@@ -13,6 +14,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.placement.VegetationPlacements;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
@@ -20,6 +22,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ScheduledTickAccess;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BonemealableBlock;
@@ -30,13 +33,17 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.neoforged.neoforge.common.ItemAbility;
+import net.neoforged.neoforge.common.extensions.IBlockExtension;
 import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
+import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Grass slab with target aware spreading and top slab vegetation behaviour. */
-public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock {
+public final class GrassSlabBlock extends SlabBlock
+        implements BonemealableBlock, IBlockExtension {
     public static final BooleanProperty SNOWY = SnowyBlock.SNOWY;
 
     public GrassSlabBlock(Properties properties) {
@@ -112,6 +119,16 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     @Override
+    public boolean onTreeGrow(BlockState state, WorldGenLevel level,
+            BiConsumer<BlockPos, BlockState> placeBlock, RandomSource random, BlockPos pos,
+            TreeConfiguration treeConfiguration) {
+        // Trees decorating a chunk can reach slabs that were already saved.
+        return level instanceof WorldGenRegion region
+                && region.getLevel().dimension() == Level.OVERWORLD
+                && LegacyWorldDataHook.isSavedOverworldChunk(pos.getX() >> 4, pos.getZ() >> 4);
+    }
+
+    @Override
     public TriState canSustainPlant(BlockState state, BlockGetter level, BlockPos pos,
             Direction direction, BlockState plant) {
 
@@ -129,12 +146,14 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     @Override
-    public boolean isBonemealSuccess(Level level, RandomSource random, BlockPos pos, BlockState state) {
+    public boolean isBonemealSuccess(Level level, RandomSource random, BlockPos pos,
+            BlockState state) {
         return state.getValue(TYPE) == SlabType.TOP && !state.getValue(WATERLOGGED);
     }
 
     @Override
-    public void performBonemeal(ServerLevel level, RandomSource random, BlockPos pos, BlockState state) {
+    public void performBonemeal(ServerLevel level, RandomSource random, BlockPos pos,
+            BlockState state) {
         if (!isBonemealSuccess(level, random, pos, state)) {
             return;
         }

@@ -1,7 +1,15 @@
 {
   "type": "minecraft:crafting_shaped",
   "category": "building",
-  "pattern": ["###"],
-  "key": { "#": "minecraft:grass_block" },
-  "result": { "id": "skysgrassslabs:grass_slab", "count": 6 }
+  "pattern": [
+    "###"
+  ],
+  "key": {
+    "#": "minecraft:grass_block"
+  },
+  "result": {
+    "id": "skysgrassslabs:grass_slab",
+    "count": 6
+  },
+  "group": "skys/result/skysgrassslabs/grass_slab"
 }

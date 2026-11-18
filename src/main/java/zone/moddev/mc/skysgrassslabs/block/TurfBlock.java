@@ -12,9 +12,10 @@ import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CarpetBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.common.extensions.IBlockExtension;
 
 /** Biome tinted grass source at carpet height with no dirt state. */
-public final class TurfBlock extends CarpetBlock {
+public final class TurfBlock extends CarpetBlock implements IBlockExtension {
     public TurfBlock(Properties properties) {
         super(properties);
     }

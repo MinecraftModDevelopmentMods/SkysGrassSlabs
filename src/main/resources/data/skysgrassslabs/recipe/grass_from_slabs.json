@@ -9,5 +9,6 @@
   "result": {
     "id": "minecraft:grass_block"
   },
-  "category": "building"
+  "category": "building",
+  "group": "skys/result/minecraft/grass_block"
 }

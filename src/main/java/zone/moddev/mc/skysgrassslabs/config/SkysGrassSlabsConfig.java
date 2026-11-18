@@ -43,7 +43,7 @@ public final class SkysGrassSlabsConfig {
     }
 
     public static void register(IEventBus modBus, ModContainer container) {
-        container.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+        container.registerConfig(NeoForgeConfigType.local(), SPEC, FILE_NAME);
         modBus.addListener((ModConfigEvent.Loading event) -> {
             if (event.getConfig().getSpec() == SPEC) {
                 commonConfig = event.getConfig();

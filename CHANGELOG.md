@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1.2602002
+
+- Match snowy terraces and exposed cold ground when selecting slab snow caps.
+- Respect entity collisions when combining slabs into a full block.
+- Respect adventure-mode placement permissions when greening a dirt slab with turf.
+- Keep saved world-state recovery messages independent of the Minecraft version.
+- Give hidden recovery items proper inventory models.
+- Keep the hidden grass recovery blocks tinted to match their biome.
+
 ## 1.2.0.2602002
 
 - Grass Slabs can share grass growth and path behaviour with Building Pieces.
