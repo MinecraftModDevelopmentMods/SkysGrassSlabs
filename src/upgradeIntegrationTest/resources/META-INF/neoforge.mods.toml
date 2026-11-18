@@ -1,0 +1,28 @@
+license="LGPL-2.1-only"
+
+[[mods]]
+modId="skysgrassslabsupgradeprobe"
+version="1"
+displayName="Sky's Grass Slabs Upgrade Probe"
+description='''Build-only saved-world compatibility verification.'''
+
+[[dependencies.skysgrassslabsupgradeprobe]]
+modId="neoforge"
+type="required"
+versionRange="[26.2.0.45-beta,26.2.1)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.skysgrassslabsupgradeprobe]]
+modId="skysgrassslabs"
+type="required"
+versionRange="[1.2.1.2602002]"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.skysgrassslabsupgradeprobe]]
+modId="minecraft"
+type="required"
+versionRange="[26.2]"
+ordering="NONE"
+side="BOTH"

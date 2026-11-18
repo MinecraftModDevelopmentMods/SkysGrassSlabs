@@ -110,7 +110,7 @@ public class ForwardUpgradeFixtureContractTest {
                 "skysgrassslabs-forward-fixture.properties"));
         for (Fixture fixture : FIXTURES) {
             Set<String> expected;
-            if (fixture.namespacedWorldData) {
+            if (fixture.namespacedOverworld) {
                 expected = new TreeSet<>(Arrays.asList(
                         "data/minecraft/world_gen_settings.dat",
                         "dimensions/minecraft/overworld/data/forge/capabilities.dat",
@@ -195,7 +195,7 @@ public class ForwardUpgradeFixtureContractTest {
         private final String jarSha256;
         private final int expectedBlocks;
         private final boolean separateEntityStorage;
-        private final boolean namespacedWorldData;
+        private final boolean namespacedOverworld;
         private final File archive;
         private final File manifest;
 
@@ -207,14 +207,14 @@ public class ForwardUpgradeFixtureContractTest {
 
         private Fixture(String minecraftVersion, String modVersion, String fixtureSha256,
                 String jarSha256, int expectedBlocks, boolean separateEntityStorage,
-                boolean namespacedWorldData) {
+                boolean namespacedOverworld) {
             this.minecraftVersion = minecraftVersion;
             this.modVersion = modVersion;
             this.fixtureSha256 = fixtureSha256;
             this.jarSha256 = jarSha256;
             this.expectedBlocks = expectedBlocks;
             this.separateEntityStorage = separateEntityStorage;
-            this.namespacedWorldData = namespacedWorldData;
+            this.namespacedOverworld = namespacedOverworld;
             String baseName = "skysgrassslabs-" + minecraftVersion + "-forward-world";
             archive = new File(FIXTURE_DIRECTORY + baseName + ".zip");
             manifest = new File(FIXTURE_DIRECTORY + baseName + ".manifest");

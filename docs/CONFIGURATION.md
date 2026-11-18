@@ -5,6 +5,10 @@ first time. Stop the game or server before editing it, then restart to apply
 changes. On a dedicated server, the server's configuration controls world
 generation and world upgrades.
 
+Newer NeoForge 26.2 builds call this configuration scope `LOCAL` rather than
+`COMMON`. The file remains `skysgrassslabs-common.toml`; existing settings do
+not need to be moved or recreated.
+
 When upgrading from an earlier release, the mod copies valid settings from
 `skysgrassslabs.cfg` if the TOML file does not already exist. The old file is
 kept. An existing TOML file always takes priority.
@@ -13,9 +17,14 @@ kept. An existing TOML file always takes priority.
 
 `worldgen.generateGrassSlabs=true`
 
+In the Mods list, select Sky’s Grass Slabs and open Config to edit these
+choices. They take effect the next time Minecraft starts.
+
 When enabled, suitable one block slopes in newly generated Overworld chunks
 may receive grass slabs. Set this to `false` to leave new terrain unchanged.
 The setting never adds or removes slabs in chunks that already exist.
+If Sky’s Terrain Smoother is installed, it handles generation for both mods.
+This setting still controls whether that smoother places grass pieces.
 
 ## Legacy slab replacement
 
@@ -46,9 +55,10 @@ the other legacy replacement option.
 
 ## Related game rules
 
-Turf and grass behaviour use Minecraft random ticks. Setting `randomTickSpeed`
-to zero pauses spreading, grass decay and delayed turf support checks.
+Turf and grass behaviour use Minecraft random ticks. Setting
+`minecraft:random_tick_speed` to zero pauses spreading, grass decay and delayed
+turf support checks.
 
-Sheep respect the `mobGriefing` game rule. With mob griefing enabled they eat
+Sheep respect the `minecraft:mob_griefing` game rule. With mob griefing enabled they eat
 and remove turf without a drop. With it disabled they can still perform their
 normal eating behaviour and regrow wool, but the turf remains.

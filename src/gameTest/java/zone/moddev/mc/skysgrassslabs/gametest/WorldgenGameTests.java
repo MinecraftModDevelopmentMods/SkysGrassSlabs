@@ -1,6 +1,9 @@
 package zone.moddev.mc.skysgrassslabs.gametest;
 
+import java.util.Set;
 import java.util.Optional;
+import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
+import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.Identifier;
@@ -9,12 +12,11 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.GenerationStep;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import net.neoforged.neoforge.common.world.BiomeModifier;
-import net.neoforged.neoforge.common.world.ModifiableBiomeInfo.BiomeInfo;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.neoforged.neoforge.common.world.BiomeModifier.Phase;
+import net.neoforged.neoforge.common.world.ModifiableBiomeInfo.BiomeInfo;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.world.GrassSlabSmoothingFeature;
@@ -34,15 +36,52 @@ public final class WorldgenGameTests {
         require(helper, modifier instanceof zone.moddev.mc.skysgrassslabs.world.SmoothingBiomeModifier,
                 "registered smoothing biome modifier is missing");
 
-        BiomeInfo.Builder builder = BiomeInfo.Builder.copyOf(
-                biome.value().modifiableBiomeInfo().getOriginalBiomeInfo());
-        modifier.modify(biome, BiomeModifier.Phase.AFTER_EVERYTHING, builder);
-        var vegetation = builder.build().generationSettings().features()
+        var vegetation = biome.value().getGenerationSettings().features()
                 .get(GenerationStep.Decoration.VEGETAL_DECORATION.ordinal());
         require(helper, vegetation.size() > 0, "biome has no vegetation features");
         PlacedFeature first = vegetation.get(0).value();
         require(helper, first.feature().value().feature() instanceof GrassSlabSmoothingFeature,
                 "smoother is not the first vegetation feature");
+        helper.succeed();
+    }
+
+    public static void bothModifierSignaturesPreservePhaseOrderAndDeduplication(GameTestHelper helper) {
+        var biome = helper.getLevel().getBiome(helper.absolutePos(BlockPos.ZERO));
+        var value = biome.value();
+        var original = new BiomeInfo(value.getModifiedClimateSettings(), value.getModifiedSpecialEffects(),
+                value.getGenerationSettings(), value.getMobSettings());
+        var key = biome.unwrapKey().orElseThrow();
+        var legacy = BiomeInfo.Builder.copyOf(original);
+        var current = BiomeInfo.Builder.copyOf(original);
+        var step = GenerationStep.Decoration.VEGETAL_DECORATION;
+        for (var builder : java.util.List.of(legacy, current)) {
+            builder.getGenerationSettings().getFeatures(step).removeIf(feature ->
+                    feature.value().feature().value().feature() instanceof GrassSlabSmoothingFeature);
+        }
+        var before = java.util.List.copyOf(current.getGenerationSettings().getFeatures(step));
+        var modifier = zone.moddev.mc.skysgrassslabs.world.SmoothingBiomeModifier.INSTANCE;
+        for (Phase phase : Phase.values()) {
+            if (phase == Phase.AFTER_EVERYTHING) {
+                continue;
+            }
+            modifier.modify(biome, phase, legacy);
+            modifier.modify(helper.getLevel().registryAccess(), biome, phase, current);
+            require(helper, legacy.getGenerationSettings().getFeatures(step).equals(before)
+                    && current.getGenerationSettings().getFeatures(step).equals(before),
+                    "a nonfinal phase changed vegetation features");
+        }
+        modifier.modify(biome, Phase.AFTER_EVERYTHING, legacy);
+        modifier.modify(helper.getLevel().registryAccess(), biome, Phase.AFTER_EVERYTHING, current);
+        var expected = java.util.List.copyOf(legacy.getGenerationSettings().getFeatures(step));
+        require(helper, current.getGenerationSettings().getFeatures(step).equals(expected),
+                "the two loader entry points changed feature order");
+        require(helper, expected.size() == before.size() + 1
+                && expected.getFirst().value().feature().value().feature() instanceof GrassSlabSmoothingFeature,
+                "smoothing was not inserted exactly once at index zero");
+        modifier.modify(helper.getLevel().registryAccess(), biome, Phase.AFTER_EVERYTHING, current);
+        modifier.modify(biome, Phase.AFTER_EVERYTHING, current);
+        require(helper, current.getGenerationSettings().getFeatures(step).equals(expected),
+                "repeat calls duplicated the smoothing feature");
         helper.succeed();
     }
 
@@ -52,6 +91,8 @@ public final class WorldgenGameTests {
 
         BlockPos center = new BlockPos(owner.getMinBlockX() + 8, y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, center, center.east());
+        helper.getLevel().setBlock(center.above(), Blocks.SHORT_GRASS.defaultBlockState(),
+                Block.UPDATE_ALL);
 
         BlockPos border = new BlockPos(owner.getMinBlockX(), y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, border, border.west());
@@ -70,16 +111,16 @@ public final class WorldgenGameTests {
         helper.getLevel().setBlock(chest, Blocks.CHEST.defaultBlockState(), Block.UPDATE_ALL);
 
         helper.runAfterDelay(5, () -> {
+            primeLoadedHeightmaps(helper, owner);
             GrassSlabSmoothingFeature feature = new GrassSlabSmoothingFeature(
-                    NoneFeatureConfiguration.CODEC);
-            FeaturePlaceContext<NoneFeatureConfiguration> context = new FeaturePlaceContext<>(
-                    Optional.empty(), helper.getLevel(),
+                    net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration.CODEC);
+            var context = new FeaturePlaceContext<>(Optional.empty(), helper.getLevel(),
                     helper.getLevel().getChunkSource().getGenerator(),
-                    RandomSource.create(19780401L),
-                    center, NoneFeatureConfiguration.INSTANCE);
-            require(helper, feature.place(context), "controlled feature pass made no changes");
+                    RandomSource.create(19780401L), center, NoneFeatureConfiguration.INSTANCE);
+            require(helper, feature.place(context),
+                    "controlled feature pass made no changes");
             require(helper, helper.getLevel().getBlockState(center.above())
-                    .is(ModBlocks.GRASS_SLAB.get()), "one-block transition was not smoothed");
+                    .is(ModBlocks.GRASS_SLAB.get()), "short grass prevented a valid one-block transition");
             require(helper, helper.getLevel().getBlockState(border.above())
                     .is(ModBlocks.GRASS_SLAB.get()), "owning-chunk border transition was not smoothed");
             require(helper, helper.getLevel().getBlockState(border.west().above())
@@ -103,6 +144,17 @@ public final class WorldgenGameTests {
                 helper.succeed();
             });
         });
+    }
+
+    private static void primeLoadedHeightmaps(GameTestHelper helper, ChunkPos owner) {
+        for (int chunkX = owner.x() - 1; chunkX <= owner.x() + 1; chunkX++) {
+            for (int chunkZ = owner.z() - 1; chunkZ <= owner.z() + 1; chunkZ++) {
+                var chunk = helper.getLevel().getChunkSource().getChunkNow(chunkX, chunkZ);
+                if (chunk != null) {
+                    Heightmap.primeHeightmaps(chunk, Set.of(Heightmap.Types.WORLD_SURFACE_WG));
+                }
+            }
+        }
     }
 
     private static int countGrassSlabs(GameTestHelper helper, ChunkPos chunk) {
