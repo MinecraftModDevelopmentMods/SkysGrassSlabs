@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.1.2602001
+
+- Improve snow caps on terraces and cold ground.
+- Keep partial slab faces visible, and respect collisions and turf placement permissions.
+- Keep recipe-book entries together by their result and protect saved slabs from tree decoration.
+
+## 1.2.0.2602001 - Minecraft 26.2
+
+- Craft two matching dirt or grass slabs back into a full block.
+- Change Grass Slabs settings from Forge’s Mods menu.
+- Let Terrain Smoother handle generation when installed. Grass Slabs still controls whether it includes grass.
+- Protect existing chunks and structures, and keep small plants where a new grass slab fits below them.
+
 ## 1.1.2.2602001 - Minecraft 26.2
 
 - Corrected snowy grass slabs so their exposed top uses the snow texture

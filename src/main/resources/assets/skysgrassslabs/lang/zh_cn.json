@@ -2,5 +2,11 @@
   "block.skysgrassslabs.dirt_slab": "泥土台阶",
   "block.skysgrassslabs.grass_slab": "草方块台阶",
   "block.skysgrassslabs.path_slab": "草径台阶",
-  "block.skysgrassslabs.turf": "草皮"
+  "block.skysgrassslabs.turf": "草皮",
+  "config.skysgrassslabs.generateGrassSlabs": "生成草方块台阶",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs": "替换旧版台阶",
+  "config.skysgrassslabs.generateGrassSlabs.tooltip": "在新生成的主世界斜坡上放置草方块台阶。安装Terrain Smoother后，此选项只控制草地。已有区块不会改变。需要重启Minecraft。",
+  "config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip": "旧世界兼容设置。普通Minecraft 1.21.1整合包请保持关闭。旧台阶会自动恢复。需要重启Minecraft。",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent": "替换 Grass Slabs 内容",
+  "config.skysgrassslabs.forceReplaceGrassSlabsModContent.tooltip": "安装 Grass Slabs 时转换受支持的内容。移除该模组后仍会自动恢复旧内容。需要重启 Minecraft。"
 }
