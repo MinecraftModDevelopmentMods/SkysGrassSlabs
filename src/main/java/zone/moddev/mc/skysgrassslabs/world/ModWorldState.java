@@ -92,7 +92,7 @@ public final class ModWorldState extends SavedData {
             Files.copy(oldFile, temporary, StandardCopyOption.REPLACE_EXISTING);
             Files.move(temporary, newFile, StandardCopyOption.ATOMIC_MOVE);
             SkysGrassSlabs.LOGGER.info("Preserved Sky's Grass Slabs world state in the "
-                    + "Minecraft 26.1 namespaced data directory");
+                    + "namespaced data directory");
         } catch (IOException exception) {
             try {
                 Files.deleteIfExists(temporary);
@@ -100,7 +100,7 @@ public final class ModWorldState extends SavedData {
                 exception.addSuppressed(cleanupFailure);
             }
             throw new IllegalStateException("Could not preserve existing Sky's Grass Slabs "
-                    + "world state before loading Minecraft 26.1", exception);
+                    + "world state before loading this Minecraft version", exception);
         }
     }
 

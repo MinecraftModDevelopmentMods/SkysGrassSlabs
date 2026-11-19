@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1.2601021
+
+Grass keeps its snowy appearance beneath smoothing pieces. Crafting and old-world recovery have also been tightened up.
+
 ## 1.2.0.2601021 - Minecraft 26.1.2
 
 - Craft two matching dirt or grass slabs back into a full block.
