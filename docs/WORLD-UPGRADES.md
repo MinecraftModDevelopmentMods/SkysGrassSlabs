@@ -6,7 +6,7 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.2.0.2601022.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.2.1.2601022.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -19,9 +19,10 @@ Minecraft 1.13.2 through 1.21.11 worlds already use named block states. Their
 orientation, snowy and waterlogged states load through Minecraft's normal
 upgrade process.
 
-Minecraft 26.1 stores dimension data in namespaced folders. The mod copies its
-older Overworld state into the new location before loading it and leaves the
-original file untouched as an additional recovery point.
+Minecraft 26.1 stores mod saved data in a namespaced Overworld directory. On
+the first upgrade, Sky's Grass Slabs copies its existing schema 1 world state
+to that location before loading it. The old file is kept as a backup. If the
+new namespaced file already exists, it takes priority.
 
 World smoothing still affects only newly generated chunks. Chunks indexed as
 part of an older world are not treated as new terrain by the smoothing
@@ -69,8 +70,8 @@ When both mods remain installed, their content is left alone by default. See
 ## Modpack checklist
 
 1. Back up the complete instance and world.
-2. Update NeoForge and every required mod to a matching Minecraft 1.21.1 build.
-3. Install the 1.21.1 Sky's Grass Slabs jar before the first upgraded start.
+2. Update NeoForge and every required mod to a matching Minecraft 26.1.2 build.
+3. Install the 26.1.2 Sky's Grass Slabs jar before the first upgraded start.
 4. Read the complete NeoForge missing content list before confirming it.
 5. Check representative slabs, turf, paths, inventories and old terrain.
 6. Stop and start the upgraded copy once more, then repeat the checks.

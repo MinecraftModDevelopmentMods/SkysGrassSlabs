@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "skysgrassslabs:worldgen/both_modifier_signatures_preserve_phase_order_and_deduplication",
+  "max_ticks": 100,
+  "structure": "minecraft:empty"
+}

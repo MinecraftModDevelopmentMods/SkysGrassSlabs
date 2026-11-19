@@ -16,7 +16,7 @@ side="BOTH"
 [[dependencies.skysgrassslabsupgradeprobe]]
 modId="skysgrassslabs"
 type="required"
-versionRange="[1.2.0.2601022]"
+versionRange="[1.2.1.2601022]"
 ordering="AFTER"
 side="BOTH"
 
