@@ -27,11 +27,19 @@ import org.junit.Test;
 public class LocalizationContractTest {
     private static final Path LANG_DIR =
             Path.of("src/main/resources/assets/skysgrassslabs/lang");
-    private static final List<String> KEYS = Arrays.asList(
+    private static final List<String> BLOCK_KEYS = Arrays.asList(
             "block.skysgrassslabs.dirt_slab",
             "block.skysgrassslabs.grass_slab",
             "block.skysgrassslabs.path_slab",
             "block.skysgrassslabs.turf");
+    private static final List<String> CONFIG_KEYS = Arrays.asList(
+            "config.skysgrassslabs.generateGrassSlabs",
+            "config.skysgrassslabs.forceReplaceBuildingBricksSlabs",
+            "config.skysgrassslabs.generateGrassSlabs.tooltip",
+            "config.skysgrassslabs.forceReplaceBuildingBricksSlabs.tooltip",
+            "config.skysgrassslabs.forceReplaceGrassSlabsModContent",
+            "config.skysgrassslabs.forceReplaceGrassSlabsModContent.tooltip");
+    private static final List<String> KEYS = Stream.concat(BLOCK_KEYS.stream(), CONFIG_KEYS.stream()).toList();
     private static final List<String> LOCALES = Arrays.asList(
             "de_at", "de_au", "de_de", "en_ca", "en_en", "en_gb", "en_pt", "en_us",
             "es_es", "es_mx", "fr_ca", "fr_fr", "ja_jp", "ko_kr", "pt_br", "pt_pt",
@@ -50,7 +58,7 @@ public class LocalizationContractTest {
         for (String locale : LOCALES) {
             Map<String, String> translations = read(locale);
             assertEquals(locale, KEYS, new ArrayList<>(translations.keySet()));
-            assertEquals(locale, 4, translations.size());
+            assertEquals(locale, 10, translations.size());
             assertFalse(locale, translations.values().stream().anyMatch(String::isBlank));
         }
     }
@@ -104,7 +112,8 @@ public class LocalizationContractTest {
     }
 
     private static void assertValues(String locale, String... values) throws Exception {
-        assertEquals(locale, Arrays.asList(values), new ArrayList<>(read(locale).values()));
+        Map<String, String> translations = read(locale);
+        assertEquals(locale, Arrays.asList(values), BLOCK_KEYS.stream().map(translations::get).toList());
     }
 
     private static Map<String, String> read(String locale) throws Exception {
