@@ -37,13 +37,14 @@ Turf spreads grass to nearby dirt and dirt slabs. Placing turf directly on a
 dirt slab consumes the turf and changes the slab into a grass slab without
 changing whether it is in the top or bottom half.
 
-Sheep can eat turf and regrow their wool. Turf eaten while `mobGriefing` is
+Sheep can eat turf and regrow their wool. Turf eaten while `minecraft:mob_griefing` is
 enabled is removed without dropping an item.
 
 ## Crafting
 
 - Three dirt blocks in a horizontal row make six dirt slabs.
 - Three grass blocks in a horizontal row make six grass slabs.
+- Two matching dirt or grass slabs side by side make their original block.
 - A dirt block and a recognised seed make a grass block.
 - A dirt slab and a recognised seed make a grass slab.
 - A grass block or grass slab together with a compatible shovel makes one

@@ -7,6 +7,7 @@ import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
+import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.compat.GrassSlabsCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
@@ -20,6 +21,11 @@ public final class ClientEvents {
     public static void registerBlockColors(RegisterColorHandlersEvent.BlockTintSources event) {
         event.register(List.of(BlockTintSources.grassBlock()),
                 ModBlocks.GRASS_SLAB.get(), ModBlocks.TURF.get());
+
+        if (BuildingBricksCompat.hasLegacyAliases()) {
+            event.register(List.of(BlockTintSources.grassBlock()),
+                    BuildingBricksCompat.grassSlab(), BuildingBricksCompat.historicalGrassSlab());
+        }
 
         if (GrassSlabsCompat.grassSlab() != null && GrassSlabsCompat.grassCarpet() != null) {
             event.register(List.of(BlockTintSources.grassBlock()),

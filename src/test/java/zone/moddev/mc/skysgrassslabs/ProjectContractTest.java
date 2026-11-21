@@ -20,6 +20,8 @@ public class ProjectContractTest {
         assertTrue(properties.contains("mod_id=skysgrassslabs"));
         assertTrue(properties.contains("minecraft_version=26.1.2"));
         assertTrue(properties.contains("neo_version=26.1.2.94"));
+        assertTrue(properties.contains("neogradle.subsystems.decompiler.enabled=true"));
+        assertTrue(properties.contains("neogradle.subsystems.decompiler.maxMemory=8g"));
         assertTrue(properties.contains("java_toolchain_version=25.0.3+9"));
         String build = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
         assertTrue(build.contains("verifyJava25Toolchain"));
@@ -33,14 +35,14 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
         assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.2.2601022.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.2.1.2601022.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void releaseIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.1.2.2601022"));
+        assertTrue(properties.contains("mod_version=1.2.1.2601022"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -62,7 +64,9 @@ public class ProjectContractTest {
         digits = digits.substring(0, digits.length() - 2);
         int minor = Integer.parseInt(digits.substring(digits.length() - 2));
         int major = Integer.parseInt(digits.substring(0, digits.length() - 2));
-        assertEquals("master-26.1.2", "master-" + major + "." + minor + "." + patch);
+        String loaderSuffix = suffix.endsWith("2") ? "-neo" : "";
+        assertEquals("master-26.1.2-neo", "master-" + major + "." + minor
+                + (patch == 0 ? "" : "." + patch) + loaderSuffix);
         assertTrue(workflow.contains("target_suffix=\"${BASH_REMATCH[1]}\""));
         assertTrue(workflow.contains("\"master-$mc_major.$mc_minor.$mc_patch$loader_suffix\""));
 
@@ -70,6 +74,7 @@ public class ProjectContractTest {
         assertTrue(properties.contains("loader_code=2"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(workflow.contains("confirm_live_publication:"));
+        assertTrue(workflow.contains("curseforge-retry-attempts: 1"));
         assertFalse(workflow.contains("    environment:\n      name: release"));
         assertTrue(workflow.contains("CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}"));
         assertTrue(workflow.contains("MAVEN_UPLOAD_URL: ${{ secrets.MAVEN_UPLOAD_URL }}"));
@@ -114,7 +119,7 @@ public class ProjectContractTest {
         assertTrue(config.contains("push(\"compat\")"));
         assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
         assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
-        assertTrue(main.contains("VERSION = \"1.1.2.2601022\""));
+        assertTrue(main.contains("VERSION = \"1.2.1.2601022\""));
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
         assertTrue(state.contains("schema_version"));
@@ -196,7 +201,7 @@ public class ProjectContractTest {
         assertTrue(chunkMixin.contains("upgradeChunkTag"));
         assertTrue(bridge.contains("new Dynamic<>(NbtOps.INSTANCE"));
         assertTrue(bridge.contains("skysgrassslabs_legacy_registry.dat"));
-        assertTrue(bridge.contains("indexLegacyChunks"));
+        assertTrue(bridge.contains("indexRegionChunks"));
         assertTrue(bridge.contains("SUPPORTED_BLOCK_IDS"));
         assertFalse(bridge.contains("import sun.misc"));
         assertFalse(bridge.contains("Unsafe.class"));
@@ -234,7 +239,7 @@ public class ProjectContractTest {
     }
 
     @Test
-    public void neoForge261LifecycleAndDataPackContractsArePresent() throws Exception {
+    public void neoForge2612LifecycleAndDataPackContractsArePresent() throws Exception {
         String blocks = Files.readString(Path.of(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/init/ModBlocks.java"),
                 StandardCharsets.UTF_8);
@@ -292,9 +297,9 @@ public class ProjectContractTest {
         }
         String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
                 StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.2.2601022.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.2.2601022-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.2.2601022-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.2601022.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.2601022-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.2601022-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
         assertTrue(ci.contains("java-version: '25.0.3+9.0.LTS'"));
         assertTrue(ci.contains("--offline --no-daemon"));

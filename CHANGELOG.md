@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.1.2601022
+
+Improved snow on terraces, exposed slab faces and placement checks. Recipes are easier to find, and nearby tree growth leaves saved slabs alone.
+
+Existing terrain, saved content and configuration choices are retained.
+
+## 1.2.0.2601022 - Minecraft 26.1.2 (NeoForge)
+
+- Craft two matching dirt or grass slabs back into a full block.
+- Change Grass Slabs settings from NeoForge’s Mods menu.
+- Let Terrain Smoother handle generation when installed. Grass Slabs still controls whether it includes grass.
+- Protect existing chunks and structures, and keep small plants where a new grass slab fits below them.
+
 ## 1.1.2.2601022 - Minecraft 26.1.2 (NeoForge)
 
 - Corrected snowy grass slabs so their exposed top uses the snow texture

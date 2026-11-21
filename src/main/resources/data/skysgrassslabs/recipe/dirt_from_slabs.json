@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SS"
+  ],
+  "key": {
+    "S": "skysgrassslabs:dirt_slab"
+  },
+  "result": {
+    "id": "minecraft:dirt"
+  },
+  "category": "building",
+  "group": "skys/result/minecraft/dirt"
+}

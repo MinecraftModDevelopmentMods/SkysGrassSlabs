@@ -129,7 +129,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
         NonNullList<Ingredient> result = NonNullList.create();
         result.add(Ingredient.of(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB.get()));
         List<Item> shovels = new ArrayList<>();
-        for (Item item : BuiltInRegistries.ITEM.stream().toList()) {
+        for (Item item : BuiltInRegistries.ITEM) {
             ItemStack candidate = new ItemStack(item);
             if (isShovel(candidate)) {
                 shovels.add(item);

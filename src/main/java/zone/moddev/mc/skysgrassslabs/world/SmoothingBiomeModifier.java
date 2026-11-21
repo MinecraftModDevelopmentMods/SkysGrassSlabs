@@ -3,6 +3,7 @@ package zone.moddev.mc.skysgrassslabs.world;
 import com.mojang.serialization.MapCodec;
 import java.util.List;
 import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.GenerationStep;
@@ -10,6 +11,7 @@ import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.neoforged.neoforge.common.world.BiomeGenerationSettingsBuilder;
 import net.neoforged.neoforge.common.world.BiomeModifier;
 import net.neoforged.neoforge.common.world.ModifiableBiomeInfo.BiomeInfo;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 
 /** Adds the smoother before vegetation in every non-Nether, non-End biome. */
 public final class SmoothingBiomeModifier implements BiomeModifier {
@@ -22,7 +24,7 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
     @Override
     public void modify(Holder<Biome> biome, Phase phase, BiomeInfo.Builder builder) {
         Holder<PlacedFeature> smoothing = WorldgenBootstrap.placedFeature();
-        if (phase != Phase.AFTER_EVERYTHING || smoothing == null
+        if (phase != Phase.AFTER_EVERYTHING || smoothing == null || GrassSlabsApi.hasSmoothingOwner()
                 || biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END)) {
             return;
         }
@@ -32,6 +34,12 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
         if (features.stream().noneMatch(existing -> existing.value() == smoothing.value())) {
             features.add(0, smoothing);
         }
+    }
+
+    // The target calls the three-argument method; newer loaders can use this overload.
+    public void modify(RegistryAccess registries, Holder<Biome> biome,
+            Phase phase, BiomeInfo.Builder builder) {
+        modify(biome, phase, builder);
     }
 
     @Override
