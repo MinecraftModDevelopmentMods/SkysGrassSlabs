@@ -18,7 +18,7 @@ side="CLIENT"
 [[dependencies.skysgrassslabsclienttest]]
 modId="skysgrassslabs"
 mandatory=true
-versionRange="[1.2.0.120011]"
+versionRange="[1.2.1.120011]"
 ordering="AFTER"
 side="CLIENT"
 

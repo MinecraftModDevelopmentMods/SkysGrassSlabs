@@ -12,5 +12,6 @@
     "item": "skysgrassslabs:grass_slab",
     "count": 6
   },
-  "category": "building"
+  "category": "building",
+  "group": "skys/result/skysgrassslabs/grass_slab"
 }
