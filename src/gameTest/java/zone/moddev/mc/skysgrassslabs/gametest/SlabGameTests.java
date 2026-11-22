@@ -753,6 +753,42 @@ public final class SlabGameTests {
         }
     }
 
+    @GameTest(template = EMPTY, batch = "slabs013")
+    public static void slabJoiningRespectsEntityCollision(GameTestHelper helper) {
+        BlockPos position = helper.absolutePos(new BlockPos(2, 2, 2));
+        BlockState slab = ModBlocks.DIRT_SLAB.defaultBlockState();
+        helper.getLevel().setBlock(position, slab, Block.UPDATE_ALL);
+        var occupant = helper.spawn(EntityType.COW, new BlockPos(2, 2, 2));
+        occupant.setPos(position.getX() + .5, position.getY() + .5, position.getZ() + .5);
+        require(helper, !helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
+                        CollisionContext.empty()), "The join fixture needs an obstructed upper half");
+        Player player = helper.makeMockPlayer();
+        ItemStack held = new ItemStack(ModBlocks.DIRT_SLAB);
+        player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        held.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false)));
+        require(helper, helper.getLevel().getBlockState(position).equals(slab) && held.getCount() == 1,
+                "Joining slabs must leave an obstructing entity and the held item alone");
+        occupant.discard();
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = "slabs013")
+    public static void turfGreeningRespectsAdventurePermissions(GameTestHelper helper) {
+        BlockPos position = helper.absolutePos(new BlockPos(2, 2, 2));
+        BlockState dirt = ModBlocks.DIRT_SLAB.defaultBlockState();
+        helper.getLevel().setBlock(position, dirt, Block.UPDATE_ALL);
+        Player player = helper.makeMockPlayer();
+        player.getAbilities().mayBuild = false;
+        ItemStack held = new ItemStack(ModBlocks.TURF);
+        player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        held.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false)));
+        require(helper, helper.getLevel().getBlockState(position).equals(dirt) && held.getCount() == 1,
+                "Turf greening must respect adventure placement permissions");
+        helper.succeed();
+    }
+
     private static final class FixedRandom extends net.minecraft.world.level.levelgen.LegacyRandomSource {
         private final int[] values;
         private int index;

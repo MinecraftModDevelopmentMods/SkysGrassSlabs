@@ -81,6 +81,10 @@ public final class TurfBlock extends Block {
         return world.getBlockState(support).isCollisionShapeFullBlock(world, support);
     }
 
+    static boolean hasDirtSupport(LevelReader level, BlockPos supportPos) {
+        return level.getBlockState(supportPos).is(Blocks.DIRT);
+    }
+
     private static void dirtifyGrassSupport(Level world, BlockPos pos) {
         if (!world.isClientSide && world.getBlockState(pos.below()).getBlock() == Blocks.GRASS_BLOCK) {
             world.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), 2);

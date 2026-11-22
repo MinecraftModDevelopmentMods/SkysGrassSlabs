@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1.120012 (unreleased)
+
+- Match snow caps to nearby snowy slopes.
+- Keep different crafting results on separate recipe-book buttons.
+- Prevent slab joining through entities and protect saved terrain during nearby decoration.
+
 ## 1.2.0.120012
 
 - Share grass spreading and support rules with Sky's Building Pieces.

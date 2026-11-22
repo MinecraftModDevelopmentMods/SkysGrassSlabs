@@ -139,8 +139,15 @@ final class SmoothingOrderChecks {
                             && arguments[0] instanceof Integer && arguments[1] instanceof Integer) {
                         return chunks.containsKey(ChunkPos.asLong((int) arguments[0], (int) arguments[1]));
                     }
+                    if (method.getReturnType() == boolean.class && arguments.length == 1
+                            && arguments[0] instanceof BlockPos position) {
+                        return chunks.containsKey(new ChunkPos(position).toLong());
+                    }
                     if (ChunkAccess.class.isAssignableFrom(method.getReturnType())) {
-                        ChunkAccess chunk = chunks.get(ChunkPos.asLong((int) arguments[0], (int) arguments[1]));
+                        long key = arguments[0] instanceof BlockPos position
+                                ? new ChunkPos(position).toLong()
+                                : ChunkPos.asLong((int) arguments[0], (int) arguments[1]);
+                        ChunkAccess chunk = chunks.get(key);
                         require(chunk != null, "A halo read must never load an unavailable chunk");
                         return chunk;
                     }

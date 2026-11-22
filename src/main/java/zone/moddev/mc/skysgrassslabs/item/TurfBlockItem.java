@@ -25,7 +25,7 @@ public final class TurfBlockItem extends BlockItem {
         BlockState state = context.getLevel().getBlockState(context.getClickedPos());
         if (context.getClickedFace() == Direction.UP && state.getBlock() == ModBlocks.DIRT_SLAB) {
             Player player = context.getPlayer();
-            if (player == null || !player.mayUseItemAt(
+            if (player == null || stack.isEmpty() || !player.mayUseItemAt(
                     context.getClickedPos(), context.getClickedFace(), stack) ||
                     state.getValue(SlabBlock.WATERLOGGED)) {
                 return InteractionResult.FAIL;

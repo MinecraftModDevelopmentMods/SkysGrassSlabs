@@ -49,12 +49,11 @@ def mavenizerFixtureChecksums = [
 
 // ForgeGradle invokes Mavenizer while configuring the project. Verify the
 // executable and its target rules before any Mavenizer code is allowed to run.
-[mavenizerCompatibilityJar.asFile, mavenizerRuleManifest.asFile].each { fixture ->
+mavenizerFixtureChecksums.each { fixture, expected ->
     if (!fixture.isFile()) {
         throw new GradleException("Missing Mavenizer compatibility fixture: ${fixture}")
     }
     String actual = sha256Of(fixture)
-    String expected = mavenizerFixtureChecksums[fixture]
     if (actual != expected) {
         throw new GradleException("Mavenizer compatibility fixture checksum mismatch for " +
                 "${fixture.name}: expected ${expected}, found ${actual}")

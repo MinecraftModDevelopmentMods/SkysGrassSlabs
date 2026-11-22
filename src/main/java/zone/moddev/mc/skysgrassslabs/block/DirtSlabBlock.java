@@ -37,8 +37,8 @@ public final class DirtSlabBlock extends LegacySlabBlock {
             BlockState facingState, LevelAccessor world, BlockPos pos, BlockPos facingPos) {
         BlockState updated = super.updateShape(state, facing, facingState, world, pos,
                 facingPos);
-        return updated.setValue(SnowyDirtBlock.SNOWY,
-                SnowySlabAppearance.hasNearbySnow(world, pos));
+        return updated.is(this) ? updated.setValue(SnowyDirtBlock.SNOWY,
+                SnowySlabAppearance.hasNearbySnow(world, pos, facing, facingState)) : updated;
     }
 
     @Override

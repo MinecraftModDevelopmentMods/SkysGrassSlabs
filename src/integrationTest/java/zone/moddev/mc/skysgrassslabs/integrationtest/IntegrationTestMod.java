@@ -190,6 +190,7 @@ public final class IntegrationTestMod {
             Properties evidence = read(marker);
             if ("fresh".equals(phase)) {
                 clearProbe(world);
+                LifecycleParityChecks.run(world);
                 int gameplay = verifyGameplay(world);
                 int generated = verifyWorldGeneration(world);
                 SmoothingOrderChecks.run(world);
@@ -381,6 +382,9 @@ public final class IntegrationTestMod {
         // Snow is a native saved state and follows snow above or beside either soil slab.
         BlockPos snow = ORIGIN.east(2);
         world.setBlock(snow, dirtBottom, 3);
+        boolean climateSnow = ((zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock) ModBlocks.DIRT_SLAB)
+                .updateShape(dirtBottom, Direction.UP, Blocks.AIR.defaultBlockState(),
+                        world, snow, snow.above()).getValue(SnowyDirtBlock.SNOWY);
         world.setBlock(snow.east().below(), Blocks.DIRT.defaultBlockState(), 3);
         world.setBlock(snow.east(), Blocks.SNOW.defaultBlockState(), 3);
         ((Block) ModBlocks.DIRT_SLAB).tick(world.getBlockState(snow), world, snow,
@@ -390,8 +394,9 @@ public final class IntegrationTestMod {
         world.removeBlock(snow.east(), false);
         ((Block) ModBlocks.DIRT_SLAB).tick(world.getBlockState(snow), world, snow,
                 RandomSource.create(2L));
-        require(!world.getBlockState(snow).getValue(SnowyDirtBlock.SNOWY),
-                "Dirt slab retained a stale snow cap");
+        require(world.getBlockState(snow).getValue(SnowyDirtBlock.SNOWY) == climateSnow,
+                "Removing nearby snow must restore the slab's normal climate appearance");
+        LOGGER.info("GRASS_SNOW_CLIMATE_PASS snowy={}", climateSnow);
         checks += 2;
 
         // Covered, wet grass decays to wet dirt without changing orientation.
@@ -427,7 +432,7 @@ public final class IntegrationTestMod {
         player.setItemInHand(InteractionHand.MAIN_HAND, secondSlab);
         InteractionResult combined = item(ModBlocks.DIRT_SLAB).useOn(
                 useContext(player, normalize, Direction.UP));
-        require(combined == InteractionResult.SUCCESS
+        require(combined.consumesAction() && secondSlab.isEmpty()
                 && world.getBlockState(normalize).getBlock() == Blocks.DIRT,
                 "Two dirt slabs did not normalize to vanilla dirt");
         checks++;
