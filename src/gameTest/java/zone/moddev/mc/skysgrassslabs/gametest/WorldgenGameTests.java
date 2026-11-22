@@ -40,7 +40,10 @@ public final class WorldgenGameTests {
     @GameTest(template = "empty", batch = "worldgen001", timeoutTicks = 300)
     public static void smoothingIsBorderSafeAndIdempotent(GameTestHelper helper) {
         ChunkPos owner = new ChunkPos(helper.absolutePos(new BlockPos(1, 2, 1)));
-        int y = 120;
+        // Build the controlled surface above every naturally generated column. The
+        // hosted runner can choose a mountain spawn whose terrain reaches past the
+        // old fixed Y=120 test surface, causing the heightmap to ignore the fixture.
+        int y = helper.getLevel().getMaxBuildHeight() - 8;
 
         BlockPos center = new BlockPos(owner.getMinBlockX() + 8, y, owner.getMinBlockZ() + 8);
         makeOneBlockRise(helper, center, center.east());
@@ -71,9 +74,9 @@ public final class WorldgenGameTests {
                     center, NoneFeatureConfiguration.INSTANCE);
             require(helper, feature.place(context), "controlled feature pass made no changes");
             require(helper, helper.getLevel().getBlockState(center.above())
-                    .is(ModBlocks.GRASS_SLAB.get()), "one-block transition was not smoothed");
+                    .is(ModBlocks.GRASS_SLAB), "one-block transition was not smoothed");
             require(helper, helper.getLevel().getBlockState(border.above())
-                    .is(ModBlocks.GRASS_SLAB.get()), "owning-chunk border transition was not smoothed");
+                    .is(ModBlocks.GRASS_SLAB), "owning-chunk border transition was not smoothed");
             require(helper, helper.getLevel().getBlockState(border.west().above())
                     .is(Blocks.GRASS_BLOCK), "feature wrote outside the owning chunk");
             require(helper, helper.getLevel().getBlockState(flat.above()).isAir(),
@@ -105,7 +108,7 @@ public final class WorldgenGameTests {
                 for (int y = helper.getLevel().getMinBuildHeight();
                         y < helper.getLevel().getMaxBuildHeight(); y++) {
                     if (helper.getLevel().getBlockState(cursor.set(x, y, z))
-                            .is(ModBlocks.GRASS_SLAB.get())) {
+                            .is(ModBlocks.GRASS_SLAB)) {
                         count++;
                     }
                 }

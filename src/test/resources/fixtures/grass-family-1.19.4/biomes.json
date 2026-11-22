@@ -1,0 +1,121 @@
+{
+  "source_minecraft": "1.19.4",
+  "source_data_version": 3337,
+  "source_world_sha256": "B804B42B65942345E99F004130FC13932BBE55565188DBCF46CB4FFFD5A28B5C",
+  "format": "zlib-u8-quart-volume-v2",
+  "min_quart_y": -16,
+  "quart_height": 96,
+  "source_names": {
+    "0": "minecraft:frozen_ocean",
+    "1": "minecraft:deep_frozen_ocean",
+    "2": "minecraft:cold_ocean",
+    "3": "minecraft:beach",
+    "4": "minecraft:river",
+    "5": "minecraft:plains"
+  },
+  "chunks": [
+    {
+      "x": 31,
+      "z": 32,
+      "cells": "eNpjYGRkZABhBhBmgLBH+aP8Uf4of5Q/7PkAKxYDYQ=="
+    },
+    {
+      "x": 32,
+      "z": 32,
+      "cells": "eNpjZBwFo2AUjIJRMBIBAAoOBgE="
+    },
+    {
+      "x": 33,
+      "z": 32,
+      "cells": "eNpjZBwFo2AUjIJRMBIBAAoOBgE="
+    },
+    {
+      "x": 34,
+      "z": 32,
+      "cells": "eNpjZBwFo2AUjIJRMBIBAAoOBgE="
+    },
+    {
+      "x": 35,
+      "z": 32,
+      "cells": "eNpjZBwFo2AUjIJRMBIBAAoOBgE="
+    },
+    {
+      "x": 36,
+      "z": 32,
+      "cells": "eNpjZGRkYIRgGBjlj/JH+aP8Uf4I4AMAx6EFQQ=="
+    },
+    {
+      "x": 37,
+      "z": 32,
+      "cells": "eNpjYIADJkYgZhjlj/JH+aP8Uf6I4AMAnUsB4Q=="
+    },
+    {
+      "x": 38,
+      "z": 32,
+      "cells": "eNpjYGBgZEICDKP8Uf4of5Q/yh8RfAAcBAlh"
+    },
+    {
+      "x": 39,
+      "z": 32,
+      "cells": "eNpjZGRkZEICjKP8Uf4of5Q/yh8RfACEEQqB"
+    },
+    {
+      "x": 40,
+      "z": 32,
+      "cells": "eNpjZGRkZEICjKP8Uf4of5Q/yh8RfACEEQqB"
+    },
+    {
+      "x": 41,
+      "z": 32,
+      "cells": "eNpjYGBgQgYMo/xR/ih/lD/KHxF8AD3zCcE="
+    },
+    {
+      "x": 42,
+      "z": 32,
+      "cells": "eNpjYhoFo2AUjIJRMBIBAA4cDAE="
+    },
+    {
+      "x": 43,
+      "z": 32,
+      "cells": "eNpjYhoFo2AUjIJRMBIBAA4cDAE="
+    },
+    {
+      "x": 44,
+      "z": 32,
+      "cells": "eNpjYoIDZige5Y/yR/mj/FH+COADAEp6DME="
+    },
+    {
+      "x": 45,
+      "z": 32,
+      "cells": "eNpjYmJhYWZGYKZR/ih/lD/KH+WPCD4Ay2QUQQ=="
+    },
+    {
+      "x": 46,
+      "z": 32,
+      "cells": "eNpjYWZmZgFiZlZWVhBmGeWP8kf5o/xR/ojgAwDFixdB"
+    },
+    {
+      "x": 47,
+      "z": 32,
+      "cells": "eNpjZoYAVihmHuWP8kf5o/xR/ojgAwCPZhOB"
+    },
+    {
+      "x": 48,
+      "z": 32,
+      "cells": "eNpjYmJiYgZhZiACAqZR/ih/lD/KH+WPCD4ABmMPAQ=="
+    },
+    {
+      "x": 49,
+      "z": 32,
+      "cells": "eNpjYkYGrKxMo/xR/ih/lD/KHxF8AGWXEyE="
+    },
+    {
+      "x": 50,
+      "z": 32,
+      "cells": "eNpjZmZmBSJWIAID5lH+KH+UP8of5Y8IPgCEdBmB"
+    }
+  ],
+  "partial_chunks": [],
+  "checked_cells": 30720,
+  "native_renamed_cells": 0
+}

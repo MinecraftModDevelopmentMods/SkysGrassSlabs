@@ -37,6 +37,9 @@ public final class ModWorldState extends SavedData {
     private long grassSlabsRetainedGrassCarpets;
     private final Map<String, Long> unsupported = new TreeMap<>();
 
+    public ModWorldState(String name) {
+    }
+
     public ModWorldState() {
     }
 

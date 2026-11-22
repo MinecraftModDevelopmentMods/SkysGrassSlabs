@@ -1,63 +1,64 @@
 package zone.moddev.mc.skysgrassslabs.config;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.util.Arrays;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public class SkysGrassSlabsConfigTest {
-    @Rule
-    public final TemporaryFolder temporary = new TemporaryFolder();
+class SkysGrassSlabsConfigTest {
+    @TempDir
+    Path temporaryDirectory;
 
     @Test
-    public void legacyConfigurationMigratesBothIndependentSettings() throws Exception {
-        Path directory = temporary.getRoot().toPath();
-        Files.write(directory.resolve("skysgrassslabs.cfg"), java.util.List.of(
+    void legacyConfigurationMigratesAllIndependentSettings() throws Exception {
+        Files.write(temporaryDirectory.resolve("skysgrassslabs.cfg"), Arrays.asList(
                 "# retained legacy file", "B:generateGrassSlabs=false",
-                "B:forceReplaceBuildingBricksSlabs=true",
-                "B:forceReplaceGrassSlabsModContent=true"), StandardCharsets.UTF_8);
+                "B:forceReplaceBuildingBricksSlabs=true", "B:forceReplaceGrassSlabsModContent=true"), StandardCharsets.UTF_8);
 
-        assertTrue(SkysGrassSlabsConfig.migrateLegacyConfig(directory));
+        assertTrue(SkysGrassSlabsConfig.migrateLegacyConfig(temporaryDirectory));
 
-        String toml = Files.readString(directory.resolve(SkysGrassSlabsConfig.FILE_NAME),
+        String toml = new String(Files.readAllBytes(
+                temporaryDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME)),
                 StandardCharsets.UTF_8);
         assertTrue(toml.contains("[worldgen]"));
         assertTrue(toml.contains("generateGrassSlabs = false"));
         assertTrue(toml.contains("[compat]"));
         assertTrue(toml.contains("forceReplaceBuildingBricksSlabs = true"));
         assertTrue(toml.contains("forceReplaceGrassSlabsModContent = true"));
-        assertTrue(Files.isRegularFile(directory.resolve("skysgrassslabs.cfg")));
+        assertTrue(Files.isRegularFile(temporaryDirectory.resolve("skysgrassslabs.cfg")));
     }
 
     @Test
-    public void existingTomlWinsAndMalformedValuesUseSafeDefaults() throws Exception {
-        Path existingDirectory = temporary.newFolder("existing").toPath();
-        Files.writeString(existingDirectory.resolve("skysgrassslabs.cfg"),
-                "B:generateGrassSlabs=false\n", StandardCharsets.UTF_8);
-        byte[] original = "[worldgen]\ngenerateGrassSlabs = true\n"
-                .getBytes(StandardCharsets.UTF_8);
-        Path existingToml = existingDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME);
-        Files.write(existingToml, original);
-        assertFalse(SkysGrassSlabsConfig.migrateLegacyConfig(existingDirectory));
-        assertArrayEquals(original, Files.readAllBytes(existingToml));
-
-        Path malformedDirectory = temporary.newFolder("malformed").toPath();
-        Files.write(malformedDirectory.resolve("skysgrassslabs.cfg"), java.util.List.of(
-                "B:generateGrassSlabs=perhaps",
-                "B:forceReplaceBuildingBricksSlabs=not-a-boolean",
-                "B:forceReplaceGrassSlabsModContent=not-a-boolean"), StandardCharsets.UTF_8);
-        assertTrue(SkysGrassSlabsConfig.migrateLegacyConfig(malformedDirectory));
-        String migrated = Files.readString(
-                malformedDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME),
+    void existingTomlAlwaysWinsAndIsLeftUntouched() throws Exception {
+        Path oldFile = temporaryDirectory.resolve("skysgrassslabs.cfg");
+        Path newFile = temporaryDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME);
+        Files.write(oldFile, Arrays.asList("B:generateGrassSlabs=false"),
                 StandardCharsets.UTF_8);
-        assertTrue(migrated.contains("generateGrassSlabs = true"));
-        assertTrue(migrated.contains("forceReplaceBuildingBricksSlabs = false"));
-        assertTrue(migrated.contains("forceReplaceGrassSlabsModContent = false"));
+        byte[] original = "[worldgen]\ngenerateGrassSlabs = true\n".getBytes(StandardCharsets.UTF_8);
+        Files.write(newFile, original);
+
+        assertFalse(SkysGrassSlabsConfig.migrateLegacyConfig(temporaryDirectory));
+        assertArrayEquals(original, Files.readAllBytes(newFile));
+    }
+
+    @Test
+    void malformedLegacyValuesFallBackSafely() throws Exception {
+        Files.write(temporaryDirectory.resolve("skysgrassslabs.cfg"), Arrays.asList(
+                "B:generateGrassSlabs=perhaps",
+                "B:forceReplaceBuildingBricksSlabs=not-a-boolean"),
+                StandardCharsets.UTF_8);
+
+        assertTrue(SkysGrassSlabsConfig.migrateLegacyConfig(temporaryDirectory));
+        String toml = new String(Files.readAllBytes(
+                temporaryDirectory.resolve(SkysGrassSlabsConfig.FILE_NAME)),
+                StandardCharsets.UTF_8);
+        assertTrue(toml.contains("generateGrassSlabs = true"));
+        assertTrue(toml.contains("forceReplaceBuildingBricksSlabs = false"));
     }
 }

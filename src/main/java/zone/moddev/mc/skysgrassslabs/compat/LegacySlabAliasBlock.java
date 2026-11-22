@@ -1,17 +1,17 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.material.MapColor;
+import zone.moddev.mc.skysgrassslabs.block.LegacySlabBlock;
 
-/** Hidden holder used only while historical block and item names deserialize. */
-final class LegacySlabAliasBlock extends SlabBlock {
-    LegacySlabAliasBlock(boolean grass) {
-        this(grass ? Blocks.GRASS_BLOCK : Blocks.DIRT);
+/** Hidden deserialization holder for a supported historical slab ID. */
+final class LegacySlabAliasBlock extends LegacySlabBlock {
+    LegacySlabAliasBlock(net.minecraft.world.level.block.Block fullBlock) {
+        super(net.minecraft.world.level.block.state.BlockBehaviour.Properties.copy(fullBlock));
     }
 
-    LegacySlabAliasBlock(Block source) {
-        super(BlockBehaviour.Properties.copy(source).noOcclusion());
+    LegacySlabAliasBlock(boolean grass) {
+        super(grass ? MapColor.GRASS : MapColor.DIRT,
+                grass ? SoundType.GRASS : SoundType.GRAVEL, 0.6F, false);
     }
 }

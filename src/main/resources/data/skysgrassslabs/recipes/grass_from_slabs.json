@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SS"
+  ],
+  "key": {
+    "S": {
+      "item": "skysgrassslabs:grass_slab"
+    }
+  },
+  "result": {
+    "item": "minecraft:grass_block"
+  },
+  "category": "building",
+  "group": "skys/result/minecraft/grass_block"
+}

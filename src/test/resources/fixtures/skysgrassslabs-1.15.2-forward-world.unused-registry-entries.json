@@ -1,0 +1,52 @@
+{
+  "source_world_sha256": "8D2FEA6A0289B35F0C2728A6E93C09EFDDC3A699EC28DCAC4115EBFE47269D05",
+  "snapshot_entries": {
+    "minecraft:entity_type": {
+      "minecraft:zombie_pigman": 53
+    },
+    "minecraft:item": {
+      "minecraft:zombie_pigman_spawn_egg": 688
+    },
+    "minecraft:memory_module_type": {
+      "minecraft:golem_last_seen_time": 24,
+      "minecraft:opened_doors": 16
+    },
+    "minecraft:sound_event": {
+      "minecraft:entity.zombie_pigman.ambient": 591,
+      "minecraft:entity.zombie_pigman.angry": 592,
+      "minecraft:entity.zombie_pigman.death": 593,
+      "minecraft:entity.zombie_pigman.hurt": 594,
+      "minecraft:music.nether": 642
+    },
+    "minecraft:point_of_interest_type": {
+      "minecraft:nitwit": 11,
+      "minecraft:unemployed": 0
+    },
+    "minecraft:block": {
+      "minecraft:sign": 150,
+      "minecraft:wall_sign": 155
+    }
+  },
+  "saved_uses": {
+    "minecraft:zombie_pigman": 0,
+    "minecraft:zombie_pigman_spawn_egg": 0,
+    "minecraft:golem_last_seen_time": 0,
+    "minecraft:opened_doors": 0,
+    "minecraft:entity.zombie_pigman.ambient": 0,
+    "minecraft:entity.zombie_pigman.angry": 0,
+    "minecraft:entity.zombie_pigman.death": 0,
+    "minecraft:entity.zombie_pigman.hurt": 0,
+    "minecraft:music.nether": 0,
+    "minecraft:nitwit": 0,
+    "minecraft:unemployed": 0,
+    "minecraft:sign": 0,
+    "minecraft:wall_sign": 0
+  },
+  "inspected_nbt_values": 1352,
+  "inspected_records": {
+    "nbt_files": 4,
+    "nbt_values": 1352,
+    "region_files": 1,
+    "region_records": 1
+  }
+}

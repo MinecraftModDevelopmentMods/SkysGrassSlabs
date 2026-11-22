@@ -170,7 +170,7 @@ public final class GrassSlabsMigrationHandler {
 
     static BlockState replacement(BlockState source, LegacyKind kind, BlockState support) {
         if (kind == LegacyKind.GRASS_CARPET) {
-            return support.is(Blocks.DIRT) ? ModBlocks.TURF.get().defaultBlockState() : null;
+            return support.is(Blocks.DIRT) ? ModBlocks.TURF.defaultBlockState() : null;
         }
 
         SlabType type = source.hasProperty(SlabBlock.TYPE)
@@ -395,9 +395,9 @@ public final class GrassSlabsMigrationHandler {
 
         Block slabBlock() {
             return switch (this) {
-                case GRASS_SLAB -> ModBlocks.GRASS_SLAB.get();
-                case DIRT_SLAB -> ModBlocks.DIRT_SLAB.get();
-                case PATH_SLAB -> ModBlocks.PATH_SLAB.get();
+                case GRASS_SLAB -> ModBlocks.GRASS_SLAB;
+                case DIRT_SLAB -> ModBlocks.DIRT_SLAB;
+                case PATH_SLAB -> ModBlocks.PATH_SLAB;
                 case GRASS_CARPET -> throw new IllegalStateException("Turf is not a slab");
             };
         }
@@ -413,10 +413,10 @@ public final class GrassSlabsMigrationHandler {
 
         Item item() {
             return switch (this) {
-                case GRASS_SLAB -> ModBlocks.GRASS_SLAB_ITEM.get();
-                case DIRT_SLAB -> ModBlocks.DIRT_SLAB_ITEM.get();
-                case PATH_SLAB -> ModBlocks.PATH_SLAB_ITEM.get();
-                case GRASS_CARPET -> ModBlocks.TURF_ITEM.get();
+                case GRASS_SLAB -> ModBlocks.GRASS_SLAB.asItem();
+                case DIRT_SLAB -> ModBlocks.DIRT_SLAB.asItem();
+                case PATH_SLAB -> ModBlocks.PATH_SLAB.asItem();
+                case GRASS_CARPET -> ModBlocks.TURF.asItem();
             };
         }
     }

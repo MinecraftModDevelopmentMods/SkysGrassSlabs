@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowLayerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LightEngine;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Vanilla light and water rules adapted for slab identities. */
@@ -35,8 +36,9 @@ final class SoilLifecycle {
         // Slabs and turf expose complete horizontal faces to the light test.
         // Grass survival only cares about the cover above, not the source
         // block's own collision shape.
-        BlockState lightState = state.is(ModBlocks.GRASS_SLAB.get())
-                || state.is(ModBlocks.TURF.get())
+        BlockState lightState = state.is(ModBlocks.GRASS_SLAB)
+                || state.is(ModBlocks.TURF)
+                || GrassSlabsApi.isGrassForm(state)
                 ? Blocks.AIR.defaultBlockState() : state;
         int blocked = LightEngine.getLightBlockInto(level, lightState, pos, cover, above,
                 Direction.UP, cover.getLightBlock(level, above));
@@ -50,12 +52,12 @@ final class SoilLifecycle {
     }
 
     static boolean isViableGrassSource(BlockState state, LevelReader level, BlockPos pos) {
-        if (state.is(ModBlocks.TURF.get())) {
+        if (state.is(ModBlocks.TURF)) {
             return TurfBlock.hasDirtSupport(level, pos.below())
                     && canPropagate(state, level, pos);
         }
 
-        return (state.is(Blocks.GRASS_BLOCK) || state.is(ModBlocks.GRASS_SLAB.get()))
+        return (state.is(Blocks.GRASS_BLOCK) || state.is(ModBlocks.GRASS_SLAB))
                 && canRemainGrass(state, level, pos);
     }
 }

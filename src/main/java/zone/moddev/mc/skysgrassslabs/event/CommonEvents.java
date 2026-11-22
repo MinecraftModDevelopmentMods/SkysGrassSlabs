@@ -6,23 +6,21 @@ import java.util.WeakHashMap;
 import net.minecraft.world.entity.animal.Sheep;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import zone.moddev.mc.skysgrassslabs.entity.ai.TurfEatingGoal;
+import zone.moddev.mc.skysgrassslabs.entity.ai.TurfEatingAI;
 
-/** Server gameplay event registrations. */
 public final class CommonEvents {
-    private static final Set<Sheep> TURF_GOAL_SHEEP =
-            Collections.newSetFromMap(new WeakHashMap<>());
+    private static final Set<Sheep> TURF_TASK_SHEEP =
+            Collections.newSetFromMap(new WeakHashMap<Sheep, Boolean>());
 
     public static void register() {
-        MinecraftForge.EVENT_BUS.addListener(CommonEvents::addTurfEatingGoal);
+        MinecraftForge.EVENT_BUS.addListener(CommonEvents::addTurfEatingTask);
     }
 
-    public static void addTurfEatingGoal(EntityJoinLevelEvent event) {
-        if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Sheep sheep)) {
-            return;
-        }
-        if (TURF_GOAL_SHEEP.add(sheep)) {
-            sheep.goalSelector.addGoal(5, new TurfEatingGoal(sheep));
+    public static void addTurfEatingTask(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide || !(event.getEntity() instanceof Sheep)) return;
+        Sheep sheep = (Sheep) event.getEntity();
+        if (TURF_TASK_SHEEP.add(sheep)) {
+            sheep.goalSelector.addGoal(5, new TurfEatingAI(sheep));
         }
     }
 

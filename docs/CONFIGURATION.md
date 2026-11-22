@@ -1,13 +1,18 @@
 # Configuration
 
-Forge creates `config/skysgrassslabs-common.toml` after the mod starts for the
-first time. Stop the game or server before editing it, then restart to apply
-changes. On a dedicated server, the server's configuration controls world
-generation and world upgrades.
+Open **Mods**, select **Sky's Grass Slabs** and choose **Config** to change the
+generation and legacy options. Hover over a setting for help. Choose
+**Done** to save, then restart Minecraft. Escape leaves pending choices unsaved.
+The screen does not change a remote server's configuration.
 
-When upgrading from an earlier release, the mod copies valid settings from
-`skysgrassslabs.cfg` if the TOML file does not already exist. The old file is
-kept. An existing TOML file always takes priority.
+Forge creates `config/skysgrassslabs-common.toml` after the mod is started for
+the first time. Stop the game or server before editing it, then restart to
+apply changes. On a dedicated server, the server's configuration controls
+world generation and world upgrades.
+
+When upgrading from an earlier Sky's Grass Slabs release, the mod copies valid
+settings from `skysgrassslabs.cfg` if the TOML file does not already exist. The
+old file is kept as a backup. An existing TOML file always takes priority.
 
 ## World smoothing
 
@@ -17,19 +22,23 @@ When enabled, suitable one block slopes in newly generated Overworld chunks
 may receive grass slabs. Set this to `false` to leave new terrain unchanged.
 The setting never adds or removes slabs in chunks that already exist.
 
-## Legacy slab replacement
+When Terrain Smoother is installed, this setting controls grass inclusion in
+its engine. Grass Slabs does not run a second pass, even when Terrain Smoother's
+master switch is off. Removing Terrain Smoother restores standalone generation.
+
+## Legacy replacement setting
 
 `compat.forceReplaceBuildingBricksSlabs=false`
 
-This setting controls replacement only when the older slabs are still
-installed. It is disabled by default so existing content remains unchanged.
-If enabled, supported grass and dirt slabs and item stacks are changed to the
-matching Sky's Grass Slabs versions as they load. Other shapes are left alone.
+This key is retained so configurations and saved migration state remain
+consistent with the Minecraft 1.10.2 release. It does not enable replacement
+of content from unofficial Minecraft 1.20.1 ports, so ordinary installations
+should leave it set to `false`.
 
-Recovery of the supported slab IDs when their original mod is absent is
-automatic and does not require this option. See
-[Upgrading an older world](WORLD-UPGRADES.md) before opening an old modded
-world.
+Recovery of supported legacy grass and dirt slab IDs from an upgraded 1.10.2
+world is automatic and does not require this option. See
+[Upgrading an older world](WORLD-UPGRADES.md) before opening an old
+modded world.
 
 `compat.forceReplaceGrassSlabsModContent=false`
 
@@ -46,8 +55,9 @@ the other legacy replacement option.
 
 ## Related game rules
 
-Turf and grass behaviour use Minecraft random ticks. Setting `randomTickSpeed`
-to zero pauses spreading, grass decay and delayed turf support checks.
+Turf, grass spreading and snowy slab repairs use Minecraft random ticks. Setting
+`randomTickSpeed` to zero pauses spreading, grass decay and delayed turf
+support checks.
 
 Sheep respect the `mobGriefing` game rule. With mob griefing enabled they eat
 and remove turf without a drop. With it disabled they can still perform their

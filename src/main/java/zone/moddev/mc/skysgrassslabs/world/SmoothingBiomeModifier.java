@@ -23,6 +23,7 @@ public final class SmoothingBiomeModifier implements BiomeModifier {
     public void modify(Holder<Biome> biome, Phase phase, BiomeInfo.Builder builder) {
         Holder<PlacedFeature> smoothing = WorldgenBootstrap.placedFeature();
         if (phase != Phase.ADD || smoothing == null
+                || zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi.hasSmoothingOwner()
                 || biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END)) {
             return;
         }

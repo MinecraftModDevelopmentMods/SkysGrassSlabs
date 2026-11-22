@@ -1,93 +1,79 @@
 package zone.moddev.mc.skysgrassslabs.init;
 
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
-import net.minecraftforge.registries.DeferredRegister;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.registries.IForgeRegistry;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.PathSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.TurfBlock;
-import zone.moddev.mc.skysgrassslabs.block.TurfBlockItem;
 import zone.moddev.mc.skysgrassslabs.item.NormalizingSlabItem;
+import zone.moddev.mc.skysgrassslabs.item.TurfBlockItem;
 
-/** Stable block and item registrations. */
 public final class ModBlocks {
-    public static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(ForgeRegistries.BLOCKS, SkysGrassSlabs.MOD_ID);
-    public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, SkysGrassSlabs.MOD_ID);
+    public static final DirtSlabBlock DIRT_SLAB = new DirtSlabBlock();
+    public static final GrassSlabBlock GRASS_SLAB = new GrassSlabBlock();
+    public static final PathSlabBlock PATH_SLAB = new PathSlabBlock();
+    public static final TurfBlock TURF = new TurfBlock();
 
-    public static final RegistryObject<Block> DIRT_SLAB = BLOCKS.register("dirt_slab",
-            () -> new DirtSlabBlock(BlockBehaviour.Properties.copy(Blocks.DIRT).randomTicks()));
-    public static final RegistryObject<Block> GRASS_SLAB = BLOCKS.register("grass_slab",
-            () -> new GrassSlabBlock(BlockBehaviour.Properties.copy(Blocks.GRASS_BLOCK).randomTicks()));
-    public static final RegistryObject<Block> PATH_SLAB = BLOCKS.register("path_slab",
-            () -> new PathSlabBlock(BlockBehaviour.Properties.copy(Blocks.DIRT_PATH)));
-    public static final RegistryObject<Block> TURF = BLOCKS.register("turf",
-            () -> new TurfBlock(BlockBehaviour.Properties.copy(Blocks.GREEN_CARPET).randomTicks()));
-
-    public static final RegistryObject<Item> DIRT_SLAB_ITEM = slabItem(
-            "dirt_slab", DIRT_SLAB, Blocks.DIRT);
-    public static final RegistryObject<Item> GRASS_SLAB_ITEM = slabItem(
-            "grass_slab", GRASS_SLAB, Blocks.GRASS_BLOCK);
-    public static final RegistryObject<Item> PATH_SLAB_ITEM = slabItem(
-            "path_slab", PATH_SLAB, Blocks.DIRT_PATH);
-    public static final RegistryObject<Item> TURF_ITEM = ITEMS.register("turf",
-            () -> new TurfBlockItem(TURF.get(), new Item.Properties()));
-
-    private ModBlocks() {
+    public static void registerBlocks(IForgeRegistry<Block> registry) {
+        registry.register(new ResourceLocation(SkysGrassSlabs.MOD_ID, "dirt_slab"), DIRT_SLAB);
+        registry.register(new ResourceLocation(SkysGrassSlabs.MOD_ID, "grass_slab"), GRASS_SLAB);
+        registry.register(new ResourceLocation(SkysGrassSlabs.MOD_ID, "path_slab"), PATH_SLAB);
+        registry.register(new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf"), TURF);
     }
 
-    public static void register(IEventBus eventBus) {
-        BLOCKS.register(eventBus);
-        ITEMS.register(eventBus);
-        eventBus.addListener(ModBlocks::buildCreativeTab);
+    public static void registerItems(IForgeRegistry<Item> registry) {
+        registerItem(registry, DIRT_SLAB,
+                new NormalizingSlabItem(DIRT_SLAB, Blocks.DIRT, new Item.Properties()));
+        registerItem(registry, GRASS_SLAB,
+                new NormalizingSlabItem(GRASS_SLAB, Blocks.GRASS_BLOCK, new Item.Properties()));
+        registerItem(registry, PATH_SLAB,
+                new NormalizingSlabItem(PATH_SLAB, Blocks.DIRT_PATH, new Item.Properties()));
+        registerItem(registry, TURF, new TurfBlockItem(TURF, new Item.Properties()));
+    }
+
+    private static void registerItem(IForgeRegistry<Item> registry, Block block, Item item) {
+        ResourceLocation name = ForgeRegistries.BLOCKS.getKey(block);
+        if (name == null) {
+            throw new IllegalStateException("A slab block must be registered before its item");
+        }
+        registry.register(name, item);
     }
 
     public static BlockState dirtStateLike(BlockState source) {
-        BlockState state = DIRT_SLAB.get().defaultBlockState()
-                .setValue(net.minecraft.world.level.block.SlabBlock.TYPE,
-                        source.getValue(net.minecraft.world.level.block.SlabBlock.TYPE))
-                .setValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED,
-                        source.getValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED));
-        return state.setValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY,
-                source.hasProperty(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY)
-                        && source.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY));
+        BlockState state = DIRT_SLAB.defaultBlockState()
+                .setValue(SlabBlock.TYPE, source.getValue(SlabBlock.TYPE))
+                .setValue(SlabBlock.WATERLOGGED, source.getValue(SlabBlock.WATERLOGGED));
+        return state.setValue(SnowyDirtBlock.SNOWY,
+                source.hasProperty(SnowyDirtBlock.SNOWY) &&
+                        source.getValue(SnowyDirtBlock.SNOWY));
     }
 
     public static BlockState grassStateLike(BlockState source) {
-        BlockState state = GRASS_SLAB.get().defaultBlockState()
-                .setValue(net.minecraft.world.level.block.SlabBlock.TYPE,
-                        source.getValue(net.minecraft.world.level.block.SlabBlock.TYPE))
-                .setValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED,
-                        source.getValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED));
-        return state.setValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY,
-                source.hasProperty(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY)
-                        && source.getValue(net.minecraft.world.level.block.SnowyDirtBlock.SNOWY));
+        BlockState state = GRASS_SLAB.defaultBlockState()
+                .setValue(SlabBlock.TYPE, source.getValue(SlabBlock.TYPE))
+                .setValue(SlabBlock.WATERLOGGED, source.getValue(SlabBlock.WATERLOGGED));
+        return state.setValue(SnowyDirtBlock.SNOWY,
+                source.hasProperty(SnowyDirtBlock.SNOWY) &&
+                        source.getValue(SnowyDirtBlock.SNOWY));
     }
 
-    private static RegistryObject<Item> slabItem(String name, RegistryObject<Block> block,
-            Block combinedBlock) {
-        return ITEMS.register(name, () -> new NormalizingSlabItem(block.get(), combinedBlock,
-                new Item.Properties()));
+    public static BlockState legacySlabState(boolean grass, int metadata) {
+        return (grass ? GRASS_SLAB : DIRT_SLAB).defaultBlockState()
+                 .setValue(SlabBlock.TYPE, (metadata & 1) == 0 ? SlabType.TOP : SlabType.BOTTOM)
+                 .setValue(SlabBlock.WATERLOGGED, Boolean.FALSE)
+                 .setValue(SnowyDirtBlock.SNOWY, Boolean.FALSE);
     }
 
-    private static void buildCreativeTab(BuildCreativeModeTabContentsEvent event) {
-        if (CreativeModeTabs.BUILDING_BLOCKS.equals(event.getTabKey())) {
-            event.accept(DIRT_SLAB_ITEM);
-            event.accept(GRASS_SLAB_ITEM);
-            event.accept(PATH_SLAB_ITEM);
-            event.accept(TURF_ITEM);
-        }
+    private ModBlocks() {
     }
 }

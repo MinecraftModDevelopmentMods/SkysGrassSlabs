@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.1.120011
+
+- Match snow caps to higher snowy ground and exposed cold slopes.
+- Keep different crafting results on separate recipe-book buttons.
+- Prevent slab joining through entities.
+- Leave saved terrain alone when decoration reaches in from a new chunk.
+
+## 1.2.0.120011
+
+- Share grass spreading and support rules with Sky's Building Pieces.
+- Let Sky's Terrain Smoother take over generation when installed.
+- Recombine matching slabs and change settings from the Mods menu.
+
 ## 1.1.1.120011 - Minecraft 1.20.1
 
 - Corrected snowy grass slabs so their exposed top uses the snow texture

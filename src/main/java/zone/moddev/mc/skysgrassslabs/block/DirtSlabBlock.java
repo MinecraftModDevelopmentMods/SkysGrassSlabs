@@ -1,25 +1,22 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import net.minecraft.util.RandomSource;
-import javax.annotation.Nullable;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraftforge.common.ToolAction;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.server.level.ServerLevel;
 
-/** Dirt slab with snow presentation and target-aware grass growth. */
-public final class DirtSlabBlock extends SlabBlock {
-    public DirtSlabBlock(Properties properties) {
-        super(properties);
-        registerDefaultState(defaultBlockState().setValue(SnowyDirtBlock.SNOWY, false));
+public final class DirtSlabBlock extends LegacySlabBlock {
+    public DirtSlabBlock() {
+        super(MapColor.DIRT, SoundType.GRAVEL, 0.6F, true);
+        registerDefaultState(defaultBlockState().setValue(SnowyDirtBlock.SNOWY, Boolean.FALSE));
     }
 
     @Override
@@ -29,7 +26,6 @@ public final class DirtSlabBlock extends SlabBlock {
     }
 
     @Override
-    @Nullable
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         BlockState state = super.getStateForPlacement(context);
         return state == null ? null : state.setValue(SnowyDirtBlock.SNOWY,
@@ -37,27 +33,21 @@ public final class DirtSlabBlock extends SlabBlock {
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
-            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
-        BlockState updated = super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
-        return updated.setValue(SnowyDirtBlock.SNOWY,
-                SnowySlabAppearance.hasNearbySnow(level, pos, direction, neighbour));
+    public BlockState updateShape(BlockState state, Direction facing,
+            BlockState facingState, LevelAccessor world, BlockPos pos, BlockPos facingPos) {
+        BlockState updated = super.updateShape(state, facing, facingState, world, pos,
+                facingPos);
+        return updated.is(this) ? updated.setValue(SnowyDirtBlock.SNOWY,
+                SnowySlabAppearance.hasNearbySnow(world, pos, facing, facingState)) : updated;
     }
 
     @Override
-    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+    public void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
         BlockState repaired = state.setValue(SnowyDirtBlock.SNOWY,
-                SnowySlabAppearance.hasNearbySnow(level, pos));
+                SnowySlabAppearance.hasNearbySnow(world, pos));
         if (repaired != state) {
-            level.setBlock(pos, repaired, Block.UPDATE_CLIENTS);
+            world.setBlock(pos, repaired, 2);
         }
-        GrassSpread.tickDirtSlab(level, pos, repaired, random);
-    }
-
-    @Override
-    @Nullable
-    public BlockState getToolModifiedState(BlockState state, UseOnContext context,
-            ToolAction action, boolean simulate) {
-        return SlabTransitions.flatten(state, action);
+        GrassSpread.tickDirtSlab(world, pos, repaired, random);
     }
 }

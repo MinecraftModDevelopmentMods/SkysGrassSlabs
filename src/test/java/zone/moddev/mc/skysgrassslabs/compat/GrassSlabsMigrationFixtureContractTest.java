@@ -1,8 +1,8 @@
 package zone.moddev.mc.skysgrassslabs.compat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class GrassSlabsMigrationFixtureContractTest {
     private static final File ARCHIVE = new File(
@@ -28,6 +28,17 @@ public class GrassSlabsMigrationFixtureContractTest {
             "B7597F48AFB9596583D8690222F4ABDD29396C00311DF7FD881BB2EA69E95422";
     private static final String SOURCE_JAR_SHA256 =
             "53D4DCE01D5BB0DC15AEC48B3AFA38588A0F840E086E3846CA9B7D51D33799A4";
+
+    @Test
+    public void packagedExpectationsAreBoundToTheGenuineSourceFixture() throws Exception {
+        File expectations = new File("src/test/resources/fixtures/grassslabs-1.18.2-expected.json");
+        assertEquals("22DDFB62FBA1F56BED8F735C7668AFF914CCC7D94D0552EE38A7E8E2E6409EF4", sha256(expectations));
+        var expected = new com.google.gson.JsonParser().parse(new String(Files.readAllBytes(
+                expectations.toPath()), StandardCharsets.UTF_8)).getAsJsonObject();
+        assertEquals(FIXTURE_SHA256, expected.get("source_world_sha256").getAsString());
+        assertEquals(19, expected.getAsJsonArray("blocks").size());
+        assertEquals(5, expected.getAsJsonObject("chest").getAsJsonArray("items").size());
+    }
 
     @Test
     public void fixtureIsChecksumLockedAndSourceQualified() throws Exception {
@@ -41,7 +52,7 @@ public class GrassSlabsMigrationFixtureContractTest {
         assertEquals(SOURCE_JAR_SHA256, manifest.getProperty("source_jar_sha256"));
         assertEquals("4f715ffd1ab73c1eaafc4ccff2f056ee9d2a56df",
                 manifest.getProperty("source_commit"));
-        assertTrue("migration fixture is no longer compact", ARCHIVE.length() < 100_000L);
+        assertTrue(ARCHIVE.length() < 100_000L, "migration fixture is no longer compact");
     }
 
     @Test

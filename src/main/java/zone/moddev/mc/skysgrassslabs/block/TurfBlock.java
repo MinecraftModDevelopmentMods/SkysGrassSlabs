@@ -1,82 +1,93 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import net.minecraft.util.RandomSource;
-
-import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.CarpetBlock;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
 
-/** Biome tinted grass source at carpet height with no dirt state. */
-public final class TurfBlock extends CarpetBlock {
-    public TurfBlock(Properties properties) {
-        super(properties);
+public final class TurfBlock extends Block {
+    public static final VoxelShape TURF_SHAPE =
+            Block.box(0.0D, 0.0D, 0.0D, 16.0D, 1.0D, 16.0D);
+
+    public TurfBlock() {
+        super(Block.Properties.of().mapColor(MapColor.GRASS).strength(0.1F)
+                .sound(SoundType.WOOL).randomTicks().noOcclusion());
     }
 
     @Override
-    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-        BlockPos supportPos = pos.below();
-
-        return level.getBlockState(supportPos).isCollisionShapeFullBlock(level, supportPos);
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos,
+            CollisionContext context) {
+        return TURF_SHAPE;
     }
 
     @Override
-    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState,
-            boolean moving) {
-        super.onPlace(state, level, pos, oldState, moving);
-        dirtifyGrassSupport(level, pos);
+    public boolean canSurvive(BlockState state, LevelReader world, BlockPos pos) {
+        return hasFullSupport(world, pos);
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
-            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
-        if (level instanceof Level concreteLevel) {
-            dirtifyGrassSupport(concreteLevel, pos);
+    public void onPlace(BlockState state, Level world, BlockPos pos, BlockState oldState,
+            boolean isMoving) {
+        super.onPlace(state, world, pos, oldState, isMoving);
+        dirtifyGrassSupport(world, pos);
+    }
+
+    @Override
+    public BlockState updateShape(BlockState state, Direction facing,
+            BlockState facingState, LevelAccessor world, BlockPos pos, BlockPos facingPos) {
+        if (world instanceof Level) {
+            dirtifyGrassSupport((Level) world, pos);
         }
-        return super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+        return !state.canSurvive(world, pos)
+                ? Blocks.AIR.defaultBlockState()
+                : super.updateShape(state, facing, facingState, world, pos, facingPos);
     }
 
     @Override
-    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        BlockPos supportPos = pos.below();
-
-        if (!hasDirtSupport(level, supportPos)) {
-            level.destroyBlock(pos, true);
+    public void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+        BlockPos support = pos.below();
+        if (world.getBlockState(support).getBlock() != Blocks.DIRT) {
+            world.destroyBlock(pos, true);
             return;
         }
+        GrassSpread.spreadFrom(world, pos, random, support);
+    }
 
-        if (!SoilLifecycle.canPropagate(state, level, pos)) {
-            return;
-        }
+    @Override
+    public int getFlammability(BlockState state, BlockGetter world, BlockPos pos,
+            Direction face) {
+        return 20;
+    }
 
-        GrassSpread.spreadFrom(level, pos, random, supportPos);
+    @Override
+    public int getFireSpreadSpeed(BlockState state, BlockGetter world, BlockPos pos,
+            Direction face) {
+        return 60;
+    }
+
+    private static boolean hasFullSupport(LevelReader world, BlockPos pos) {
+        BlockPos support = pos.below();
+        return world.getBlockState(support).isCollisionShapeFullBlock(world, support);
     }
 
     static boolean hasDirtSupport(LevelReader level, BlockPos supportPos) {
         return level.getBlockState(supportPos).is(Blocks.DIRT);
     }
 
-    private static void dirtifyGrassSupport(Level level, BlockPos pos) {
-        if (!level.isClientSide && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
-            level.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), 2);
+    private static void dirtifyGrassSupport(Level world, BlockPos pos) {
+        if (!world.isClientSide && world.getBlockState(pos.below()).getBlock() == Blocks.GRASS_BLOCK) {
+            world.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), 2);
         }
-    }
-
-    @Override
-    public int getFlammability(BlockState state, BlockGetter level, BlockPos pos,
-            Direction direction) {
-        return 20;
-    }
-
-    @Override
-    public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos,
-            Direction direction) {
-        return 60;
     }
 }

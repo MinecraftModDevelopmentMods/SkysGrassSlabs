@@ -1,8 +1,8 @@
 package zone.moddev.mc.skysgrassslabs;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -61,8 +61,8 @@ public class ResourceContractTest {
         assertEquals(1, element.getAsJsonArray("to").get(1).getAsInt());
         var faces = element.getAsJsonObject("faces");
         for (Map.Entry<String, JsonElement> face : faces.entrySet()) {
-            assertEquals(face.getKey(), 0,
-                    face.getValue().getAsJsonObject().get("tintindex").getAsInt());
+            assertEquals(0,
+                    face.getValue().getAsJsonObject().get("tintindex").getAsInt(), face.getKey());
         }
     }
 
@@ -87,9 +87,9 @@ public class ResourceContractTest {
     @Test
     public void grassSlabUsesVanillaGrassCutoutLayer() throws Exception {
         String client = Files.readString(Path.of(
-                "src/main/java/zone/moddev/mc/skysgrassslabs/client/ClientEvents.java"));
+                "src/main/java/zone/moddev/mc/skysgrassslabs/proxy/ClientProxy.java"));
         assertTrue(client.contains("RenderType.cutoutMipped()"));
-        assertTrue(client.contains("ModBlocks.GRASS_SLAB.get()"));
+        assertTrue(client.contains("ModBlocks.GRASS_SLAB, cutoutMipped"));
     }
 
     @Test

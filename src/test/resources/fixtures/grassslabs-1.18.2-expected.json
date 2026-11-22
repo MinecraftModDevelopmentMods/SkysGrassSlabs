@@ -1,0 +1,133 @@
+{
+  "source_world_sha256": "B7597F48AFB9596583D8690222F4ABDD29396C00311DF7FD881BB2EA69E95422",
+  "blocks": [
+    {
+      "x": 1,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"false\", type: \"bottom\"}, Name: \"grassslabs:grass_slab\"}"
+    },
+    {
+      "x": 2,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"true\", type: \"top\"}, Name: \"grassslabs:grass_slab\"}"
+    },
+    {
+      "x": 3,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"false\", type: \"double\"}, Name: \"grassslabs:grass_slab\"}"
+    },
+    {
+      "x": 4,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"false\", type: \"bottom\"}, Name: \"grassslabs:dirt_slab\"}"
+    },
+    {
+      "x": 5,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"true\", type: \"top\"}, Name: \"grassslabs:dirt_slab\"}"
+    },
+    {
+      "x": 6,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"false\", type: \"double\"}, Name: \"grassslabs:dirt_slab\"}"
+    },
+    {
+      "x": 7,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"false\", type: \"bottom\"}, Name: \"grassslabs:dirt_path_slab\"}"
+    },
+    {
+      "x": 8,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"true\", type: \"top\"}, Name: \"grassslabs:dirt_path_slab\"}"
+    },
+    {
+      "x": 9,
+      "y": 100,
+      "z": 1,
+      "source": "{Properties: {waterlogged: \"false\", type: \"double\"}, Name: \"grassslabs:dirt_path_slab\"}"
+    },
+    {
+      "x": 10,
+      "y": 100,
+      "z": 1,
+      "source": "{Name: \"grassslabs:grass_carpet\"}"
+    },
+    {
+      "x": 11,
+      "y": 100,
+      "z": 1,
+      "source": "{Name: \"grassslabs:grass_carpet\"}"
+    },
+    {
+      "x": 1,
+      "y": 100,
+      "z": 2,
+      "source": "{Properties: {waterlogged: \"false\", half: \"bottom\", shape: \"straight\", facing: \"north\"}, Name: \"grassslabs:grass_stairs\"}"
+    },
+    {
+      "x": 2,
+      "y": 100,
+      "z": 2,
+      "source": "{Properties: {waterlogged: \"false\", half: \"bottom\", shape: \"straight\", facing: \"north\"}, Name: \"grassslabs:dirt_stairs\"}"
+    },
+    {
+      "x": 3,
+      "y": 100,
+      "z": 2,
+      "source": "{Properties: {waterlogged: \"false\", half: \"bottom\", shape: \"straight\", facing: \"north\"}, Name: \"grassslabs:dirt_path_stairs\"}"
+    },
+    {
+      "x": 4,
+      "y": 100,
+      "z": 2,
+      "source": "{Name: \"grassslabs:dirt_carpet\"}"
+    },
+    {
+      "x": 5,
+      "y": 100,
+      "z": 2,
+      "source": "{Name: \"grassslabs:dirt_path_carpet\"}"
+    },
+    {
+      "x": 6,
+      "y": 100,
+      "z": 2,
+      "source": "{Properties: {waterlogged: \"false\", type: \"bottom\"}, Name: \"grassslabs:mycelium_slab\"}"
+    },
+    {
+      "x": 7,
+      "y": 100,
+      "z": 2,
+      "source": "{Name: \"grassslabs:mycelium_carpet\"}"
+    },
+    {
+      "x": 8,
+      "y": 100,
+      "z": 2,
+      "source": "{Properties: {waterlogged: \"false\", half: \"bottom\", shape: \"straight\", facing: \"north\"}, Name: \"grassslabs:mycelium_stairs\"}"
+    }
+  ],
+  "chest": {
+    "x": 1,
+    "y": 100,
+    "z": 3,
+    "items": [
+      "{Slot: 0b, id: \"grassslabs:grass_slab\", Count: 3b, tag: {migration_test: \"grass slab\"}}",
+      "{Slot: 1b, id: \"grassslabs:dirt_slab\", Count: 4b, tag: {migration_test: \"dirt slab\"}}",
+      "{Slot: 2b, id: \"grassslabs:dirt_path_slab\", Count: 5b, tag: {migration_test: \"path slab\"}}",
+      "{Slot: 3b, id: \"grassslabs:grass_carpet\", Count: 6b, tag: {migration_test: \"grass carpet\"}}",
+      "{Slot: 4b, id: \"grassslabs:mycelium_slab\", Count: 2b, tag: {migration_test: \"unsupported\"}}"
+    ]
+  },
+  "dropped_uuid": "b5b81a45-56f8-445d-b008-fd27f5bb0fc9",
+  "dropped_item": "{id: \"grassslabs:grass_carpet\", Count: 2b, tag: {migration_test: \"entity\"}}"
+}

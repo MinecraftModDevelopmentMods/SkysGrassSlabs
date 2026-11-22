@@ -268,6 +268,20 @@ jobs:
         with:
           ref: ${{ needs.preflight.outputs.release_sha }}
 
+      - name: Install ForgeGradle Mavenizer toolchain
+        if: needs.preflight.outputs.loader_name == 'forge' && needs.preflight.outputs.java_version != '25'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '25.0.3+9.0.LTS'
+
+      - name: Install ForgeGradle legacy renamer toolchain
+        if: needs.preflight.outputs.loader_name == 'forge' && needs.preflight.outputs.java_version != '8' && needs.preflight.outputs.java_version != '25'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '8.0.502+7'
+
       - name: Install target Java toolchain
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
@@ -280,6 +294,20 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ needs.preflight.outputs.gradle_java_version }}
+
+      - name: Configure ForgeGradle toolchains
+        if: needs.preflight.outputs.loader_name == 'forge'
+        shell: bash
+        run: |
+          set -euo pipefail
+          paths=()
+          for version in 8 17 21 25; do
+            variable="JAVA_HOME_${version}_X64"
+            if [[ -n "${!variable:-}" ]]; then paths+=("${!variable}"); fi
+          done
+          [[ -n "${JAVA_HOME_25_X64:-}" ]]
+          joined="$(IFS=,; echo "${paths[*]}")"
+          printf 'GRADLE_OPTS=%s -Dorg.gradle.java.installations.paths=%s -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.java.installations.auto-download=false\n' "${GRADLE_OPTS:-}" "$joined" >> "$GITHUB_ENV"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
@@ -423,6 +451,20 @@ jobs:
         with:
           ref: ${{ needs.preflight.outputs.release_sha }}
 
+      - name: Install ForgeGradle Mavenizer toolchain
+        if: needs.preflight.outputs.loader_name == 'forge' && needs.preflight.outputs.java_version != '25'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '25.0.3+9.0.LTS'
+
+      - name: Install ForgeGradle legacy renamer toolchain
+        if: needs.preflight.outputs.loader_name == 'forge' && needs.preflight.outputs.java_version != '8' && needs.preflight.outputs.java_version != '25'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '8.0.502+7'
+
       - name: Install target Java toolchain
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
@@ -435,6 +477,20 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ needs.preflight.outputs.gradle_java_version }}
+
+      - name: Configure ForgeGradle toolchains
+        if: needs.preflight.outputs.loader_name == 'forge'
+        shell: bash
+        run: |
+          set -euo pipefail
+          paths=()
+          for version in 8 17 21 25; do
+            variable="JAVA_HOME_${version}_X64"
+            if [[ -n "${!variable:-}" ]]; then paths+=("${!variable}"); fi
+          done
+          [[ -n "${JAVA_HOME_25_X64:-}" ]]
+          joined="$(IFS=,; echo "${paths[*]}")"
+          printf 'GRADLE_OPTS=%s -Dorg.gradle.java.installations.paths=%s -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.java.installations.auto-download=false\n' "${GRADLE_OPTS:-}" "$joined" >> "$GITHUB_ENV"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
@@ -501,10 +557,12 @@ jobs:
           fi
 
       - name: Publish Sky's Grass Slabs
+        id: curseforge
         uses: Kira-NT/mc-publish@52307b03863581dec6b652b83e597aec02ebb075 # v3.3.1
         with:
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           curseforge-id: ${{ needs.preflight.outputs.curseforge_project_id }}
+          curseforge-retry-attempts: 1
           name: Sky's Grass Slabs ${{ needs.preflight.outputs.release_version }} for Minecraft ${{ needs.preflight.outputs.minecraft_version }} (${{ needs.preflight.outputs.loader_display }})
           version: ${{ needs.preflight.outputs.release_version }}
           version-type: ${{ inputs.curseforge_release_level }}
@@ -519,6 +577,16 @@ jobs:
             ${{ runner.temp }}/release-input/${{ needs.preflight.outputs.main_jar }}
             ${{ runner.temp }}/release-input/${{ needs.preflight.outputs.sources_jar }}
             ${{ runner.temp }}/release-input/${{ needs.preflight.outputs.javadoc_jar }}
+
+      - name: Record CurseForge publication
+        env:
+          CURSEFORGE_FILE_ID: ${{ steps.curseforge.outputs.curseforge-version }}
+          CURSEFORGE_URL: ${{ steps.curseforge.outputs.curseforge-url }}
+        run: |
+          set -euo pipefail
+          [[ "$CURSEFORGE_FILE_ID" =~ ^[0-9]+$ ]]
+          printf 'CurseForge file: %s\nDownload: %s\n' "$CURSEFORGE_FILE_ID" "$CURSEFORGE_URL"
+          printf '### CurseForge publication\n\nFile: %s\n\nDownload: %s\n' "$CURSEFORGE_FILE_ID" "$CURSEFORGE_URL" >> "$GITHUB_STEP_SUMMARY"
 
   publish_github:
     name: Publish GitHub Release

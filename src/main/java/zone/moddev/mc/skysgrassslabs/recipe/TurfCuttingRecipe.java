@@ -2,27 +2,37 @@ package zone.moddev.mc.skysgrassslabs.recipe;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.core.NonNullList;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingBookCategory;
-import net.minecraft.world.item.crafting.CustomRecipe;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.core.NonNullList;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.ToolActions;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.world.item.crafting.CustomRecipe;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
+import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
 import zone.moddev.mc.skysgrassslabs.compat.BuildingBricksCompat;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
-import zone.moddev.mc.skysgrassslabs.init.ModRecipes;
 
-/** Cuts turf while returning the matching dirt and an unchanged shovel. */
 public final class TurfCuttingRecipe extends CustomRecipe {
+    public static final ResourceLocation SERIALIZER_ID =
+            new ResourceLocation(SkysGrassSlabs.MOD_ID, "turf_cutting");
+    public static final RecipeSerializer<TurfCuttingRecipe> SERIALIZER =
+            new SimpleCraftingRecipeSerializer<>(TurfCuttingRecipe::new);
+
     private final NonNullList<Ingredient> ingredients;
+
+    public TurfCuttingRecipe(ResourceLocation id) {
+        this(id, CraftingBookCategory.BUILDING);
+    }
 
     public TurfCuttingRecipe(ResourceLocation id, CraftingBookCategory category) {
         super(id, category);
@@ -30,14 +40,12 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean matches(CraftingContainer container, Level level) {
+    public boolean matches(CraftingContainer inventory, Level world) {
         int grassInputs = 0;
         int shovels = 0;
-        for (int slot = 0; slot < container.getContainerSize(); ++slot) {
-            ItemStack stack = container.getItem(slot);
-            if (stack.isEmpty()) {
-                continue;
-            }
+        for (int slot = 0; slot < inventory.getContainerSize(); ++slot) {
+            ItemStack stack = inventory.getItem(slot);
+            if (stack.isEmpty()) continue;
             if (!soilRemainder(stack).isEmpty()) {
                 ++grassInputs;
             } else if (isShovel(stack)) {
@@ -50,8 +58,8 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer container, RegistryAccess registryAccess) {
-        return new ItemStack(ModBlocks.TURF_ITEM.get());
+    public ItemStack assemble(CraftingContainer inventory, RegistryAccess registryAccess) {
+        return matches(inventory, null) ? new ItemStack(ModBlocks.TURF) : ItemStack.EMPTY;
     }
 
     @Override
@@ -61,7 +69,7 @@ public final class TurfCuttingRecipe extends CustomRecipe {
 
     @Override
     public ItemStack getResultItem(RegistryAccess registryAccess) {
-        return new ItemStack(ModBlocks.TURF_ITEM.get());
+        return new ItemStack(ModBlocks.TURF);
     }
 
     @Override
@@ -70,14 +78,12 @@ public final class TurfCuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public NonNullList<ItemStack> getRemainingItems(CraftingContainer container) {
+    public NonNullList<ItemStack> getRemainingItems(CraftingContainer inventory) {
         NonNullList<ItemStack> remaining = NonNullList.withSize(
-                container.getContainerSize(), ItemStack.EMPTY);
-        for (int slot = 0; slot < container.getContainerSize(); ++slot) {
-            ItemStack stack = container.getItem(slot);
-            if (stack.isEmpty()) {
-                continue;
-            }
+                inventory.getContainerSize(), ItemStack.EMPTY);
+        for (int slot = 0; slot < inventory.getContainerSize(); ++slot) {
+            ItemStack stack = inventory.getItem(slot);
+            if (stack.isEmpty()) continue;
             ItemStack soil = soilRemainder(stack);
             if (!soil.isEmpty()) {
                 remaining.set(slot, soil);
@@ -97,7 +103,12 @@ public final class TurfCuttingRecipe extends CustomRecipe {
 
     @Override
     public RecipeSerializer<?> getSerializer() {
-        return ModRecipes.TURF_CUTTING.get();
+        return SERIALIZER;
+    }
+
+    @Override
+    public RecipeType<?> getType() {
+        return RecipeType.CRAFTING;
     }
 
     private static boolean isShovel(ItemStack stack) {
@@ -106,26 +117,26 @@ public final class TurfCuttingRecipe extends CustomRecipe {
 
     private static NonNullList<Ingredient> createIngredients() {
         NonNullList<Ingredient> result = NonNullList.create();
-        result.add(Ingredient.of(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB.get()));
-        List<ItemStack> shovels = new ArrayList<>();
+        result.add(Ingredient.of(Blocks.GRASS_BLOCK, ModBlocks.GRASS_SLAB));
+        List<ItemStack> shovels = new ArrayList<ItemStack>();
         for (Item item : ForgeRegistries.ITEMS.getValues()) {
             ItemStack candidate = new ItemStack(item);
-            if (isShovel(candidate)) {
-                shovels.add(candidate);
-            }
+            if (isShovel(candidate)) shovels.add(candidate);
         }
-        result.add(Ingredient.of(shovels.stream()));
+        result.add(Ingredient.of(shovels.toArray(new ItemStack[shovels.size()])));
         return result;
     }
 
     private static ItemStack soilRemainder(ItemStack stack) {
-        if (stack.is(Blocks.GRASS_BLOCK.asItem())) {
+        Item item = stack.getItem();
+        if (item == Blocks.GRASS_BLOCK.asItem()) {
             return new ItemStack(Blocks.DIRT);
         }
-        if (stack.is(ModBlocks.GRASS_SLAB_ITEM.get())
-                || BuildingBricksCompat.isGrassSlabItem(stack)) {
-            return new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get());
+        if (item == ModBlocks.GRASS_SLAB.asItem() ||
+                BuildingBricksCompat.isGrassSlabItem(stack)) {
+            return new ItemStack(ModBlocks.DIRT_SLAB);
         }
         return ItemStack.EMPTY;
     }
+
 }
