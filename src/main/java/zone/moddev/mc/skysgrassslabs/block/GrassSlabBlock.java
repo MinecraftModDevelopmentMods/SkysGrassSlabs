@@ -110,6 +110,17 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     @Override
+    public boolean onTreeGrow(BlockState state, LevelReader level,
+            java.util.function.BiConsumer<BlockPos, BlockState> placeBlock, RandomSource random,
+            BlockPos pos, net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration config) {
+        // A tree decorating a new chunk must not change an existing world's slabs.
+        return level instanceof net.minecraft.server.level.WorldGenRegion region
+                && region.getLevel().dimension() == Level.OVERWORLD
+                && zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook
+                        .isSavedOverworldChunk(pos.getX() >> 4, pos.getZ() >> 4);
+    }
+
+    @Override
     public boolean canSustainPlant(BlockState state, BlockGetter level, BlockPos pos,
             Direction direction, IPlantable plantable) {
 

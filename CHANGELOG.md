@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1.121011 (unreleased)
+
+- Exposed slab faces stay visible beside neighbouring full blocks.
+- New slabs pick up snow from nearby snowy slopes immediately.
+- Grass spreads and decays through normal random ticks, including both slab halves.
+- Different crafting results have their own recipe-book buttons.
+- Slabs cannot be joined through entities, and nearby tree decoration leaves saved terrain alone.
+
 ## 1.2.0.121011 - Minecraft 1.21.1
 
 - Added a Config screen to the Mods list.

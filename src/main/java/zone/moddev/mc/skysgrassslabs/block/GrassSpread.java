@@ -51,8 +51,9 @@ public final class GrassSpread {
             return;
         }
         for (int attempt = 0; attempt < SPREAD_ATTEMPTS; ++attempt) {
+            // Searching for a source reverses the vertical range used when grass spreads outward.
             BlockPos source = target.offset(random.nextInt(3) - 1,
-                    random.nextInt(5) - 3, random.nextInt(3) - 1);
+                    random.nextInt(5) - 1, random.nextInt(3) - 1);
             if (!withinBuildHeight(level, source) || !level.isLoaded(source)) {
                 continue;
             }

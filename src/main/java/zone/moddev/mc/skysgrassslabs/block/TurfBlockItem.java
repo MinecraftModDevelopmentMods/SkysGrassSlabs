@@ -38,6 +38,13 @@ public final class TurfBlockItem extends BlockItem {
             return InteractionResult.FAIL;
         }
 
+        Player player = context.getPlayer();
+        ItemStack held = context.getItemInHand();
+        if (player == null || held.isEmpty()
+                || !player.mayUseItemAt(pos, context.getClickedFace(), held)) {
+            return InteractionResult.FAIL;
+        }
+
         BlockState grass = SlabTransitions.grassFor(current);
 
         if (grass.hasProperty(GrassSlabBlock.SNOWY)) {
@@ -49,8 +56,6 @@ public final class TurfBlockItem extends BlockItem {
             return InteractionResult.FAIL;
         }
 
-        Player player = context.getPlayer();
-        ItemStack held = context.getItemInHand();
 
         if (player instanceof ServerPlayer serverPlayer) {
             CriteriaTriggers.PLACED_BLOCK.trigger(serverPlayer, pos, held);

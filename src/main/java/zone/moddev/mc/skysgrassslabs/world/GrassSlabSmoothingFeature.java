@@ -26,10 +26,15 @@ import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Deterministic two-pass slope smoothing for newly generated Overworld chunks. */
 public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
+    public static final String FEATURE_ID = "skysgrassslabs:grass_slab_smoothing";
     private static final int HALO_WIDTH = 18;
     private static final int MISSING = Integer.MIN_VALUE;
     private static final ThreadLocal<DecisionBuffer> BUFFERS =
             ThreadLocal.withInitial(DecisionBuffer::new);
+
+    public GrassSlabSmoothingFeature() {
+        this(NoneFeatureConfiguration.CODEC);
+    }
 
     public GrassSlabSmoothingFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -162,7 +167,16 @@ public final class GrassSlabSmoothingFeature extends Feature<NoneFeatureConfigur
 
     private static int surfaceY(ChunkAccess chunk, int localX, int localZ,
             BlockPos.MutableBlockPos cursor) {
-        int y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, localX, localZ);
+        // The generation map is not retained on every finished chunk at the border.
+        // The live surface map counts the same blocks and is already up to date there.
+        Heightmap.Types heightmap = Heightmap.Types.WORLD_SURFACE_WG;
+        if (!chunk.hasPrimedHeightmap(heightmap)) {
+            heightmap = Heightmap.Types.WORLD_SURFACE;
+            if (!chunk.hasPrimedHeightmap(heightmap)) {
+                return MISSING;
+            }
+        }
+        int y = chunk.getHeight(heightmap, localX, localZ);
         int minY = chunk.getMinBuildHeight();
         int x = chunk.getPos().getMinBlockX() + localX;
         int z = chunk.getPos().getMinBlockZ() + localZ;
