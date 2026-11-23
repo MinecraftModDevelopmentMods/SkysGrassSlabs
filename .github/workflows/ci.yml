@@ -3,11 +3,11 @@ name: Sky's Grass Slabs 1.20.1 CI
 on:
   push:
     branches:
-      - master-1.20.1
+      - master-1.20.1-neo
       - 'feature/**'
   pull_request:
     branches:
-      - master-1.20.1
+      - master-1.20.1-neo
 
 permissions:
   contents: read
@@ -127,9 +127,9 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           path: |
-            build/libs/SkysGrassSlabs-1.2.0.120011.jar
-            build/libs/SkysGrassSlabs-1.2.0.120011-sources.jar
-            build/libs/SkysGrassSlabs-1.2.0.120011-javadoc.jar
+            build/libs/SkysGrassSlabs-1.2.1.120012.jar
+            build/libs/SkysGrassSlabs-1.2.1.120012-sources.jar
+            build/libs/SkysGrassSlabs-1.2.1.120012-javadoc.jar
             build/release/SHA256SUMS
             CHANGELOG.md
 

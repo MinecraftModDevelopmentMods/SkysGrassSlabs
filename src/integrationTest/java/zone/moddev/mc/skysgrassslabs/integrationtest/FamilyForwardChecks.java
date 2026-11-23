@@ -73,6 +73,8 @@ final class FamilyForwardChecks {
             expectedVersion = 2975;
         } else if (sourceVersion.equals("1.19.4")) {
             expectedVersion = 3337;
+        } else if (sourceVersion.equals("1.20.1")) {
+            expectedVersion = 3465;
         } else {
             throw new AssertionError("Unknown source family fixture: " + sourceVersion);
         }
@@ -165,7 +167,7 @@ final class FamilyForwardChecks {
             contract = new JsonParser().parse(input).getAsJsonObject();
         }
         require(contract.get("source_minecraft").getAsString().equals(sourceVersion), "Wrong biome fixture");
-        boolean expandedHeight = sourceVersion.equals("1.18.2") || sourceVersion.equals("1.19.4");
+        boolean expandedHeight = sourceVersion.equals("1.18.2") || sourceVersion.equals("1.19.4") || sourceVersion.equals("1.20.1");
         String expectedFormat = expandedHeight
                 ? "zlib-u8-quart-volume-v2" : "zlib-u8-quart-volume-v1";
         require(contract.get("format").getAsString().equals(expectedFormat), "Unknown biome encoding");

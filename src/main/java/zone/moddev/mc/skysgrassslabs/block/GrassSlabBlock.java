@@ -1,6 +1,7 @@
 package zone.moddev.mc.skysgrassslabs.block;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,11 +26,13 @@ import net.minecraft.data.worldgen.placement.VegetationPlacements;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.feature.configurations.RandomPatchConfiguration;
-import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration;
+import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraftforge.common.IPlantable;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
+import zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook;
 
 public final class GrassSlabBlock extends LegacySlabBlock implements BonemealableBlock {
     public GrassSlabBlock() {
@@ -62,7 +65,7 @@ public final class GrassSlabBlock extends LegacySlabBlock implements Bonemealabl
             BlockState facingState, LevelAccessor world, BlockPos pos, BlockPos facingPos) {
         BlockState updated = super.updateShape(state, facing, facingState, world, pos,
                 facingPos).setValue(SnowyDirtBlock.SNOWY,
-                        SnowySlabAppearance.hasNearbySnow(world, pos));
+                        SnowySlabAppearance.hasNearbySnow(world, pos, facing, facingState));
         if (world instanceof Level) {
             dirtifyGrassSupport((Level) world, pos);
         }
@@ -82,6 +85,16 @@ public final class GrassSlabBlock extends LegacySlabBlock implements Bonemealabl
             world.setBlock(pos, repaired, 2);
         }
         GrassSpread.spreadFrom(world, pos, random, pos.below());
+    }
+
+    @Override
+    public boolean onTreeGrow(BlockState state, LevelReader level,
+            BiConsumer<BlockPos, BlockState> placeBlock, RandomSource random,
+            BlockPos pos, TreeConfiguration config) {
+        // Decoration from a new chunk must not turn a saved slab into tree soil.
+        return level instanceof WorldGenRegion region
+                && region.getLevel().dimension() == Level.OVERWORLD
+                && LegacyWorldDataHook.isSavedOverworldChunk(pos.getX() >> 4, pos.getZ() >> 4);
     }
 
     @Override

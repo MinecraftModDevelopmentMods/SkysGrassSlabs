@@ -23,11 +23,11 @@ class ProjectContractTest {
     void releaseIdentityAndToolchainArePinned() throws Exception {
         String properties = read("gradle.properties");
         assertTrue(properties.contains("minecraft_version=1.20.1"));
-        assertTrue(properties.contains("forge_version=47.4.10"));
+        assertTrue(properties.contains("forge_version=47.1.106"));
         assertTrue(properties.contains("mapping_channel=official"));
         assertTrue(properties.contains("mapping_version=1.20.1"));
         assertTrue(properties.contains("mcp_version=20230612.114412"));
-        assertTrue(properties.contains("mod_version=1.2.0.120011"));
+        assertTrue(properties.contains("mod_version=1.2.1.120012"));
         assertTrue(properties.contains("curseforge_project_id=1677588"));
         assertTrue(properties.contains("java_toolchain_version=17.0.1+12"));
         String build = read("build.gradle");
@@ -206,7 +206,7 @@ class ProjectContractTest {
         assertTrue(turf.contains("public void onPlace"));
         String spread = read(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/block/GrassSpread.java");
-        assertTrue(spread.contains("cover.getBlock() == ModBlocks.TURF"));
+        assertTrue(spread.contains("cover.is(ModBlocks.TURF)"));
     }
 
     @Test
@@ -249,7 +249,7 @@ class ProjectContractTest {
         assertTrue(feature.contains("region.getCenter()"));
         assertFalse(feature.contains("BiomeLoadingEvent"));
         assertFalse(feature.contains("BuiltinRegistries.CONFIGURED_FEATURE"));
-        assertTrue(feature.contains("world.hasChunk(chunkX, chunkZ)"));
+        assertTrue(feature.contains("level.hasChunk(chunkX, chunkZ)"));
         assertFalse(new File(
                 "src/main/java/zone/moddev/mc/skysgrassslabs/world/ContextFeature.java").exists());
     }
@@ -313,9 +313,9 @@ class ProjectContractTest {
             assertFalse(workflow.contains("master-1.16.5"), name);
         }
         String ci = read(".github/workflows/ci.yml");
-        assertTrue(ci.contains("SkysGrassSlabs-1.2.0.120011.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.2.0.120011-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.2.0.120011-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.120012.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.120012-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.120012-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
         assertTrue(ci.contains("java-version: '8.0.502+7'"));
         assertTrue(ci.contains("JAVA_HOME_8_X64"));

@@ -12,5 +12,6 @@
     "item": "skysgrassslabs:dirt_slab",
     "count": 6
   },
-  "category": "building"
+  "category": "building",
+  "group": "skys/result/skysgrassslabs/dirt_slab"
 }

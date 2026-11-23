@@ -21,6 +21,22 @@ public final class SmoothingDecision {
         return neighbourSurfaceY == lowerSurfaceY + 1 && neighbourIsNaturalGrass;
     }
 
+    public static boolean shouldPlace(int lowerY, int northY, int southY, int westY,
+            int eastY, boolean lowerIsGrass, boolean northIsGrass, boolean southIsGrass,
+            boolean westIsGrass, boolean eastIsGrass, boolean targetClear,
+            boolean targetDry, boolean supported) {
+        if (!lowerIsGrass || !targetClear || !targetDry || !supported) {
+            return false;
+        }
+
+        int highY = lowerY + 1;
+
+        return northIsGrass && northY == highY
+                || southIsGrass && southY == highY
+                || westIsGrass && westY == highY
+                || eastIsGrass && eastY == highY;
+    }
+
     private SmoothingDecision() {
     }
 }

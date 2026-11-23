@@ -43,6 +43,7 @@ public final class LegacyWorldDataHook {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final BitSet SUPPORTED_BLOCK_IDS = new BitSet();
     private static final Set<Long> LEGACY_CHUNKS = ConcurrentHashMap.newKeySet();
+    private static final Set<Long> SAVED_OVERWORLD_CHUNKS = ConcurrentHashMap.newKeySet();
     private static final Set<ResourceLocation> SKY_IDS = new LinkedHashSet<ResourceLocation>();
     private static final Set<ResourceLocation> SUPPORTED_BUILDINGBRICKS_IDS =
             new LinkedHashSet<ResourceLocation>();
@@ -99,6 +100,7 @@ public final class LegacyWorldDataHook {
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
         File levelDat = event.getServer().getWorldPath(LevelResource.LEVEL_DATA_FILE).toFile();
         prepareLegacyWorld(levelDat);
+        snapshotSavedOverworldChunks(levelDat.getParentFile());
     }
 
     static synchronized void prepareLegacyWorld(File levelDat) {
@@ -239,6 +241,16 @@ public final class LegacyWorldDataHook {
         return root;
     }
 
+    static void snapshotSavedOverworldChunks(File worldDirectory) {
+        indexRegionChunks(worldDirectory, SAVED_OVERWORLD_CHUNKS);
+    }
+
+    /** A saved but unfinished chunk still belongs to the existing world. */
+    public static boolean isSavedOverworldChunk(int chunkX, int chunkZ) {
+        return SAVED_OVERWORLD_CHUNKS.contains(chunkKey(chunkX, chunkZ))
+                || isLegacyChunk(chunkX, chunkZ);
+    }
+
     public static boolean isLegacyChunk(int chunkX, int chunkZ) {
         return legacyWorldActive && LEGACY_CHUNKS.contains(chunkKey(chunkX, chunkZ));
     }
@@ -332,7 +344,11 @@ public final class LegacyWorldDataHook {
     }
 
     private static int indexLegacyChunks(File worldDirectory) {
-        LEGACY_CHUNKS.clear();
+        return indexRegionChunks(worldDirectory, LEGACY_CHUNKS);
+    }
+
+    private static int indexRegionChunks(File worldDirectory, Set<Long> chunks) {
+        chunks.clear();
         File regionDirectory = new File(worldDirectory, "region");
         File[] regionFiles = regionDirectory.listFiles((directory, name) ->
                 name.startsWith("r.") && (name.endsWith(".mca") || name.endsWith(".mcr")));
@@ -360,7 +376,7 @@ public final class LegacyWorldDataHook {
                     int offset = index * 4;
                     if ((locations[offset] | locations[offset + 1] |
                             locations[offset + 2] | locations[offset + 3]) != 0) {
-                        LEGACY_CHUNKS.add(chunkKey(regionX * 32 + (index & 31),
+                        chunks.add(chunkKey(regionX * 32 + (index & 31),
                                 regionZ * 32 + (index >> 5)));
                     }
                 }
@@ -369,7 +385,7 @@ public final class LegacyWorldDataHook {
                         exception);
             }
         }
-        return LEGACY_CHUNKS.size();
+        return chunks.size();
     }
 
     static int expandFlatteningTable(int requiredLength) {
