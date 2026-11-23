@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.2.1.120012 (unreleased)
+## 1.2.1.120012
 
 - Match snow caps to nearby snowy slopes.
 - Keep different crafting results on separate recipe-book buttons.
