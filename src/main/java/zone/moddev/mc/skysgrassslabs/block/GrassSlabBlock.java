@@ -32,6 +32,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.RandomPatchConf
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraftforge.common.IPlantable;
 import net.minecraftforge.common.ToolAction;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.init.ModBlocks;
 
 /** Grass slab with target aware spreading and top slab vegetation behaviour. */
@@ -106,6 +107,17 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
             ToolAction action, boolean simulate) {
 
         return SlabTransitions.flatten(state, action);
+    }
+
+    @Override
+    public boolean onTreeGrow(BlockState state, LevelReader level,
+            java.util.function.BiConsumer<BlockPos, BlockState> placeBlock, RandomSource random,
+            BlockPos pos, net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration config) {
+        // A tree decorating a new chunk must not change an existing world's slabs.
+        return level instanceof net.minecraft.server.level.WorldGenRegion region
+                && region.getLevel().dimension() == Level.OVERWORLD
+                && zone.moddev.mc.skysgrassslabs.compat.LegacyWorldDataHook
+                        .isSavedOverworldChunk(pos.getX() >> 4, pos.getZ() >> 4);
     }
 
     @Override
@@ -187,8 +199,6 @@ public final class GrassSlabBlock extends SlabBlock implements BonemealableBlock
     }
 
     private static void dirtifyGrassSupport(Level level, BlockPos pos) {
-        if (!level.isClientSide && level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)) {
-            level.setBlock(pos.below(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_CLIENTS);
-        }
+        GrassSlabsApi.repairSupport(level, pos);
     }
 }

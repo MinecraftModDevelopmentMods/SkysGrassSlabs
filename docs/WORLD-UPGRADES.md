@@ -6,7 +6,7 @@ world has been checked in game.
 
 ## Sky's Grass Slabs content
 
-Install `SkysGrassSlabs-1.1.1.121011.jar` before opening a world that used an
+Install `SkysGrassSlabs-1.2.1.121011.jar` before opening a world that used an
 earlier release. The permanent dirt slab, grass slab, path slab and turf IDs
 are unchanged.
 
@@ -19,9 +19,8 @@ Minecraft 1.13.2 through 1.20.6 worlds already use named block states. Their
 orientation, snowy and waterlogged states load through Minecraft's normal
 upgrade process.
 
-World smoothing still affects only newly generated chunks. Chunks indexed as
-part of an older world are not treated as new terrain by the smoothing
-feature.
+World smoothing affects only new terrain. It skips chunks already saved in
+your world, even if Minecraft still needs to finish decorating them.
 
 ## Supported older slab IDs
 

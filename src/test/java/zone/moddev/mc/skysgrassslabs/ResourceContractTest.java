@@ -17,6 +17,40 @@ import com.google.gson.JsonParser;
 
 public class ResourceContractTest {
     @Test
+    public void insetFacesStayVisibleBesideFullBlocks() throws Exception {
+        try (Stream<Path> models = Files.list(Path.of(
+                "src/main/resources/assets/skysgrassslabs/models/block"))) {
+            for (Path path : models.filter(file -> file.toString().endsWith(".json")).toList()) {
+                var model = JsonParser.parseString(Files.readString(path)).getAsJsonObject();
+                if (!model.has("elements")) {
+                    continue;
+                }
+                for (var value : model.getAsJsonArray("elements")) {
+                    var element = value.getAsJsonObject();
+                    for (var face : element.getAsJsonObject("faces").entrySet()) {
+                        var definition = face.getValue().getAsJsonObject();
+                        if (!definition.has("cullface")) {
+                            continue;
+                        }
+                        String direction = definition.get("cullface").getAsString();
+                        int axis = switch (direction) {
+                            case "east", "west" -> 0;
+                            case "up", "down" -> 1;
+                            default -> 2;
+                        };
+                        boolean positive = direction.equals("east") || direction.equals("up")
+                                || direction.equals("south");
+                        // Only a face on the block boundary can meet a neighbouring block.
+                        assertEquals(path + " " + face.getKey(), positive ? 16 : 0,
+                                element.getAsJsonArray(positive ? "to" : "from")
+                                        .get(axis).getAsDouble(), 0.0);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     public void everyJsonResourceParses() throws Exception {
         try (Stream<Path> files = Files.walk(Path.of("src/main/resources"))) {
             files.filter(path -> path.toString().endsWith(".json"))
@@ -69,7 +103,7 @@ public class ResourceContractTest {
     @Test
     public void grassSlabUsesVanillaGrassCutoutLayer() throws Exception {
         for (String modelName : new String[] {"grass_slab", "grass_slab_top",
-                "grass_slab_snow", "grass_slab_top_snow"}) {
+                "grass_slab_snow", "grass_slab_top_snow", "turf"}) {
             String model = Files.readString(Path.of(
                     "src/main/resources/assets/skysgrassslabs/models/block/"
                             + modelName + ".json"));

@@ -36,14 +36,14 @@ public class ProjectContractTest {
         assertTrue(Files.isRegularFile(Path.of("docs/GAMEPLAY.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/WORLD-UPGRADES.md")));
         assertFalse(Files.exists(Path.of("docs/REPOSITORY.md")));
-        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.1.1.121011.md")));
+        assertTrue(Files.isRegularFile(Path.of("docs/RELEASE-1.2.1.121011.md")));
         assertTrue(Files.isRegularFile(Path.of("docs/BETA-0.2.0.118021.md")));
     }
 
     @Test
     public void releaseIdentityAndLicenseAreStable() throws Exception {
         String properties = Files.readString(Path.of("gradle.properties"), StandardCharsets.UTF_8);
-        assertTrue(properties.contains("mod_version=1.1.1.121011"));
+        assertTrue(properties.contains("mod_version=1.2.1.121011"));
         assertTrue(properties.contains("mod_license=LGPL-2.1-only"));
         assertEquals("LGPL-2.1-only", Files.readString(Path.of("LICENSE.spdx"), StandardCharsets.UTF_8).trim());
         assertTrue(Files.readString(Path.of("NOTICE"), StandardCharsets.UTF_8)
@@ -100,7 +100,7 @@ public class ProjectContractTest {
         assertTrue(config.contains("push(\"compat\")"));
         assertTrue(config.contains("define(FORCE_REPLACE_BUILDINGBRICKS_SLABS, false)"));
         assertTrue(config.contains("define(FORCE_REPLACE_GRASS_SLABS_MOD_CONTENT, false)"));
-        assertTrue(main.contains("VERSION = \"1.1.1.121011\""));
+        assertTrue(main.contains("VERSION = \"1.2.1.121011\""));
         assertTrue(state.contains("skysgrassslabs_world_state"));
         assertTrue(state.contains("SCHEMA_VERSION = 1"));
         assertTrue(state.contains("schema_version"));
@@ -154,7 +154,7 @@ public class ProjectContractTest {
         assertTrue(coremod.contains("current !== vanilla && current !== target"));
         assertTrue(coremod.contains("throw new Error"));
         assertTrue(bridge.contains("skysgrassslabs_legacy_registry.dat"));
-        assertTrue(bridge.contains("indexLegacyChunks"));
+        assertTrue(bridge.contains("indexRegionChunks(worldDirectory, LEGACY_CHUNKS)"));
         assertTrue(bridge.contains("SUPPORTED_BLOCK_IDS"));
         assertFalse(bridge.contains("import sun.misc"));
         assertFalse(bridge.contains("Unsafe.class"));
@@ -219,7 +219,7 @@ public class ProjectContractTest {
         assertTrue(pack.contains("\"max_inclusive\": 48"));
 
         for (String recipeName : new String[] {"dirt_slab", "grass_slab",
-                "grass_block_from_seeds", "grass_slab_from_seeds", "turf"}) {
+                "grass_block_from_seeds", "grass_slab_from_seeds", "dirt_from_slabs", "grass_from_slabs", "turf"}) {
             String recipe = Files.readString(Path.of(
                     "src/main/resources/data/skysgrassslabs/recipe/" + recipeName + ".json"),
                     StandardCharsets.UTF_8);
@@ -247,9 +247,9 @@ public class ProjectContractTest {
         }
         String ci = Files.readString(Path.of(".github/workflows/ci.yml"),
                 StandardCharsets.UTF_8);
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.121011.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.121011-sources.jar"));
-        assertTrue(ci.contains("SkysGrassSlabs-1.1.1.121011-javadoc.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.121011.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.121011-sources.jar"));
+        assertTrue(ci.contains("SkysGrassSlabs-1.2.1.121011-javadoc.jar"));
         assertTrue(ci.contains("if-no-files-found: error"));
         assertEquals(2, ci.lines()
                 .filter(line -> line.contains("java-version: '8.0.502+7'"))

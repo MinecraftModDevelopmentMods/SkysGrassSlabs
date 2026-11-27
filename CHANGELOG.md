@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.1.121011 (unreleased)
+
+- Exposed slab faces stay visible beside neighbouring full blocks.
+- New slabs pick up snow from nearby snowy slopes immediately.
+- Grass spreads and decays through normal random ticks, including both slab halves.
+- Different crafting results have their own recipe-book buttons.
+- Slabs cannot be joined through entities, and nearby tree decoration leaves saved terrain alone.
+
+## 1.2.0.121011 - Minecraft 1.21.1
+
+- Added a Config screen to the Mods list.
+- Two dirt or grass slabs can now be crafted back into a full block.
+- Grass spreads between slabs and grass pieces from Sky's Building Pieces.
+- With Sky's Terrain Smoother installed, it handles new terrain for both mods. The grass setting still controls whether it places grass pieces.
+- Standalone smoothing leaves saved chunks, structure areas and foliage it cannot safely move alone.
+
 ## 1.1.1.121011 - Minecraft 1.21.1
 
 - Corrected snowy grass slabs so their exposed top uses the snow texture

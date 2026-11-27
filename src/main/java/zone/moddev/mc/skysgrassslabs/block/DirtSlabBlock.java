@@ -37,11 +37,12 @@ public final class DirtSlabBlock extends SlabBlock {
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour,
-            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
-        BlockState updated = super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
-        return updated.setValue(SnowyDirtBlock.SNOWY,
-                SnowySlabAppearance.hasNearbySnow(level, pos, direction, neighbour));
+    public BlockState updateShape(BlockState state, Direction facing,
+            BlockState facingState, LevelAccessor world, BlockPos pos, BlockPos facingPos) {
+        BlockState updated = super.updateShape(state, facing, facingState, world, pos,
+                facingPos);
+        return updated.is(this) ? updated.setValue(SnowyDirtBlock.SNOWY,
+                SnowySlabAppearance.hasNearbySnow(world, pos, facing, facingState)) : updated;
     }
 
     @Override

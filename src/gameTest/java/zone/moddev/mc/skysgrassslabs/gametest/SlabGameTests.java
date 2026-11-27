@@ -43,6 +43,7 @@ import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import zone.moddev.mc.skysgrassslabs.SkysGrassSlabs;
+import zone.moddev.mc.skysgrassslabs.api.GrassSlabsApi;
 import zone.moddev.mc.skysgrassslabs.block.DirtSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSlabBlock;
 import zone.moddev.mc.skysgrassslabs.block.GrassSpread;
@@ -169,7 +170,7 @@ public final class SlabGameTests {
         helper.runAfterDelay(20, () -> {
             ((DirtSlabBlock) ModBlocks.DIRT_SLAB.get()).randomTick(
                     helper.getLevel().getBlockState(dirtPos), helper.getLevel(), dirtPos,
-                    new FixedRandom(2, 3, 1));
+                    FixedRandom.sourceOffset(1, 0, 0));
             require(helper,
                     helper.getLevel().getBlockState(dirtPos).is(ModBlocks.GRASS_SLAB.get()),
                     "vanilla grass did not reach dirt slab; areaLoaded="
@@ -524,7 +525,7 @@ public final class SlabGameTests {
                     ModBlocks.DIRT_SLAB.get().defaultBlockState(), Block.UPDATE_ALL);
             ((DirtSlabBlock) ModBlocks.DIRT_SLAB.get()).randomTick(
                     helper.getLevel().getBlockState(slabTarget), helper.getLevel(), slabTarget,
-                    new FixedRandom(2, 4, 1));
+                    FixedRandom.sourceOffset(1, 1, 0));
             require(helper, helper.getLevel().getBlockState(slabTarget)
                     .is(ModBlocks.GRASS_SLAB.get()), "dirt slab did not recognize turf as grass");
             helper.succeed();
@@ -688,6 +689,51 @@ public final class SlabGameTests {
                         .is(ModBlocks.GRASS_SLAB_ITEM.get());
     }
 
+    @GameTest(template = EMPTY, batch = "slabs_family")
+    public static void sharedGrassFormsKeepTheirOrientationAndWater(GameTestHelper helper) {
+        for (SlabType half : new SlabType[] {SlabType.BOTTOM, SlabType.TOP}) {
+            for (boolean waterlogged : new boolean[] {false, true}) {
+                BlockState dirt = ModBlocks.DIRT_SLAB.get().defaultBlockState()
+                        .setValue(SlabBlock.TYPE, half).setValue(SlabBlock.WATERLOGGED, waterlogged);
+                BlockState grass = GrassSlabsApi.grassFor(dirt);
+                require(helper, grass != null && grass.is(ModBlocks.GRASS_SLAB.get()),
+                        "The shared catalogue is missing a native grass slab form");
+                require(helper, grass.getValue(SlabBlock.TYPE) == half
+                                && grass.getValue(SlabBlock.WATERLOGGED) == waterlogged,
+                        "The shared catalogue changed a slab's orientation or water");
+                require(helper, GrassSlabsApi.dirtFor(grass) == dirt
+                                && GrassSlabsApi.isSpreadingGrassForm(grass) == !waterlogged,
+                        "The shared catalogue changed the dirt form or wet grass behaviour");
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = "slabs_family")
+    public static void twoMatchingSlabsCraftBackToOneBlock(GameTestHelper helper) {
+        verifyRecombination(helper, "dirt_from_slabs",
+                new ItemStack(ModBlocks.DIRT_SLAB_ITEM.get()), Blocks.DIRT);
+        verifyRecombination(helper, "grass_from_slabs",
+                new ItemStack(ModBlocks.GRASS_SLAB_ITEM.get()), Blocks.GRASS_BLOCK);
+        helper.succeed();
+    }
+
+    private static void verifyRecombination(GameTestHelper helper, String recipeName,
+            ItemStack slab, Block fullBlock) {
+        CraftingRecipe recipe = (CraftingRecipe) helper.getLevel().getRecipeManager()
+                .byKey(ResourceLocation.fromNamespaceAndPath(SkysGrassSlabs.MOD_ID, recipeName))
+                .orElseThrow().value();
+        CraftingInput grid = craftingGrid(2, 1, slab.copy(), slab.copy());
+        require(helper, recipe.matches(grid, helper.getLevel()),
+                "Matching slabs did not fit the recombination recipe");
+        ItemStack result = recipe.assemble(grid, helper.getLevel().registryAccess());
+        require(helper, result.is(fullBlock.asItem()) && result.getCount() == 1,
+                "Two slabs must give back exactly one full block");
+        CraftingInput singleSlab = craftingGrid(1, 1, slab.copy());
+        require(helper, !recipe.matches(singleSlab, helper.getLevel()),
+                "A single slab must not give back a full block");
+    }
+
     private static CraftingInput craftingGrid(int width, int height, ItemStack... stacks) {
         NonNullList<ItemStack> items = NonNullList.withSize(width * height, ItemStack.EMPTY);
         for (int slot = 0; slot < stacks.length; ++slot) {
@@ -721,13 +767,87 @@ public final class SlabGameTests {
         }
     }
 
-    private static final class FixedRandom extends LegacyRandomSource {
+    @GameTest(template = EMPTY, batch = "slabs013")
+    public static void slabJoiningRespectsEntityCollision(GameTestHelper helper) {
+        BlockPos position = helper.absolutePos(new BlockPos(2, 2, 2));
+        BlockState slab = ModBlocks.DIRT_SLAB.get().defaultBlockState();
+        helper.getLevel().setBlock(position, slab, Block.UPDATE_ALL);
+        var occupant = helper.spawn(EntityType.COW, new BlockPos(2, 2, 2));
+        occupant.setPos(position.getX() + .5, position.getY() + .5, position.getZ() + .5);
+        require(helper, !helper.getLevel().isUnobstructed(Blocks.DIRT.defaultBlockState(), position,
+                        CollisionContext.empty()), "The join fixture needs an obstructed upper half");
+        Player player = helper.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL);
+        ItemStack held = new ItemStack(ModBlocks.DIRT_SLAB.get());
+        player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        held.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false)));
+        require(helper, helper.getLevel().getBlockState(position).equals(slab) && held.getCount() == 1,
+                "Joining slabs must leave an obstructing entity and the held item alone");
+        occupant.discard();
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = "slabs013")
+    public static void turfGreeningRespectsAdventurePermissions(GameTestHelper helper) {
+        BlockPos position = helper.absolutePos(new BlockPos(2, 2, 2));
+        BlockState dirt = ModBlocks.DIRT_SLAB.get().defaultBlockState();
+        helper.getLevel().setBlock(position, dirt, Block.UPDATE_ALL);
+        Player player = helper.makeMockPlayer(net.minecraft.world.level.GameType.ADVENTURE);
+        player.getAbilities().mayBuild = false;
+        ItemStack held = new ItemStack(ModBlocks.TURF.get());
+        player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        held.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false)));
+        require(helper, helper.getLevel().getBlockState(position).equals(dirt) && held.getCount() == 1,
+                "Turf greening must respect adventure placement permissions");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = "slabs014")
+    public static void randomTicksDecayBothCoveredHalves(GameTestHelper helper) {
+        BlockPos position = helper.absolutePos(new BlockPos(2, 2, 2));
+        for (SlabType half : new SlabType[] {SlabType.BOTTOM, SlabType.TOP}) {
+            BlockState grass = ModBlocks.GRASS_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, half);
+            helper.getLevel().setBlock(position.below(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_ALL);
+            helper.getLevel().setBlock(position, grass, Block.UPDATE_ALL);
+            helper.getLevel().setBlock(position.above(), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+            helper.getLevel().getBlockState(position).randomTick(helper.getLevel(), position, RandomSource.create(0));
+            BlockState dirt = helper.getLevel().getBlockState(position);
+            require(helper, dirt.is(ModBlocks.DIRT_SLAB.get()) && dirt.getValue(SlabBlock.TYPE) == half,
+                    "Covered grass must decay through native random ticks while keeping its half: " + half);
+            helper.getLevel().setBlock(position.above(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = "slabs014")
+    public static void placedSlabInheritsHigherTerraceSnow(GameTestHelper helper) {
+        BlockPos position = helper.absolutePos(new BlockPos(2, 2, 2));
+        helper.getLevel().setBlock(position.below(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_ALL);
+        helper.getLevel().setBlock(position.north(), Blocks.GRASS_BLOCK.defaultBlockState(), Block.UPDATE_ALL);
+        helper.getLevel().setBlock(position.north().above(), Blocks.SNOW.defaultBlockState(), Block.UPDATE_ALL);
+        var player = helper.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL);
+        var context = new net.minecraft.world.item.context.BlockPlaceContext(helper.getLevel(), player,
+                InteractionHand.MAIN_HAND, new ItemStack(ModBlocks.GRASS_SLAB.get()),
+                new BlockHitResult(Vec3.atBottomCenterOf(position), Direction.UP, position.below(), false));
+        BlockState placed = ModBlocks.GRASS_SLAB.get().getStateForPlacement(context);
+        require(helper, placed != null && placed.getValue(GrassSlabBlock.SNOWY),
+                "A new slab must inherit snow from its higher terrace immediately");
+        helper.succeed();
+    }
+
+    private static final class FixedRandom extends net.minecraft.world.level.levelgen.LegacyRandomSource {
         private final int[] values;
         private int index;
 
         FixedRandom(int... values) {
             super(0L);
             this.values = values;
+        }
+
+        static FixedRandom sourceOffset(int east, int above, int south) {
+            // Looking for a source reverses the vertical range of outward spreading.
+            return new FixedRandom(east + 1, above + 1, south + 1);
         }
 
         @Override
